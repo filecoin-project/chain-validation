@@ -7,8 +7,8 @@ import (
 // Factory abstracts over concrete state manipulation methods.
 type Factory interface {
 	NewActor(code cid.Cid, balance AttoFIL) Actor
-	NewState(actors map[Address]Actor) Tree
-	ApplyMessage(Tree, interface{}) Tree
+	NewState(actors map[Address]Actor) (Tree, error)
+	ApplyMessage(Tree, interface{}) (Tree, error)
 }
 
 type Validator struct {
@@ -20,8 +20,12 @@ func NewValidator(factory Factory) *Validator {
 }
 
 func (v *Validator) ApplyMessages(tree Tree, messages []interface{}) (Tree, error) {
+	var err error
 	for _, m := range messages {
-		tree = v.factory.ApplyMessage(tree, m)
+		tree, err = v.factory.ApplyMessage(tree, m)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return tree, nil
 }
