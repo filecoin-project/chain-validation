@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"github.com/filecoin-project/chain-validation/pkg/storage"
 	"math/big"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 )
 
 // Get this method to run
-func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.Factory) {
+func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.Factory, storageFactory storage.Factory) {
 	actors := make(map[state.Address]state.Actor)
 	actors[state.NetworkAddress] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(1000000))
 	actors[state.BurntFundsAddress] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(0))
@@ -24,7 +25,7 @@ func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.
 	producer := chain.NewMessageProducer(msgFactory)
 	require.NoError(t, producer.Transfer(state.NetworkAddress, state.BurntFundsAddress, big.NewInt(1)))
 
-	validator := state.NewValidator(stateFactory)
+	validator := state.NewValidator(stateFactory, storageFactory)
 	endState, err := validator.ApplyMessages(initState, producer.Messages())
 	require.NoError(t, err)
 

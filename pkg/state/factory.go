@@ -1,7 +1,9 @@
 package state
 
 import (
+	"github.com/filecoin-project/chain-validation/pkg/storage"
 	"github.com/ipfs/go-cid"
+	"github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 )
 
@@ -9,47 +11,36 @@ import (
 type Factory interface {
 	NewActor(code cid.Cid, balance AttoFIL) Actor
 	NewState(actors map[Address]Actor) (Tree, error)
-	ApplyMessage(VMParams, Tree, interface{}) (Tree, error)
-}
-
-type VMParams interface {
-	StorageMap() Storage
-	BlockHeight() uint64
-}
-
-type ValidatorVMParams struct {
-	storageMap blockstore.Blockstore
-	blockHeight uint64
-}
-
-func (vc *ValidatorVMParams) StorageMap() Storage {
-	panic("NYI")
-}
-
-func (vc *ValidatorVMParams) BlockHeight() uint64 {
-	panic("NYI")
-}
-
-func NewValidatorContext() VMParams {
-	return &ValidatorVMParams{}
+	ApplyMessage(*VMContext, Tree, interface{}) (Tree, error)
 }
 
 type Validator struct {
 	factory Factory
-	context VMParams
+	store storage.StorageMap
 }
 
-func NewValidator(factory Factory) *Validator {
-	return &Validator{factory, NewValidatorContext()}
+
+func NewValidator(factory Factory, storage storage.Factory) *Validator {
+	bs := blockstore.NewBlockstore(datastore.NewMapDatastore())
+	storageMap := storage.NewStorageMap(bs)
+
+	return &Validator{factory, storageMap}
+}
+
+// TODO probs make an interface
+type VMContext struct {
+	Store storage.StorageMap
 }
 
 func (v *Validator) ApplyMessages(tree Tree, messages []interface{}) (Tree, error) {
+	vmctx := &VMContext{v.store}
 	var err error
 	for _, m := range messages {
-		tree, err = v.factory.ApplyMessage(v.context, tree, m)
+		tree, err = v.factory.ApplyMessage(vmctx,tree, m)
 		if err != nil {
 			return nil, err
 		}
 	}
 	return tree, nil
 }
+

@@ -22,7 +22,3 @@ type Actor interface {
 	Balance() AttoFIL
 }
 
-
-type Storage interface {
-	Get(cid cid.Cid, out interface{}) error
-}
