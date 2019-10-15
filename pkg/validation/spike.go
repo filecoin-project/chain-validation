@@ -1,7 +1,6 @@
 package validation
 
 import (
-	"github.com/filecoin-project/chain-validation/pkg/storage"
 	"math/big"
 	"testing"
 
@@ -13,7 +12,7 @@ import (
 )
 
 // Get this method to run
-func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.Factory, storageFactory storage.Factory) {
+func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.StateFactory, storageFactory state.StorageFactory) {
 	actors := make(map[state.Address]state.Actor)
 	actors[state.NetworkAddress] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(1000000))
 	actors[state.BurntFundsAddress] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(0))
