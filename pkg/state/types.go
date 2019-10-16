@@ -12,5 +12,4 @@ type (
 	AttoFIL *big.Int
 	GasUnit uint64
 	PeerID string
-	Signature []byte
 )

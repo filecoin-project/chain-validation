@@ -21,14 +21,6 @@ func NewActorAddress(data []byte) (Address, error) {
 	return newAddress(2, digest)
 }
 
-func NewSecp256k1Address(pubkey []byte) (Address, error) {
-	digest, err := hash(pubkey, addressHashConfig)
-	if err != nil {
-		return "", err
-	}
-	return newAddress(1,digest)
-}
-
 func newAddress(protocol byte, payload []byte) (Address, error) {
 	buf := make([]byte, 1+len(payload))
 	buf[0] = protocol

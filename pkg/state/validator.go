@@ -6,6 +6,7 @@ import (
 
 // StateFactory abstracts over concrete state manipulation methods.
 type StateFactory interface {
+	NewAddress() (Address, error)
 	NewActor(code cid.Cid, balance AttoFIL) Actor
 	NewState(actors map[Address]Actor) (Tree, StorageMap, error)
 	ApplyMessage(state Tree, storage StorageMap, context *ExecutionContext, msg interface{}) (Tree, error)
