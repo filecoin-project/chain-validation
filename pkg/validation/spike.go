@@ -40,9 +40,9 @@ func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.
 
 	actorAlice, err := endState.Actor(alice)
 	require.NoError(t, err)
-	assert.Equal(t, big.NewInt(50), actorAlice.Balance())
+	assert.Equal(t, state.AttoFIL(big.NewInt(50)), actorAlice.Balance())
 
 	actorBob, err := endState.Actor(bob)
 	require.NoError(t, err)
-	assert.Equal(t, big.NewInt(50), actorBob.Balance())
+	assert.Equal(t, state.AttoFIL(big.NewInt(50)), actorBob.Balance())
 }
