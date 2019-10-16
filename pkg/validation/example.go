@@ -11,8 +11,7 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
-// Get this method to run
-func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.StateFactory) {
+func Example(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.StateFactory) {
 	actors := make(map[state.Address]state.Actor)
 
 	alice, err := stateFactory.NewAddress()
@@ -34,9 +33,14 @@ func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.
 	exeCtx := state.NewExecutionContext(1, alice)
 	validator := state.NewValidator(stateFactory)
 
-	endState, err := validator.ApplyMessages(exeCtx, tree, storage, producer.Messages())
+	endState, msgReceipts, err := validator.ApplyMessages(exeCtx, tree, storage, producer.Messages())
 	require.NoError(t, err)
 	require.NotNil(t, endState)
+	require.NotNil(t, msgReceipts)
+	// TODO when this is moved to an actual unit test do full verification of message receipt values (gas & return vals)
+	for _, m := range msgReceipts {
+		require.Zero(t, m.Exitcode)
+	}
 
 	actorAlice, err := endState.Actor(alice)
 	require.NoError(t, err)

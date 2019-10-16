@@ -9,7 +9,7 @@ type StateFactory interface {
 	NewAddress() (Address, error)
 	NewActor(code cid.Cid, balance AttoFIL) Actor
 	NewState(actors map[Address]Actor) (Tree, StorageMap, error)
-	ApplyMessage(state Tree, storage StorageMap, context *ExecutionContext, msg interface{}) (Tree, error)
+	ApplyMessage(state Tree, storage StorageMap, context *ExecutionContext, msg interface{}) (Tree, MessageReceiept, error)
 }
 
 // ExecutionContext provides the context for execution of a message.
@@ -30,13 +30,16 @@ func NewValidator(factory StateFactory) *Validator {
 	return &Validator{factory}
 }
 
-func (v *Validator) ApplyMessages(context *ExecutionContext, tree Tree, storage StorageMap, messages []interface{}) (Tree, error) {
+func (v *Validator) ApplyMessages(context *ExecutionContext, tree Tree, storage StorageMap, messages []interface{}) (Tree, []MessageReceiept, error) {
 	var err error
+	var receipts []MessageReceiept
 	for _, m := range messages {
-		tree, err = v.factory.ApplyMessage(tree, storage, context, m)
+		var mr MessageReceiept
+		tree, mr, err = v.factory.ApplyMessage(tree, storage, context, m)
+		receipts = append(receipts, mr)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	return tree, nil
+	return tree, receipts, nil
 }
