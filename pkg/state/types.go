@@ -11,5 +11,5 @@ type (
 	BytesAmount *big.Int
 	AttoFIL *big.Int
 	GasUnit uint64
+	PeerID string
 )
-

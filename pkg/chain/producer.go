@@ -1,8 +1,6 @@
 package chain
 
 import (
-	"github.com/libp2p/go-libp2p-core/peer"
-
 	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
@@ -59,7 +57,7 @@ func (mp *MessageProducer) Transfer(from, to state.Address, value state.AttoFIL)
 // StorageMarket
 //
 
-func (mp *MessageProducer) CreateStorageMiner(from state.Address, collateral state.AttoFIL, sectorSize state.BytesAmount, peerID peer.ID) error {
+func (mp *MessageProducer) CreateStorageMiner(from state.Address, collateral state.AttoFIL, sectorSize state.BytesAmount, peerID state.PeerID) error {
 	nonce := mp.accountNonces[from]
 	mp.accountNonces[from]++
 	return mp.Build(state.StorageMarketAddress, from, state.MethodID("createStorageMiner"), nonce, collateral, sectorSize, peerID)

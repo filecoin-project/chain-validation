@@ -12,11 +12,15 @@ import (
 )
 
 // Get this method to run
-func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.StateFactory, storageFactory state.StorageFactory) {
+func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.StateFactory) {
+	minerOwner, err := state.NewActorAddress([]byte("miner")) // This should really be a SECP address
+	require.NoError(t, err)
+
 	actors := make(map[state.Address]state.Actor)
 	actors[state.NetworkAddress] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(1000000))
 	actors[state.BurntFundsAddress] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(0))
-	initState, err := stateFactory.NewState(actors)
+	actors[minerOwner] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(0))
+	tree, storage, err := stateFactory.NewState(actors)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,9 +28,12 @@ func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.
 	producer := chain.NewMessageProducer(msgFactory)
 	require.NoError(t, producer.Transfer(state.NetworkAddress, state.BurntFundsAddress, big.NewInt(1)))
 
-	validator := state.NewValidator(stateFactory, storageFactory)
-	endState, err := validator.ApplyMessages(initState, producer.Messages())
+	context := state.NewExecutionContext(1, minerOwner)
+	validator := state.NewValidator(stateFactory)
+
+	endState, err := validator.ApplyMessages(context, tree, storage, producer.Messages())
 	require.NoError(t, err)
+	require.NotNil(t, endState)
 
 	networkActor, err := endState.Actor(state.NetworkAddress)
 	require.NoError(t, err)
