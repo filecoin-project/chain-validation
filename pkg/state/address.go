@@ -22,7 +22,7 @@ func NewActorAddress(data []byte) (Address, error) {
 }
 
 func NewSecp256k1Address(pubkey []byte) (Address, error) {
-	digest, err := hash(pubkey)
+	digest, err := hash(pubkey, addressHashConfig)
 	if err != nil {
 		return "", err
 	}
