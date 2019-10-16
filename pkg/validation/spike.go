@@ -13,33 +13,36 @@ import (
 
 // Get this method to run
 func TryItOut(t *testing.T, msgFactory chain.MessageFactory, stateFactory state.StateFactory) {
-	minerOwner, err := state.NewActorAddress([]byte("miner")) // This should really be a SECP address
-	require.NoError(t, err)
-
 	actors := make(map[state.Address]state.Actor)
-	actors[state.NetworkAddress] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(1000000))
-	actors[state.BurntFundsAddress] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(0))
-	actors[minerOwner] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(0))
+
+	alice, err := stateFactory.NewAddress()
+	require.NoError(t, err)
+	actors[alice] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(100))
+
+	bob, err := stateFactory.NewAddress()
+	require.NoError(t, err)
+	actors[bob] = stateFactory.NewActor(state.AccountActorCodeCid, big.NewInt(0))
+
 	tree, storage, err := stateFactory.NewState(actors)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+	require.NotNil(t, tree)
+	require.NotNil(t, storage)
 
 	producer := chain.NewMessageProducer(msgFactory)
-	require.NoError(t, producer.Transfer(state.NetworkAddress, state.BurntFundsAddress, big.NewInt(1)))
+	require.NoError(t, producer.Transfer(alice, bob, big.NewInt(50)))
 
-	context := state.NewExecutionContext(1, minerOwner)
+	exeCtx := state.NewExecutionContext(1, alice)
 	validator := state.NewValidator(stateFactory)
 
-	endState, err := validator.ApplyMessages(context, tree, storage, producer.Messages())
+	endState, err := validator.ApplyMessages(exeCtx, tree, storage, producer.Messages())
 	require.NoError(t, err)
 	require.NotNil(t, endState)
 
-	networkActor, err := endState.Actor(state.NetworkAddress)
+	actorAlice, err := endState.Actor(alice)
 	require.NoError(t, err)
-	assert.Equal(t, big.NewInt(999999), networkActor.Balance())
+	assert.Equal(t, big.NewInt(50), actorAlice.Balance())
 
-	burntActor, err := endState.Actor(state.BurntFundsAddress)
+	actorBob, err := endState.Actor(bob)
 	require.NoError(t, err)
-	assert.Equal(t, big.NewInt(1), burntActor.Balance())
+	assert.Equal(t, big.NewInt(50), actorBob.Balance())
 }
