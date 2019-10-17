@@ -67,8 +67,6 @@ github.com/ipfs/go-block-format v0.0.2/go.mod h1:AWR46JfpcObNfg3ok2JHDUfdiHRgWhJ
 github.com/ipfs/go-blockservice v0.0.1/go.mod h1:2Ao89U7jV1KIqqNk5EdhSTBG/Pgc1vMFr0bhkx376j4=
 github.com/ipfs/go-blockservice v0.0.2 h1:ZiKTWdZAPifdWhjjO7HjAF8grUVE86IPzcUtGCTYw4w=
 github.com/ipfs/go-blockservice v0.0.2/go.mod h1:2Ao89U7jV1KIqqNk5EdhSTBG/Pgc1vMFr0bhkx376j4=
-github.com/ipfs/go-blockservice v0.1.0 h1:dh2i7xjMbCtf0ZSMyQAF2qpV/pEEmM7yVpQ00+gik6U=
-github.com/ipfs/go-blockservice v0.1.0/go.mod h1:hzmMScl1kXHg3M2BjTymbVPjv627N7sYcvYaKbop39M=
 github.com/ipfs/go-cid v0.0.1/go.mod h1:GHWU/WuQdMPmIosc4Yn1bcCT7dSeX4lBafM7iqUPQvM=
 github.com/ipfs/go-cid v0.0.2/go.mod h1:GHWU/WuQdMPmIosc4Yn1bcCT7dSeX4lBafM7iqUPQvM=
 github.com/ipfs/go-cid v0.0.3 h1:UIAh32wymBpStoe83YCzwVQQ5Oy/H0FdxvUS6DJDzms=
@@ -111,8 +109,6 @@ github.com/ipfs/go-log v0.0.1 h1:9XTUN/rW64BCG1YhPK9Hoy3q8nr4gOmHHBpgFdfw6Lc=
 github.com/ipfs/go-log v0.0.1/go.mod h1:kL1d2/hzSpI0thNYjiKfjanbVNU+IIGA/WnNESY9leM=
 github.com/ipfs/go-merkledag v0.0.2 h1:U3Q74RLOwpbtERjCv/MODC99qSxHBw33ZeMfiGXl7ts=
 github.com/ipfs/go-merkledag v0.0.2/go.mod h1:CRdtHMROECqaehAGeJ0Wd9TtlmWv/ta5cUnvbTnniEI=
-github.com/ipfs/go-merkledag v0.2.4 h1:ZSHQSe9BENfixUjT+MaLeHEeZGxrZQfgo3KT3SLosF8=
-github.com/ipfs/go-merkledag v0.2.4/go.mod h1:SQiXrtSts3KGNmgOzMICy5c0POOpUNQLvB3ClKnBAlk=
 github.com/ipfs/go-metrics-interface v0.0.1 h1:j+cpbjYvu4R8zbleSs36gvB7jR+wsL2fGD6n0jO4kdg=
 github.com/ipfs/go-metrics-interface v0.0.1/go.mod h1:6s6euYU4zowdslK0GKHmqaIZ3j/b/tL7HTWtJ4VPgWY=
 github.com/ipfs/go-peertaskqueue v0.1.0 h1:bpRbgv76eT4avutNPDFZuCPOQus6qTgurEYxfulgZW4=
