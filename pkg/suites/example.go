@@ -16,6 +16,10 @@ import (
 func Example(t *testing.T, driver Driver) {
 	actors := make(map[state.Address]state.Actor)
 
+	// TODO this is poor UX, these will maybe need to go somehwere else?
+	gasPrice := big.NewInt(1)
+	gasLimit := big.NewInt(1000)
+
 	alice, err := driver.NewAddress()
 	require.NoError(t, err)
 	actors[alice] = driver.NewActor(state.AccountActorCodeCid, big.NewInt(2000))
@@ -34,7 +38,7 @@ func Example(t *testing.T, driver Driver) {
 	require.NotNil(t, storage)
 
 	producer := chain.NewMessageProducer(driver)
-	require.NoError(t, producer.Transfer(alice, bob, big.NewInt(50)))
+	require.NoError(t, producer.Transfer(alice, bob, big.NewInt(50), gasPrice, gasLimit))
 
 	exeCtx := chain.NewExecutionContext(1, miner)
 	validator := chain.NewValidator(driver)
