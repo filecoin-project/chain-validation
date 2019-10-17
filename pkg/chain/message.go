@@ -4,13 +4,13 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
-// MethodID is the type of a VM actor method identifier.
-// This is a string for generality at the moment, but should eventually become an integer.
+// MethodID identifies a VM actor method.
+// The values here are not intended to match the spec's method IDs, though once implementations
+// converge on those we could make it so.
+// Integrations should map these method ids to the internal method handle representation.
 type MethodID int
 
 // An enumeration of all actor methods which a message could invoke.
-// The enum values here are not intended to match the spec's method IDs, though once implementations
-// converge on those we could make it so.
 // Note that some methods are not intended for direct invocation by account actors, but they are still
 // listed here so that the behaviour of attempting to invoke them can be exercised.
 const (
@@ -34,9 +34,15 @@ const (
 	CronConstructor
 	CronTick
 	// List not yet complete, pending specification.
+
+	// Provides a value above which integrations can assign their own method identifiers without
+	// collision with these "standard" ones.
+	MethodCount
 )
 
 // MessageFactory creates a concrete, but opaque, message object.
+// Integrations should implement this to provide a message value that will be accepted by the
+// validation engine.
 type MessageFactory interface {
 	MakeMessage(from, to state.Address, method MethodID, nonce uint64, value state.AttoFIL,
 		params ...interface{}) (interface{}, error)
@@ -80,26 +86,22 @@ func (mp *MessageProducer) Build(from, to state.Address, method MethodID, nonce 
 // Sugar methods for type-checked construction of specific messages.
 //
 
+// Transfer builds a simple value transfer message.
 func (mp *MessageProducer) Transfer(from, to state.Address, value state.AttoFIL) error {
 	nonce := mp.accountNonces[from]
 	mp.accountNonces[from]++
 	return mp.Build(from, to, NoMethod, nonce, value)
 }
 
-//
-// Init actor
-//
 
+// InitExec builds a message invoking InitActor.Exec
 func (mp *MessageProducer) InitExec(from state.Address, value state.AttoFIL, params ...interface{}) error {
 	nonce := mp.accountNonces[from]
 	mp.accountNonces[from]++
 	return mp.Build(state.InitAddress, from, InitExec, nonce, value, params)
 }
 
-//
-// StoragePower actor
-//
-
+// StoragePowerCreateStorageMiner builds a message invoking StoragePowerActor.CreateStorageMiner
 func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, value state.AttoFIL, owner state.Address, worker state.PubKey, sectorSize state.BytesAmount, peerID state.PeerID) error {
 	nonce := mp.accountNonces[from]
 	mp.accountNonces[from]++

@@ -2,7 +2,7 @@ package state
 
 import "math/big"
 
-// Type aliases for message method parameters.
+// Type aliases for state values and message method parameters.
 type (
 	BytesAmount *big.Int
 	AttoFIL *big.Int
@@ -11,8 +11,3 @@ type (
 	PeerID string
 )
 
-type MessageReceiept struct {
-	Exitcode    uint8
-	ReturnValue [][]byte
-	GasUsed     AttoFIL
-}
