@@ -104,7 +104,7 @@ type SugarMessageProducer struct {
 	gasLimit state.GasUnit
 }
 
-func (s *SugarMessageProducer) Transfer(from, to *SugarActor, amount int64) state.Tree {
+func (s *SugarMessageProducer) MustTransfer(from, to *SugarActor, amount int64) state.Tree {
 	msg, err := s.producer.Transfer(from.address, to.address, big.NewInt(amount), s.gasPrice, s.gasLimit)
 	require.NoError(s.t, err)
 
@@ -119,14 +119,27 @@ func (s *SugarMessageProducer) Transfer(from, to *SugarActor, amount int64) stat
 
 	newFromState, err := endState.Actor(from.address)
 	require.NoError(s.t, err)
-	from.actor = newFromState
 
 	newToState, err := endState.Actor(to.address)
 	require.NoError(s.t, err)
-	to.actor = newToState
 
+	// TODO make some assertions on the miners state once gas works in go-filecoin
 	newMinerState, err := endState.Actor(s.miner.address)
 	require.NoError(s.t, err)
+
+	prevFromBalance := big.Int(*from.actor.Balance())
+	expectedFromBalance := prevFromBalance.Sub(&prevFromBalance, big.NewInt(amount))
+	actualFromBalance := big.Int(*newFromState.Balance())
+	require.Equal(s.t, expectedFromBalance.String(), actualFromBalance.String())
+
+	prevToBalance := big.Int(*to.actor.Balance())
+	expectedToBalance := prevToBalance.Add(&prevToBalance, big.NewInt(amount))
+	actualToBalance := big.Int(*newToState.Balance())
+	require.Equal(s.t, expectedToBalance.String(), actualToBalance.String())
+
+	// update actor state
+	from.actor = newFromState
+	to.actor = newToState
 	s.miner.actor = newMinerState
 
 	return endState
