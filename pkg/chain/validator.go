@@ -39,16 +39,6 @@ func NewValidator(executor Applier) *Validator {
 
 // ApplyMessages applies a sequence of message to a state.
 // The resulting state is return. The storage is modified in place.
-func (v *Validator) ApplyMessages(context *ExecutionContext, tree state.Tree, storage state.StorageMap, messages []interface{}) (state.Tree, []MessageReceipt, error) {
-	var err error
-	var receipts []MessageReceipt
-	for _, m := range messages {
-		var mr MessageReceipt
-		tree, mr, err = v.applier.ApplyMessage(tree, storage, context, m)
-		receipts = append(receipts, mr)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	return tree, receipts, nil
+func (v *Validator) ApplyMessage(context *ExecutionContext, tree state.Tree, storage state.StorageMap, message interface{}) (state.Tree, MessageReceipt, error) {
+	return v.applier.ApplyMessage(tree, storage, context, message)
 }
