@@ -38,20 +38,19 @@ func Example(t *testing.T, driver Driver) {
 	require.NotNil(t, storage)
 
 	producer := chain.NewMessageProducer(driver)
-	require.NoError(t, producer.Transfer(alice, bob, big.NewInt(50), gasPrice, gasLimit))
+	msg, err := producer.Transfer(alice, bob, big.NewInt(50), gasPrice, gasLimit)
 
 	exeCtx := chain.NewExecutionContext(1, miner)
 	validator := chain.NewValidator(driver)
 
-	endState, msgReceipts, err := validator.ApplyMessages(exeCtx, tree, storage, producer.Messages())
+	endState, msgReceipt, err := validator.ApplyMessage(exeCtx, tree, storage, msg)
 	require.NoError(t, err)
 	require.NotNil(t, endState)
-	require.NotNil(t, msgReceipts)
+	require.NotNil(t, msgReceipt)
 
-	assert.Equal(t, 1, len(msgReceipts))
-	assert.Equal(t, uint8(0), msgReceipts[0].ExitCode)
-	assert.Equal(t, []byte{}, msgReceipts[0].ReturnValue)
-	assert.Equal(t, state.GasUnit(0), msgReceipts[0].GasUsed)
+	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
+	assert.Equal(t, []byte{}, msgReceipt.ReturnValue)
+	assert.Equal(t, state.GasUnit(0), msgReceipt.GasUsed)
 
 	actorAlice, err := endState.Actor(alice)
 	require.NoError(t, err)
