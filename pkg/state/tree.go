@@ -22,3 +22,7 @@ type Actor interface {
 	Balance() AttoFIL
 }
 
+type ActorAndAddress struct {
+	Actor   Actor
+	Address Address
+}

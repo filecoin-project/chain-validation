@@ -10,6 +10,7 @@ var (
 	InitActorCodeCid          cid.Cid
 	AccountActorCodeCid       cid.Cid
 	StorageMarketActorCodeCid cid.Cid
+	StorageMinerActorCodeCid  cid.Cid
 )
 
 // Builtin actor addresses.
@@ -31,6 +32,9 @@ func init() {
 
 	StorageMarketActorCodeObj := dag.NewRawNode([]byte("storagemarket"))
 	StorageMarketActorCodeCid = StorageMarketActorCodeObj.Cid()
+
+	StorageMinerActorCodeObj := dag.NewRawNode([]byte("storagemarket"))
+	StorageMinerActorCodeCid = StorageMinerActorCodeObj.Cid()
 
 	InitAddress, err = NewIDAddress(0)
 	if err != nil {
