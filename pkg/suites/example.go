@@ -18,7 +18,7 @@ func Example(t *testing.T, driver Driver) {
 
 	// TODO this is poor UX, these will maybe need to go somehwere else?
 	gasPrice := big.NewInt(1)
-	gasLimit := big.NewInt(1000)
+	gasLimit := state.GasUnit(1000)
 
 	alice, err := driver.NewAddress()
 	require.NoError(t, err)

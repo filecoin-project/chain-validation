@@ -44,8 +44,7 @@ const (
 // Integrations should implement this to provide a message value that will be accepted by the
 // validation engine.
 type MessageFactory interface {
-	MakeMessage(from, to state.Address, method MethodID, nonce uint64,
-		value state.AttoFIL, gasPrice state.AttoFIL, gasLimit state.AttoFIL,
+	MakeMessage(from, to state.Address, method MethodID, nonce uint64, value, gasPrice state.AttoFIL, gasLimit state.GasUnit,
 		params ...interface{}) (interface{}, error)
 }
 
@@ -72,8 +71,7 @@ func (mp *MessageProducer) Messages() []interface{} {
 }
 
 // Build creates and stores a single message.
-func (mp *MessageProducer) Build(from, to state.Address, method MethodID, nonce uint64,
-	value state.AttoFIL, gasPrice state.AttoFIL, gasLimit state.AttoFIL,
+func (mp *MessageProducer) Build(from, to state.Address, method MethodID, nonce uint64, value, gasPrice state.AttoFIL, gasLimit state.GasUnit,
 	params ...interface{}) error {
 	fm, err := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params)
 	if err != nil {
@@ -89,21 +87,21 @@ func (mp *MessageProducer) Build(from, to state.Address, method MethodID, nonce 
 //
 
 // Transfer builds a simple value transfer message.
-func (mp *MessageProducer) Transfer(from, to state.Address, value, gasPrice, gasLimit state.AttoFIL) error {
+func (mp *MessageProducer) Transfer(from, to state.Address, value, gasPrice state.AttoFIL, gasLimit state.GasUnit) error {
 	nonce := mp.accountNonces[from]
 	mp.accountNonces[from]++
 	return mp.Build(from, to, NoMethod, nonce, value, gasPrice, gasLimit)
 }
 
 // InitExec builds a message invoking InitActor.Exec
-func (mp *MessageProducer) InitExec(from state.Address, value, gasPrice, gasLimit state.AttoFIL, params ...interface{}) error {
+func (mp *MessageProducer) InitExec(from state.Address, value, gasPrice state.AttoFIL, gasLimit state.GasUnit, params ...interface{}) error {
 	nonce := mp.accountNonces[from]
 	mp.accountNonces[from]++
 	return mp.Build(state.InitAddress, from, InitExec, nonce, value, gasPrice, gasLimit, params)
 }
 
 // StoragePowerCreateStorageMiner builds a message invoking StoragePowerActor.CreateStorageMiner
-func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, value, gasPrice, gasLimit state.AttoFIL,
+func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, value, gasPrice state.AttoFIL, gasLimit state.GasUnit,
 	owner state.Address, worker state.PubKey, sectorSize state.BytesAmount, peerID state.PeerID) error {
 	nonce := mp.accountNonces[from]
 	mp.accountNonces[from]++
