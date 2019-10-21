@@ -4,9 +4,9 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
-// Applier applies abstract messages to state trees.
+// Applier applies abstract messages to states.
 type Applier interface {
-	ApplyMessage(state state.Tree, storage state.StorageMap, context *ExecutionContext, msg interface{}) (state.Tree, MessageReceipt, error)
+	ApplyMessage(context *ExecutionContext, state state.Wrapper, msg interface{}) (MessageReceipt, error)
 }
 
 // MessageReceipt is the return value of message application.
@@ -37,8 +37,7 @@ func NewValidator(executor Applier) *Validator {
 	return &Validator{executor}
 }
 
-// ApplyMessages applies a sequence of message to a state.
-// The resulting state is return. The storage is modified in place.
-func (v *Validator) ApplyMessage(context *ExecutionContext, tree state.Tree, storage state.StorageMap, message interface{}) (state.Tree, MessageReceipt, error) {
-	return v.applier.ApplyMessage(tree, storage, context, message)
+// ApplyMessages applies a message to a state
+func (v *Validator) ApplyMessage(context *ExecutionContext, state state.Wrapper, message interface{}) (MessageReceipt, error) {
+	return v.applier.ApplyMessage(context, state, message)
 }
