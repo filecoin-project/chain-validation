@@ -1,6 +1,8 @@
 package chain
 
 import (
+	"math/big"
+
 	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
@@ -52,27 +54,71 @@ type MessageFactory interface {
 // The created messages are retained for subsequent export or evaluation in a VM.
 // Actual message construction is delegated to a `MessageFactory`, and the message are opaque to the producer.
 type MessageProducer struct {
-	factory       MessageFactory
-	messages      []interface{}
-	accountNonces map[state.Address]uint64
+	factory  MessageFactory
+	defaults msgOpts // Note non-pointer reference.
+
+	messages []interface{}
 }
 
 // NewMessageProducer creates a new message producer, delegating message creation to `factory`.
-func NewMessageProducer(factory MessageFactory) *MessageProducer {
+func NewMessageProducer(factory MessageFactory, defaultGasLimit state.GasUnit, defaultGasPrice state.AttoFIL) *MessageProducer {
 	return &MessageProducer{
-		factory:       factory,
-		accountNonces: make(map[state.Address]uint64),
+		factory: factory,
+		defaults: msgOpts{
+			gasLimit: defaultGasLimit,
+			gasPrice: defaultGasPrice,
+		},
 	}
 }
 
-// // Messages returns a slice containing all messages created by the producer.
+// Messages returns a slice containing all messages created by the producer.
 func (mp *MessageProducer) Messages() []interface{} {
 	return mp.messages[:]
 }
 
-// Build creates a single message and returns it.
-func (mp *MessageProducer) Build(from, to state.Address, method MethodID, nonce uint64, value, gasPrice state.AttoFIL, gasLimit state.GasUnit,
-	params ...interface{}) (interface{}, error) {
+// msgOpts specifies value and gas parameters for a message, supporting a functional options pattern
+// for concise but customizable message construction.
+type msgOpts struct {
+	value    state.AttoFIL
+	gasLimit state.GasUnit
+	gasPrice state.AttoFIL
+}
+
+// MsgOpt is an option configuring message value or gas parameters.
+type MsgOpt func(*msgOpts)
+
+func Value(value uint64) MsgOpt {
+	return func(opts *msgOpts) {
+		opts.value = big.NewInt(0).SetUint64(value)
+	}
+}
+
+func GasLimit(limit uint64) MsgOpt {
+	return func(opts *msgOpts) {
+		opts.gasLimit = state.GasUnit(limit)
+	}
+}
+
+func GasPrice(price uint64) MsgOpt {
+	return func(opts *msgOpts) {
+		opts.gasPrice = big.NewInt(0).SetUint64(price)
+	}
+}
+
+// Build creates and returns a single message, using default gas parameters unless modified by `opts`.
+func (mp *MessageProducer) Build(from, to state.Address, nonce uint64, method MethodID, params []interface{},
+	opts ...MsgOpt) (interface{}, error) {
+	values := mp.defaults
+	for _, opt := range opts {
+		opt(&values)
+	}
+
+	return mp.BuildFull(from, to, method, nonce, values.value, values.gasLimit, values.gasPrice, params)
+}
+
+// BuildFull creates and returns a single message.
+func (mp *MessageProducer) BuildFull(from, to state.Address, method MethodID, nonce uint64, value state.AttoFIL,
+	gasLimit state.GasUnit, gasPrice state.AttoFIL, params ...interface{}) (interface{}, error) {
 	fm, err := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params)
 	if err != nil {
 		return nil, err
@@ -87,23 +133,23 @@ func (mp *MessageProducer) Build(from, to state.Address, method MethodID, nonce 
 //
 
 // Transfer builds a simple value transfer message and returns it.
-func (mp *MessageProducer) Transfer(from, to state.Address, value, gasPrice state.AttoFIL, gasLimit state.GasUnit) (interface{}, error) {
-	nonce := mp.accountNonces[from]
-	mp.accountNonces[from]++
-	return mp.Build(from, to, NoMethod, nonce, value, gasPrice, gasLimit)
+func (mp *MessageProducer) Transfer(from, to state.Address, nonce uint64, value uint64, opts ...MsgOpt) (interface{}, error) {
+	x := append([]MsgOpt{Value(value)}, opts...)
+	return mp.Build(from, to, nonce, NoMethod, noParams, x...)
 }
 
 // InitExec builds a message invoking InitActor.Exec and returns it.
-func (mp *MessageProducer) InitExec(from state.Address, value, gasPrice state.AttoFIL, gasLimit state.GasUnit, params ...interface{}) (interface{}, error) {
-	nonce := mp.accountNonces[from]
-	mp.accountNonces[from]++
-	return mp.Build(state.InitAddress, from, InitExec, nonce, value, gasPrice, gasLimit, params)
+func (mp *MessageProducer) InitExec(from state.Address, nonce uint64, params []interface{}, opts ...MsgOpt) (interface{}, error) {
+	return mp.Build(state.InitAddress, from, nonce, InitExec, params, opts...)
 }
 
 // StoragePowerCreateStorageMiner builds a message invoking StoragePowerActor.CreateStorageMiner and returns it.
-func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, value, gasPrice state.AttoFIL, gasLimit state.GasUnit,
-	owner state.Address, worker state.PubKey, sectorSize state.BytesAmount, peerID state.PeerID) (interface{}, error) {
-	nonce := mp.accountNonces[from]
-	mp.accountNonces[from]++
-	return mp.Build(state.StorageMarketAddress, from, StoragePowerCreateStorageMiner, nonce, value, gasPrice, gasLimit, owner, worker, sectorSize, peerID)
+func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, nonce uint64,
+	owner state.Address, worker state.PubKey, sectorSize state.BytesAmount, peerID state.PeerID,
+	opts ...MsgOpt) (interface{}, error) {
+	params := []interface{}{owner, worker, sectorSize, peerID}
+	return mp.Build(state.StorageMarketAddress, from, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
+
+var noParams []interface{}
+
