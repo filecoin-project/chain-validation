@@ -2,7 +2,7 @@ package state
 
 import (
 	"github.com/ipfs/go-cid"
-	dag "github.com/ipfs/go-merkledag"
+	mh "github.com/multiformats/go-multihash"
 )
 
 // Builtin actor code CIDs.
@@ -21,17 +21,20 @@ var (
 )
 
 func init() {
+	pref := cid.NewPrefixV1(cid.Raw, mh.ID)
+	mustSum := func(s string) cid.Cid {
+		c, err := pref.Sum([]byte(s))
+		if err != nil {
+			panic(err)
+		}
+		return c
+	}
+
+	AccountActorCodeCid = mustSum("account")
+	StorageMarketActorCodeCid = mustSum("smarket")
+	InitActorCodeCid = mustSum("init")
+
 	var err error
-
-	InitActorCodeObj := dag.NewRawNode([]byte("initactor"))
-	InitActorCodeCid = InitActorCodeObj.Cid()
-
-	AccountActorCodeObj := dag.NewRawNode([]byte("accountactor"))
-	AccountActorCodeCid = AccountActorCodeObj.Cid()
-
-	StorageMarketActorCodeObj := dag.NewRawNode([]byte("storagemarket"))
-	StorageMarketActorCodeCid = StorageMarketActorCodeObj.Cid()
-
 	InitAddress, err = NewIDAddress(0)
 	if err != nil {
 		panic(err)
@@ -49,3 +52,4 @@ func init() {
 		panic(err)
 	}
 }
+
