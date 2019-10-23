@@ -1,6 +1,8 @@
 package state
 
-import "math/big"
+import (
+	"math/big"
+)
 
 // Type aliases for state values and message method parameters.
 type (
@@ -8,6 +10,6 @@ type (
 	AttoFIL *big.Int
 	GasUnit uint64
 	PubKey []byte
-	PeerID string
+	PeerID []byte
 )
 
