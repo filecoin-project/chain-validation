@@ -1,13 +1,10 @@
 package state_test
 
 import (
-	"encoding/binary"
 	"math/big"
 	"testing"
 
 	cbor "github.com/ipfs/go-ipld-cbor"
-	"github.com/libp2p/go-libp2p-core/peer"
-	mh "github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -19,11 +16,7 @@ func TestExampleEncodeValues(t *testing.T) {
 	require.NoError(t, err)
 
 	sectorSize := state.BytesAmount(big.NewInt(10))
-
-	bpid, err := RequireIntPeerID(t, 0).MarshalBinary()
-	require.NoError(t, err)
-
-	peerID := state.PeerID(bpid)
+	peerID := state.PeerID([]byte{0,9,8,7,6,5})
 
 	params := []interface{}{owner, sectorSize, peerID}
 	data, err := state.EncodeValues(params...)
@@ -43,19 +36,8 @@ func TestExampleEncodeValues(t *testing.T) {
 	assert.Equal(t, sectorSize, expSectorSize)
 
 	v = arr[2] // peerID
-	bp, err := peer.IDFromBytes(v)
 	require.NoError(t, err)
-	expPeerID := state.PeerID(bp)
+	expPeerID := state.PeerID(v)
 	assert.Equal(t, peerID, expPeerID)
 
-}
-
-func RequireIntPeerID(t *testing.T, i int64) peer.ID {
-	buf := make([]byte, 16)
-	n := binary.PutVarint(buf, i)
-	h, err := mh.Sum(buf[:n], mh.ID, -1)
-	require.NoError(t, err)
-	pid, err := peer.IDFromBytes(h)
-	require.NoError(t, err)
-	return pid
 }
