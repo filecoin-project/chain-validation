@@ -113,13 +113,13 @@ func (mp *MessageProducer) Build(from, to state.Address, nonce uint64, method Me
 		opt(&values)
 	}
 
-	return mp.BuildFull(from, to, method, nonce, values.value, values.gasLimit, values.gasPrice, params)
+	return mp.BuildFull(from, to, method, nonce, values.value, values.gasLimit, values.gasPrice, params...)
 }
 
 // BuildFull creates and returns a single message.
 func (mp *MessageProducer) BuildFull(from, to state.Address, method MethodID, nonce uint64, value state.AttoFIL,
 	gasLimit state.GasUnit, gasPrice state.AttoFIL, params ...interface{}) (interface{}, error) {
-	fm, err := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params)
+	fm, err := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params...)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, no
 	owner state.Address, worker state.PubKey, sectorSize state.BytesAmount, peerID state.PeerID,
 	opts ...MsgOpt) (interface{}, error) {
 	params := []interface{}{owner, worker, sectorSize, peerID}
-	return mp.Build(state.StorageMarketAddress, from, nonce, StoragePowerCreateStorageMiner, params, opts...)
+	return mp.Build(from, state.StorageMarketAddress, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
 
 var noParams []interface{}
