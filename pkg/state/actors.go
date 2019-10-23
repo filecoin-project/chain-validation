@@ -1,16 +1,16 @@
 package state
 
-type ActorCodeCid int
+type ActorCodeID int
 const (
-	AccountActorCodeCid  = ActorCodeCid(iota)
+	AccountActorCodeCid  = ActorCodeID(iota)
 	StorageMinerCodeCid
 	MultisigActorCodeCid
 	PaymentChannelActorCodeCid
 )
 
-type SingletonActorAddress int
+type SingletonActorID int
 const (
-	InitAddress = SingletonActorAddress(iota)
+	InitAddress = SingletonActorID(iota)
 	NetworkAddress
 	StorageMarketAddress
 	BurntFundsAddress
