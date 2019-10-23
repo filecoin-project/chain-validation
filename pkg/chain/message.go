@@ -48,6 +48,7 @@ const (
 type MessageFactory interface {
 	MakeMessage(from, to state.Address, method MethodID, nonce uint64, value, gasPrice state.AttoFIL, gasLimit state.GasUnit,
 		params ...interface{}) (interface{}, error)
+	FromSingletonAddress(address state.SingletonActorAddress) (state.Address, error)
 }
 
 // MessageProducer presents a convenient API for scripting the creation of long and complex message sequences.
@@ -140,16 +141,24 @@ func (mp *MessageProducer) Transfer(from, to state.Address, nonce uint64, value 
 
 // InitExec builds a message invoking InitActor.Exec and returns it.
 func (mp *MessageProducer) InitExec(from state.Address, nonce uint64, params []interface{}, opts ...MsgOpt) (interface{}, error) {
-	return mp.Build(state.InitAddress, from, nonce, InitExec, params, opts...)
+	iaAddr, err := mp.factory.FromSingletonAddress(state.InitAddress)
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(iaAddr, from, nonce, InitExec, params, opts...)
 }
 
 // StoragePowerCreateStorageMiner builds a message invoking StoragePowerActor.CreateStorageMiner and returns it.
 func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, nonce uint64,
 	owner state.Address, worker state.PubKey, sectorSize state.BytesAmount, peerID state.PeerID,
 	opts ...MsgOpt) (interface{}, error) {
+
+	smaAddr, err := mp.factory.FromSingletonAddress(state.StorageMarketAddress)
+	if err != nil {
+		return nil, err
+	}
 	params := []interface{}{owner, worker, sectorSize, peerID}
-	return mp.Build(from, state.StorageMarketAddress, nonce, StoragePowerCreateStorageMiner, params, opts...)
+	return mp.Build(from, smaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
 
 var noParams []interface{}
-

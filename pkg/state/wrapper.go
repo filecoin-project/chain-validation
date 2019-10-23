@@ -14,9 +14,13 @@ type Wrapper interface {
 
 	// Creates a new private key and returns the associated address.
 	NewAccountAddress() (Address, error)
+
 	// Installs a new actor in the state tree.
 	// This signature will probably become a little more complex when the actor state is non-empty.
-	SetActor(address Address, code cid.Cid, balance AttoFIL) (Actor, Storage, error)
+	SetActor(address Address, code ActorCodeCid, balance AttoFIL) (Actor, Storage, error)
+
+	// Installs a new singleton actor in the state tree.
+	SetSingletonActor(address SingletonActorAddress, balance AttoFIL) (Actor, Storage, error)
 }
 
 // Actor is an abstraction over the actor states stored in the root of the state tree.
