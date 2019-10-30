@@ -46,6 +46,8 @@ func EncodeValue(p interface{}) ([]byte, error) {
 		return (*v).Bytes(), nil
 	case GasUnit:
 		return leb128.FromUInt64(uint64(v)), nil
+	case uint64:
+		return leb128.FromUInt64(v), nil
 	case PubKey:
 		return v, nil
 	case PeerID:
@@ -53,6 +55,5 @@ func EncodeValue(p interface{}) ([]byte, error) {
 	default:
 		return []byte{}, errors.Errorf("invalid type: %T", p)
 	}
-
 }
 
