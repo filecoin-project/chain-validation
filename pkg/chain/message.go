@@ -155,4 +155,10 @@ func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, no
 	return mp.Build(from, spaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
 
+func (mp *MessageProducer) StoragePowerUpdateStorage(from state.Address, nonce uint64, delta state.BytesAmount,opts ...MsgOpt) (interface{}, error) {
+	spaAddr := mp.factory.FromSingletonAddress(state.StoragePowerAddress)
+	params := []interface{}{delta}
+	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
+}
+
 var noParams []interface{}
