@@ -150,9 +150,9 @@ func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, no
 	owner state.Address, worker state.PubKey, sectorSize state.BytesAmount, peerID state.PeerID,
 	opts ...MsgOpt) (interface{}, error) {
 
-	smaAddr := mp.factory.FromSingletonAddress(state.StorageMarketAddress)
+	spaAddr := mp.factory.FromSingletonAddress(state.StoragePowerAddress)
 	params := []interface{}{owner, worker, sectorSize, peerID}
-	return mp.Build(from, smaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
+	return mp.Build(from, spaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
 
 var noParams []interface{}
