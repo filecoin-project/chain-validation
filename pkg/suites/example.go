@@ -13,33 +13,38 @@ import (
 
 // A basic example validation test.
 // At present this code is verbose and demonstrates the opportunity for helper methods.
-func Example(t *testing.T, factories Factories) {
-	drv := NewStateDriver(t, factories.NewState())
+func AccountValueTransferTest(t *testing.T, factory Factories) {
+	drv := NewStateDriver(t, factory.NewState())
+
+	_, _, err := drv.State().SetSingletonActor(state.InitAddress, big.NewInt(0))
+	require.NoError(t, err)
 
 	alice := drv.NewAccountActor(2000)
 	bob := drv.NewAccountActor(0)
 	miner := drv.NewAccountActor(0) // Miner owner
 
+
 	gasPrice := big.NewInt(1)
 	gasLimit := state.GasUnit(1000)
 
-	producer := chain.NewMessageProducer(factories.NewMessageFactory(drv.State()), gasLimit, gasPrice)
+	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
 	msg, err := producer.Transfer(alice, bob, 0, 50)
 	require.NoError(t, err)
 
-	validator := chain.NewValidator(factories)
+	validator := chain.NewValidator(factory)
 	exeCtx := chain.NewExecutionContext(1, miner)
 
 	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
 	require.NoError(t, err)
 	require.NotNil(t, msgReceipt)
 
+	expectedGasUsed := 126 // NB: should be derived from the size of the message + some other lotus VM bits
 	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
-	assert.Equal(t, []byte{}, msgReceipt.ReturnValue)
-	assert.Equal(t, state.GasUnit(0), msgReceipt.GasUsed)
+	assert.Empty(t, msgReceipt.ReturnValue)
+	assert.Equal(t, state.GasUnit(expectedGasUsed), msgReceipt.GasUsed)
 
-	drv.AssertBalance(alice, 1950)
+	drv.AssertBalance(alice, uint64(1950 - expectedGasUsed))
 	drv.AssertBalance(bob, 50)
 	// This should become non-zero after gas tracking and payments are integrated.
-	drv.AssertBalance(miner, 0)
+	drv.AssertBalance(miner, uint64(expectedGasUsed))
 }
