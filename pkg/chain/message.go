@@ -20,6 +20,7 @@ const (
 	InitConstructor
 	InitExec
 	InitGetActorIDForAddress
+
 	StoragePowerConstructor
 	StoragePowerCreateStorageMiner
 	StoragePowerUpdatePower
@@ -27,12 +28,22 @@ const (
 	StoragePowerPowerLookup
 	StoragePowerIncrementPower
 	StoragePowerSuspendMiner
+
 	StorageMarketConstructor
 	StorageMarketWithdrawBalance
 	StorageMarketAddBalance
 	StorageMarketCheckLockedBalance
 	StorageMarketPublishStorageDeal
 	StorageMarketHandleCronAction
+
+	StorageMinerUpdatePeerID
+	StorageMinerGetOwner
+	StorageMinerGetWorkerAddr
+	StorageMinerGetPower
+	StorageMinerGetPeerID
+	StorageMinerGetSectorSize
+
+	GetSectorSize
 	CronConstructor
 	CronTick
 	// List not yet complete, pending specification.
@@ -147,12 +158,44 @@ func (mp *MessageProducer) InitExec(from state.Address, nonce uint64, params []i
 
 // StoragePowerCreateStorageMiner builds a message invoking StoragePowerActor.CreateStorageMiner and returns it.
 func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, nonce uint64,
-	owner state.Address, worker state.PubKey, sectorSize state.BytesAmount, peerID state.PeerID,
+	owner state.Address, worker state.Address, sectorSize state.BytesAmount, peerID state.PeerID,
 	opts ...MsgOpt) (interface{}, error) {
 
-	smaAddr := mp.factory.FromSingletonAddress(state.StorageMarketAddress)
+	spaAddr := mp.factory.FromSingletonAddress(state.StoragePowerAddress)
 	params := []interface{}{owner, worker, sectorSize, peerID}
-	return mp.Build(from, smaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
+	return mp.Build(from, spaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
+
+func (mp *MessageProducer) StoragePowerUpdateStorage(from state.Address, nonce uint64, delta state.BytesAmount,opts ...MsgOpt) (interface{}, error) {
+	spaAddr := mp.factory.FromSingletonAddress(state.StoragePowerAddress)
+	params := []interface{}{delta}
+	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
+}
+
+func (mp *MessageProducer) StorageMinerUpdatePeerID(to, from state.Address, nonce uint64, peerID state.PeerID, opts ...MsgOpt) (interface{}, error) {
+	params := []interface{}{peerID}
+	return mp.Build(from, to, nonce, StorageMinerUpdatePeerID, params, opts...)
+}
+
+func (mp *MessageProducer) StorageMinerGetOwner(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+	return mp.Build(from, to, nonce, StorageMinerGetOwner, noParams, opts...)
+}
+
+func (mp *MessageProducer) StorageMinerGetPower(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+	return mp.Build(from, to, nonce, StorageMinerGetPower, noParams, opts...)
+}
+
+func (mp *MessageProducer) StorageMinerGetWorkerAddr(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+	return mp.Build(from, to, nonce, StorageMinerGetWorkerAddr, noParams, opts...)
+}
+
+func (mp *MessageProducer) StorageMinerGetPeerID(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+	return mp.Build(from, to, nonce, StorageMinerGetPeerID, noParams, opts...)
+}
+
+func (mp *MessageProducer) StorageMinerGetSectorSize(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+	return mp.Build(from, to, nonce, StorageMinerGetSectorSize, noParams, opts...)
+}
+
 
 var noParams []interface{}

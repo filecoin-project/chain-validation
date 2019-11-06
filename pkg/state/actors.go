@@ -14,4 +14,5 @@ const (
 	NetworkAddress
 	StorageMarketAddress
 	BurntFundsAddress
+	StoragePowerAddress
 )
