@@ -16,7 +16,7 @@ type (
 	GasUnit uint64
 
 	PubKey []byte
-	PeerID []byte
+	PeerID string
 )
 
 // Given a slice of the above types encode them to CBOR byte array.
@@ -24,7 +24,7 @@ func EncodeValues(params ...interface{}) ([]byte, error) {
 	if len(params) == 0 {
 		return []byte{}, nil
 	}
-	var arr [][]byte
+	var arr []interface{}
 	for i, p := range params {
 		bs, err := EncodeValue(p)
 		if err != nil {
@@ -36,18 +36,18 @@ func EncodeValues(params ...interface{}) ([]byte, error) {
 }
 
 // Given an above type encode it to CBOR.
-func EncodeValue(p interface{}) ([]byte, error) {
+func EncodeValue(p interface{}) (interface{}, error) {
 	switch v := p.(type) {
 	case Address:
 		return []byte(v), nil
 	case AttoFIL:
 		return (*v).Bytes(), nil
 	case BytesAmount:
-		return (*v).Bytes(), nil
+		return (*v).Uint64(), nil
 	case GasUnit:
 		return leb128.FromUInt64(uint64(v)), nil
 	case uint64:
-		return leb128.FromUInt64(v), nil
+		return v, nil
 	case PubKey:
 		return v, nil
 	case PeerID:

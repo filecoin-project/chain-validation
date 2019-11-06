@@ -166,7 +166,7 @@ func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, no
 	return mp.Build(from, spaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
 
-func (mp *MessageProducer) StoragePowerUpdateStorage(from state.Address, nonce uint64, delta state.BytesAmount,opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StoragePowerUpdateStorage(from state.Address, nonce uint64, delta state.BytesAmount, opts ...MsgOpt) (interface{}, error) {
 	spaAddr := mp.factory.FromSingletonAddress(state.StoragePowerAddress)
 	params := []interface{}{delta}
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
@@ -196,6 +196,5 @@ func (mp *MessageProducer) StorageMinerGetPeerID(to, from state.Address, nonce u
 func (mp *MessageProducer) StorageMinerGetSectorSize(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetSectorSize, noParams, opts...)
 }
-
 
 var noParams []interface{}
