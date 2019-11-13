@@ -33,5 +33,5 @@ type Actor interface {
 
 // Storage provides a key/value store for actor state.
 type Storage interface {
-	Get(cid cid.Cid) ([]byte, error)
+	Get(c cid.Cid, out interface{}) error
 }

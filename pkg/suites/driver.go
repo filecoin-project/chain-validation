@@ -54,8 +54,7 @@ func (d *StateDriver) AssertBalance(addr state.Address, expected uint64) {
 
 // AssertReceipt checks that a receipt is not nill and has values equal to `expected`.
 func (d *StateDriver) AssertReceipt(receipt, expected chain.MessageReceipt) {
-	// TODO uncomment when gas values stabalize
-	//assert.Equal(t, expected.GasUsed, receipt.GasUsed)
+	assert.Equal(d.tb, expected.GasUsed, receipt.GasUsed)
 	assert.NotNil(d.tb, receipt)
 	assert.Equal(d.tb, expected.ReturnValue, receipt.ReturnValue)
 	assert.Equal(d.tb, expected.ExitCode, receipt.ExitCode)

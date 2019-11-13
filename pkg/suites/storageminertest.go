@@ -36,7 +36,6 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	_, _, err = drv.State().SetSingletonActor(state.StoragePowerAddress, big.NewInt(0))
 	require.NoError(t, err)
 
-
 	// miner that mines in this test
 	testMiner := drv.NewAccountActor(0)
 	// account that will own the miner
@@ -49,12 +48,12 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	sectorSize := big.NewInt(int64(sectorSizes[0]))
 	// peerID of the miner created
 	rawPeerID, err := RequireIntPeerID(t, 1).MarshalBinary()
-	require.NoError(t,err)
+	require.NoError(t, err)
 	peerID := state.PeerID(rawPeerID)
 	// peerID of the miner after update
-	rawPeerID2, err := RequireIntPeerID(t,2).MarshalBinary()
-	require.NoError(t,err)
-	peerID2 :=state.PeerID(rawPeerID2)
+	rawPeerID2, err := RequireIntPeerID(t, 2).MarshalBinary()
+	require.NoError(t, err)
+	peerID2 := state.PeerID(rawPeerID2)
 
 	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
@@ -86,7 +85,6 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 		GasUsed:     0,
 	})
 
-
 	//
 	// verify storage miners owner
 	//
@@ -112,7 +110,6 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 		ReturnValue: []byte{},
 		GasUsed:     0,
 	})
-
 
 	//
 	// verify storage miner worker address

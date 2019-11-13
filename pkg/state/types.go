@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/filecoin-project/go-leb128"
+	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	"github.com/pkg/errors"
 )
@@ -11,7 +12,7 @@ import (
 // Type aliases for state values and message method parameters.
 type (
 	BytesAmount *big.Int
-	AttoFIL *big.Int
+	AttoFIL     *big.Int
 
 	GasUnit uint64
 
@@ -52,8 +53,11 @@ func EncodeValue(p interface{}) (interface{}, error) {
 		return v, nil
 	case PeerID:
 		return v, nil
+	case cid.Cid:
+		return v, nil
+	case []interface{}:
+		return EncodeValues(v...)
 	default:
 		return []byte{}, errors.Errorf("invalid type: %T", p)
 	}
 }
-

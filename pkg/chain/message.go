@@ -3,6 +3,8 @@ package chain
 import (
 	"math/big"
 
+	"github.com/ipfs/go-cid"
+
 	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
@@ -43,6 +45,8 @@ const (
 	StorageMinerGetPeerID
 	StorageMinerGetSectorSize
 
+	PaymentChannelCreate
+
 	GetSectorSize
 	CronConstructor
 	CronTick
@@ -60,6 +64,7 @@ type MessageFactory interface {
 	MakeMessage(from, to state.Address, method MethodID, nonce uint64, value, gasPrice state.AttoFIL, gasLimit state.GasUnit,
 		params ...interface{}) (interface{}, error)
 	FromSingletonAddress(address state.SingletonActorID) state.Address
+	FromActorCodeCid(cod state.ActorCodeID) cid.Cid
 }
 
 // MessageProducer presents a convenient API for scripting the creation of long and complex message sequences.
@@ -156,6 +161,10 @@ func (mp *MessageProducer) InitExec(from state.Address, nonce uint64, params []i
 	return mp.Build(iaAddr, from, nonce, InitExec, params, opts...)
 }
 
+//
+// Storage Power Actor Methods
+//
+
 // StoragePowerCreateStorageMiner builds a message invoking StoragePowerActor.CreateStorageMiner and returns it.
 func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, nonce uint64,
 	owner state.Address, worker state.Address, sectorSize state.BytesAmount, peerID state.PeerID,
@@ -171,6 +180,10 @@ func (mp *MessageProducer) StoragePowerUpdateStorage(from state.Address, nonce u
 	params := []interface{}{delta}
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
 }
+
+//
+// Storage Miner Actor Methods
+//
 
 func (mp *MessageProducer) StorageMinerUpdatePeerID(to, from state.Address, nonce uint64, peerID state.PeerID, opts ...MsgOpt) (interface{}, error) {
 	params := []interface{}{peerID}
@@ -195,6 +208,18 @@ func (mp *MessageProducer) StorageMinerGetPeerID(to, from state.Address, nonce u
 
 func (mp *MessageProducer) StorageMinerGetSectorSize(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetSectorSize, noParams, opts...)
+}
+
+//
+// Payment Channel Actor Methods
+//
+
+func (mp *MessageProducer) PaymentChannelCreate(to, from state.Address, nonce, value uint64, opts ...MsgOpt) (interface{}, error) {
+	payChParams := []interface{}{to}
+	msgOpt := append([]MsgOpt{Value(value)}, opts...)
+
+	initParams := []interface{}{mp.factory.FromActorCodeCid(state.PaymentChannelActorCodeCid), payChParams}
+	return mp.Build(from, mp.factory.FromSingletonAddress(state.InitAddress), nonce, InitExec, initParams, msgOpt...)
 }
 
 var noParams []interface{}
