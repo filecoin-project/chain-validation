@@ -46,7 +46,7 @@ func AccountValueTransferSuccess(t *testing.T, factory Factories, expGasUsed uin
 	assert.Empty(t, msgReceipt.ReturnValue)
 	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
-	drv.AssertBalance(alice, 1950 - expGasUsed)
+	drv.AssertBalance(alice, 1950-expGasUsed)
 	drv.AssertBalance(bob, 50)
 	// This should become non-zero after gas tracking and payments are integrated.
 	drv.AssertBalance(miner, expGasUsed)
@@ -72,7 +72,7 @@ func AccountValueTransferZeroFunds(t *testing.T, factory Factories, expGasUsed u
 	assert.Empty(t, msgReceipt.ReturnValue)
 	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
-	drv.AssertBalance(alice, 2000 - expGasUsed)
+	drv.AssertBalance(alice, 2000-expGasUsed)
 	drv.AssertBalance(bob, 0)
 	// This should become non-zero after gas tracking and payments are integrated.
 	drv.AssertBalance(miner, expGasUsed)
@@ -98,7 +98,7 @@ func AccountValueTransferOverBalanceNonZero(t *testing.T, factory Factories, exp
 	assert.Empty(t, msgReceipt.ReturnValue)
 	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
-	drv.AssertBalance(alice, 2000 - expGasUsed)
+	drv.AssertBalance(alice, 2000-expGasUsed)
 	drv.AssertBalance(bob, 0)
 	// This should become non-zero after gas tracking and payments are integrated.
 	drv.AssertBalance(miner, expGasUsed)
