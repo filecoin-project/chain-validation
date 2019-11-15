@@ -1,6 +1,7 @@
 package suites
 
 import (
+	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
 
@@ -53,17 +54,11 @@ func PaymentChannelCreateSuccess(t *testing.T, factory Factories, expGasUsed uin
 	drv.AssertBalance(miner, expGasUsed)
 	drv.AssertBalance(expPayChAddress, 50)
 
-	// TODO make this state inspection work
-	/*
-		pca, err := drv.State().Actor(expPayChAddress)
-		require.NoError(t, err)
+	pcaState, err := drv.State().PaymentChannelActorState(expPayChAddress)
+	require.NoError(t, err)
 
-		pcaStorage, err := drv.State().Storage(expPayChAddress)
-		require.NoError(t, err)
-
-		var pcs state.PaymentChannelActorState
-		require.NoError(t,pcaStorage.Get(pca.Head(), &pcs))
-		assert.Equal(t, []byte(alice), pcs.From)
-		assert.Equal(t, []byte(bob), pcs.To)
-	*/
+	assert.Equal(t, bob, pcaState.To())
+	assert.Equal(t, alice, pcaState.From())
+	assert.Zero(t, pcaState.MinCloseHeight())
+	assert.Zero(t, pcaState.ClosingAt())
 }

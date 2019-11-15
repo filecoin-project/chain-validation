@@ -1,14 +1,21 @@
 package state
 
-import "github.com/ipfs/go-cid"
+import (
+	"github.com/ipfs/go-cid"
+)
 
 // Wrapper abstracts the inspection and mutation of an implementation-specific state tree and storage.
 // The interface wraps a single, mutable state.
 type Wrapper interface {
 	// Returns the CID of the root node of the state tree.
 	Cid() cid.Cid
+
 	// Returns the actor state at `address` (or an error if there is none).
 	Actor(address Address) (Actor, error)
+
+	// Returns an abstraction over a payment channel actors state.
+	PaymentChannelActorState(address Address) (PaymentChannelActorState, error)
+
 	// Returns the actor storage for the actor at `address` (which is empty if there is no such actor).
 	Storage(address Address) (Storage, error)
 
@@ -34,4 +41,13 @@ type Actor interface {
 // Storage provides a key/value store for actor state.
 type Storage interface {
 	Get(c cid.Cid, out interface{}) error
+}
+
+// PaymentChannelActorState is an abstraction over a payment channel actor's state.
+type PaymentChannelActorState interface {
+	From() Address
+	To() Address
+	ToSend() AttoFIL
+	ClosingAt() uint64
+	MinCloseHeight() uint64
 }
