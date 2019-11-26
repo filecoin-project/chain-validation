@@ -1,7 +1,6 @@
 package suites
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,15 +8,17 @@ import (
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors"
+	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
 func transferTestSetup(t *testing.T, factory Factories) (*StateDriver, *chain.MessageProducer, *chain.Validator) {
 	drv := NewStateDriver(t, factory.NewState())
 
-	_, _, err := drv.State().SetSingletonActor(state.InitAddress, big.NewInt(0))
+	_, _, err := drv.State().SetSingletonActor(actors.InitAddress, types.NewBigInt(0))
 	require.NoError(t, err)
 
-	gasPrice := big.NewInt(1)
+	gasPrice := types.NewBigInt(1)
 	gasLimit := state.GasUnit(1000)
 
 	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)

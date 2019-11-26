@@ -1,7 +1,6 @@
 package suites
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +8,9 @@ import (
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors"
+	"github.com/filecoin-project/chain-validation/pkg/state/address"
+	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
 // Factories wraps up all the implementation-specific integration points.
@@ -36,20 +38,20 @@ func (d *StateDriver) State() state.Wrapper {
 }
 
 // NewAccountActor installs a new account actor, returning the address.
-func (d *StateDriver) NewAccountActor(balanceAttoFil uint64) state.Address {
+func (d *StateDriver) NewAccountActor(balanceAttoFil uint64) address.Address {
 	addr, err := d.st.NewAccountAddress()
 	require.NoError(d.tb, err)
 
-	_, _, err = d.st.SetActor(addr, state.AccountActorCodeCid, af(balanceAttoFil))
+	_, _, err = d.st.SetActor(addr, actors.AccountActorCodeCid, types.NewBigInt(balanceAttoFil))
 	require.NoError(d.tb, err)
 	return addr
 }
 
 // AssertBalance checks an actor has an expected balance.
-func (d *StateDriver) AssertBalance(addr state.Address, expected uint64) {
+func (d *StateDriver) AssertBalance(addr address.Address, expected uint64) {
 	actr, err := d.st.Actor(addr)
 	require.NoError(d.tb, err)
-	assert.Equal(d.tb, af(expected), actr.Balance())
+	assert.Equal(d.tb, types.NewBigInt(expected), actr.Balance())
 }
 
 // AssertReceipt checks that a receipt is not nill and has values equal to `expected`.
@@ -58,10 +60,4 @@ func (d *StateDriver) AssertReceipt(receipt, expected chain.MessageReceipt) {
 	assert.NotNil(d.tb, receipt)
 	assert.Equal(d.tb, expected.ReturnValue, receipt.ReturnValue)
 	assert.Equal(d.tb, expected.ExitCode, receipt.ExitCode)
-}
-
-// Helpers
-
-func af(v uint64) state.AttoFIL {
-	return big.NewInt(0).SetUint64(v)
 }
