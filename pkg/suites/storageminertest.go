@@ -11,6 +11,7 @@ import (
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/address"
 )
 
 const totalFilecoin = 2000000000
@@ -42,7 +43,7 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	minerOwner := drv.NewAccountActor(20000000000)
 
 	// address of the miner created
-	minerAddr, err := state.NewIDAddress(102)
+	minerAddr, err := address.NewIDAddress(102)
 	require.NoError(t, err)
 	// sector size of the miner created
 	sectorSize := big.NewInt(int64(sectorSizes[0]))

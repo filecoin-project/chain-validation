@@ -1,14 +1,15 @@
 package suites
 
 import (
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/address"
 )
 
 func testSetup(t *testing.T, factory Factories) (*StateDriver, *chain.MessageProducer, *chain.Validator) {
@@ -29,7 +30,7 @@ func testSetup(t *testing.T, factory Factories) (*StateDriver, *chain.MessagePro
 func PaymentChannelCreateSuccess(t *testing.T, factory Factories, expGasUsed uint64) {
 	drv, producer, validator := testSetup(t, factory)
 
-	expPayChAddress, err := state.NewIDAddress(103)
+	expPayChAddress, err := address.NewIDAddress(103)
 
 	alice := drv.NewAccountActor(30000)
 	bob := drv.NewAccountActor(0)

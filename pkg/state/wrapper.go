@@ -2,6 +2,8 @@ package state
 
 import (
 	"github.com/ipfs/go-cid"
+
+	"github.com/filecoin-project/chain-validation/pkg/state/address"
 )
 
 // Wrapper abstracts the inspection and mutation of an implementation-specific state tree and storage.
@@ -11,20 +13,20 @@ type Wrapper interface {
 	Cid() cid.Cid
 
 	// Returns the actor state at `address` (or an error if there is none).
-	Actor(address Address) (Actor, error)
+	Actor(address address.Address) (Actor, error)
 
 	// Returns an abstraction over a payment channel actors state.
-	PaymentChannelActorState(address Address) (PaymentChannelActorState, error)
+	PaymentChannelActorState(address address.Address) (PaymentChannelActorState, error)
 
 	// Returns the actor storage for the actor at `address` (which is empty if there is no such actor).
-	Storage(address Address) (Storage, error)
+	Storage(address address.Address) (Storage, error)
 
 	// Creates a new private key and returns the associated address.
-	NewAccountAddress() (Address, error)
+	NewAccountAddress() (address.Address, error)
 
 	// Installs a new actor in the state tree.
 	// This signature will probably become a little more complex when the actor state is non-empty.
-	SetActor(address Address, code ActorCodeID, balance AttoFIL) (Actor, Storage, error)
+	SetActor(address address.Address, code ActorCodeID, balance AttoFIL) (Actor, Storage, error)
 
 	// Installs a new singleton actor in the state tree.
 	SetSingletonActor(address SingletonActorID, balance AttoFIL) (Actor, Storage, error)
@@ -45,8 +47,8 @@ type Storage interface {
 
 // PaymentChannelActorState is an abstraction over a payment channel actor's state.
 type PaymentChannelActorState interface {
-	From() Address
-	To() Address
+	From() address.Address
+	To() address.Address
 	ToSend() AttoFIL
 	ClosingAt() uint64
 	MinCloseHeight() uint64

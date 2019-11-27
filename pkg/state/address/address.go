@@ -1,4 +1,4 @@
-package state
+package address
 
 import (
 	"github.com/filecoin-project/go-leb128"
