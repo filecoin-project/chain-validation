@@ -1,8 +1,6 @@
 package types
 
 import (
-	"math/big"
-
 	"github.com/filecoin-project/go-leb128"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
@@ -13,9 +11,6 @@ import (
 
 // Type aliases for state values and message method parameters.
 type (
-	BytesAmount *big.Int
-	AttoFIL     *big.Int
-
 	GasUnit uint64
 
 	PubKey []byte
@@ -43,10 +38,8 @@ func EncodeValue(p interface{}) (interface{}, error) {
 	switch v := p.(type) {
 	case address.Address:
 		return v, nil
-	case AttoFIL:
-		return (*v).Bytes(), nil
-	case BytesAmount:
-		return (*v).Uint64(), nil
+	case BigInt:
+		return v, nil
 	case GasUnit:
 		return leb128.FromUInt64(uint64(v)), nil
 	case uint64:

@@ -27,10 +27,10 @@ type Wrapper interface {
 
 	// Installs a new actor in the state tree.
 	// This signature will probably become a little more complex when the actor state is non-empty.
-	SetActor(address address.Address, code ActorCodeID, balance types.AttoFIL) (Actor, Storage, error)
+	SetActor(address address.Address, code ActorCodeID, balance types.BigInt) (Actor, Storage, error)
 
 	// Installs a new singleton actor in the state tree.
-	SetSingletonActor(address SingletonActorID, balance types.AttoFIL) (Actor, Storage, error)
+	SetSingletonActor(address SingletonActorID, balance types.BigInt) (Actor, Storage, error)
 }
 
 // Actor is an abstraction over the actor states stored in the root of the state tree.
@@ -38,7 +38,7 @@ type Actor interface {
 	Code() cid.Cid
 	Head() cid.Cid
 	Nonce() uint64
-	Balance() types.AttoFIL
+	Balance() types.BigInt
 }
 
 // Storage provides a key/value store for actor state.
@@ -50,7 +50,7 @@ type Storage interface {
 type PaymentChannelActorState interface {
 	From() address.Address
 	To() address.Address
-	ToSend() types.AttoFIL
+	ToSend() types.BigInt
 	ClosingAt() uint64
 	MinCloseHeight() uint64
 }

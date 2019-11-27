@@ -1,7 +1,6 @@
 package suites
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,10 +15,10 @@ import (
 func testSetup(t *testing.T, factory Factories) (*StateDriver, *chain.MessageProducer, *chain.Validator) {
 	drv := NewStateDriver(t, factory.NewState())
 
-	_, _, err := drv.State().SetSingletonActor(state.InitAddress, big.NewInt(0))
+	_, _, err := drv.State().SetSingletonActor(state.InitAddress, types.NewInt(0))
 	require.NoError(t, err)
 
-	gasPrice := big.NewInt(1)
+	gasPrice := types.NewInt(1)
 	gasLimit := types.GasUnit(10000)
 
 	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)

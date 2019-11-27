@@ -31,7 +31,7 @@ type BigInt struct {
 
 var EmptyInt = BigInt{}
 
-func NewBigInt(i uint64) BigInt {
+func NewInt(i uint64) BigInt {
 	return BigInt{big.NewInt(0).SetUint64(i)}
 }
 
@@ -52,7 +52,7 @@ func (bi *BigInt) cborBytes() []byte {
 
 func fromCborBytes(buf []byte) (BigInt, error) {
 	if len(buf) == 0 {
-		return NewBigInt(0), nil
+		return NewInt(0), nil
 	}
 
 	var negative bool
@@ -75,7 +75,7 @@ func fromCborBytes(buf []byte) (BigInt, error) {
 
 func (bi *BigInt) MarshalCBOR(w io.Writer) error {
 	if bi.Int == nil {
-		zero := NewBigInt(0)
+		zero := NewInt(0)
 		return zero.MarshalCBOR(w)
 	}
 

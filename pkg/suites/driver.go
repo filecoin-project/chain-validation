@@ -1,7 +1,7 @@
 package suites
 
 import (
-	"math/big"
+	"github.com/filecoin-project/chain-validation/pkg/state/types"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +10,6 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
-	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
 // Factories wraps up all the implementation-specific integration points.
@@ -42,7 +41,7 @@ func (d *StateDriver) NewAccountActor(balanceAttoFil uint64) address.Address {
 	addr, err := d.st.NewAccountAddress()
 	require.NoError(d.tb, err)
 
-	_, _, err = d.st.SetActor(addr, state.AccountActorCodeCid, af(balanceAttoFil))
+	_, _, err = d.st.SetActor(addr, state.AccountActorCodeCid, types.NewInt(balanceAttoFil))
 	require.NoError(d.tb, err)
 	return addr
 }
@@ -51,7 +50,7 @@ func (d *StateDriver) NewAccountActor(balanceAttoFil uint64) address.Address {
 func (d *StateDriver) AssertBalance(addr address.Address, expected uint64) {
 	actr, err := d.st.Actor(addr)
 	require.NoError(d.tb, err)
-	assert.Equal(d.tb, af(expected), actr.Balance())
+	assert.Equal(d.tb, types.NewInt(expected), actr.Balance())
 }
 
 // AssertReceipt checks that a receipt is not nill and has values equal to `expected`.
@@ -60,10 +59,4 @@ func (d *StateDriver) AssertReceipt(receipt, expected chain.MessageReceipt) {
 	assert.NotNil(d.tb, receipt)
 	assert.Equal(d.tb, expected.ReturnValue, receipt.ReturnValue)
 	assert.Equal(d.tb, expected.ExitCode, receipt.ExitCode)
-}
-
-// Helpers
-
-func af(v uint64) types.AttoFIL {
-	return big.NewInt(0).SetUint64(v)
 }
