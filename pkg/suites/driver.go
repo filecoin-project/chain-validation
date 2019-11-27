@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
+	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
 // Factories wraps up all the implementation-specific integration points.
@@ -63,6 +64,6 @@ func (d *StateDriver) AssertReceipt(receipt, expected chain.MessageReceipt) {
 
 // Helpers
 
-func af(v uint64) state.AttoFIL {
+func af(v uint64) types.AttoFIL {
 	return big.NewInt(0).SetUint64(v)
 }

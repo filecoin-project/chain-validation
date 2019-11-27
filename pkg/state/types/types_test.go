@@ -1,4 +1,4 @@
-package state_test
+package types_test
 
 import (
 	"math/big"
@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/chain-validation/pkg/state"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 )
 
@@ -16,11 +15,11 @@ func TestExampleEncodeValues(t *testing.T) {
 	owner, err := address.NewActorAddress([]byte{1, 2, 3, 4, 5})
 	require.NoError(t, err)
 
-	sectorSize := state.BytesAmount(big.NewInt(10))
-	peerID := state.PeerID([]byte{0, 9, 8, 7, 6, 5})
+	sectorSize := BytesAmount(big.NewInt(10))
+	peerID := PeerID([]byte{0, 9, 8, 7, 6, 5})
 
 	params := []interface{}{owner, sectorSize, peerID}
-	data, err := state.EncodeValues(params...)
+	data, err := EncodeValues(params...)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, data)
 
