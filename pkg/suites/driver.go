@@ -9,6 +9,7 @@ import (
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 )
 
@@ -41,7 +42,7 @@ func (d *StateDriver) NewAccountActor(balanceAttoFil uint64) address.Address {
 	addr, err := d.st.NewAccountAddress()
 	require.NoError(d.tb, err)
 
-	_, _, err = d.st.SetActor(addr, state.AccountActorCodeCid, types.NewInt(balanceAttoFil))
+	_, _, err = d.st.SetActor(addr, actors.AccountActorCodeCid, types.NewInt(balanceAttoFil))
 	require.NoError(d.tb, err)
 	return addr
 }

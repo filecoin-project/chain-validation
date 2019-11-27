@@ -1,4 +1,4 @@
-package state
+package actors
 
 type ActorCodeID int
 

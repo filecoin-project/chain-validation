@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
-	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
@@ -31,11 +31,11 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	gasPrice := types.NewInt(1)
 	// gas prices will be inconsistent for a while, use a big value lotus team suggests using a large value here.
 	gasLimit := types.GasUnit(1000000)
-	_, _, err := drv.State().SetSingletonActor(state.InitAddress, types.NewInt(0))
+	_, _, err := drv.State().SetSingletonActor(actors.InitAddress, types.NewInt(0))
 	require.NoError(t, err)
-	_, _, err = drv.State().SetSingletonActor(state.NetworkAddress, TotalNetworkBalance)
+	_, _, err = drv.State().SetSingletonActor(actors.NetworkAddress, TotalNetworkBalance)
 	require.NoError(t, err)
-	_, _, err = drv.State().SetSingletonActor(state.StoragePowerAddress, types.NewInt(0))
+	_, _, err = drv.State().SetSingletonActor(actors.StoragePowerAddress, types.NewInt(0))
 	require.NoError(t, err)
 
 	// miner that mines in this test
