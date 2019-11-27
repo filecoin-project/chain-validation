@@ -42,7 +42,7 @@ func EncodeValues(params ...interface{}) ([]byte, error) {
 func EncodeValue(p interface{}) (interface{}, error) {
 	switch v := p.(type) {
 	case address.Address:
-		return []byte(v), nil
+		return v, nil
 	case AttoFIL:
 		return (*v).Bytes(), nil
 	case BytesAmount:

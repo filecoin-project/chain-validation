@@ -95,7 +95,7 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	require.NoError(t, err)
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
-		ReturnValue: []byte(minerOwner),
+		ReturnValue: minerOwner.Bytes(),
 		GasUsed:     0,
 	})
 
@@ -121,7 +121,7 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	require.NoError(t, err)
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
-		ReturnValue: []byte(minerOwner),
+		ReturnValue: minerOwner.Bytes(),
 		GasUsed:     0,
 	})
 

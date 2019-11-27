@@ -30,7 +30,7 @@ func TestExampleEncodeValues(t *testing.T) {
 
 	v := arr[0] // owner address
 	expOwner := v.([]byte)
-	assert.Equal(t, []byte(owner), expOwner)
+	assert.Equal(t, owner.Bytes(), expOwner)
 
 	v = arr[1] // sectorSize
 	expSectorSize := v.(uint64)

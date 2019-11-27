@@ -45,7 +45,7 @@ func PaymentChannelCreateSuccess(t *testing.T, factory Factories, expGasUsed uin
 	require.NoError(t, err)
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
-		ReturnValue: []byte(expPayChAddress),
+		ReturnValue: expPayChAddress.Bytes(),
 		GasUsed:     state.GasUnit(expGasUsed),
 	})
 
