@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
-	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
@@ -15,7 +15,7 @@ import (
 func testSetup(t *testing.T, factory Factories) (*StateDriver, *chain.MessageProducer, *chain.Validator) {
 	drv := NewStateDriver(t, factory.NewState())
 
-	_, _, err := drv.State().SetSingletonActor(state.InitAddress, types.NewInt(0))
+	_, _, err := drv.State().SetSingletonActor(actors.InitAddress, types.NewInt(0))
 	require.NoError(t, err)
 
 	gasPrice := types.NewInt(1)

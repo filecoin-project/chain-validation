@@ -3,7 +3,7 @@ package chain
 import (
 	"github.com/ipfs/go-cid"
 
-	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
@@ -63,8 +63,8 @@ const (
 type MessageFactory interface {
 	MakeMessage(from, to address.Address, method MethodID, nonce uint64, value, gasPrice types.BigInt, gasLimit types.GasUnit,
 		params ...interface{}) (interface{}, error)
-	FromSingletonAddress(address state.SingletonActorID) address.Address
-	FromActorCodeCid(cod state.ActorCodeID) cid.Cid
+	FromSingletonAddress(address actors.SingletonActorID) address.Address
+	FromActorCodeCid(cod actors.ActorCodeID) cid.Cid
 }
 
 // MessageProducer presents a convenient API for scripting the creation of long and complex message sequences.
@@ -157,7 +157,7 @@ func (mp *MessageProducer) Transfer(from, to address.Address, nonce uint64, valu
 
 // InitExec builds a message invoking InitActor.Exec and returns it.
 func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, params []interface{}, opts ...MsgOpt) (interface{}, error) {
-	iaAddr := mp.factory.FromSingletonAddress(state.InitAddress)
+	iaAddr := mp.factory.FromSingletonAddress(actors.InitAddress)
 	return mp.Build(iaAddr, from, nonce, InitExec, params, opts...)
 }
 
@@ -170,13 +170,13 @@ func (mp *MessageProducer) StoragePowerCreateStorageMiner(from address.Address, 
 	owner address.Address, worker address.Address, sectorSize types.BigInt, peerID types.PeerID,
 	opts ...MsgOpt) (interface{}, error) {
 
-	spaAddr := mp.factory.FromSingletonAddress(state.StoragePowerAddress)
+	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
 	params := []interface{}{owner, worker, sectorSize, peerID}
 	return mp.Build(from, spaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
 
 func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce uint64, delta types.BigInt, opts ...MsgOpt) (interface{}, error) {
-	spaAddr := mp.factory.FromSingletonAddress(state.StoragePowerAddress)
+	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
 	params := []interface{}{delta}
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
 }
@@ -218,8 +218,8 @@ func (mp *MessageProducer) PaymentChannelCreate(to, from address.Address, nonce,
 	payChParams := []interface{}{to}
 	msgOpt := append([]MsgOpt{Value(value)}, opts...)
 
-	initParams := []interface{}{mp.factory.FromActorCodeCid(state.PaymentChannelActorCodeCid), payChParams}
-	return mp.Build(from, mp.factory.FromSingletonAddress(state.InitAddress), nonce, InitExec, initParams, msgOpt...)
+	initParams := []interface{}{mp.factory.FromActorCodeCid(actors.PaymentChannelActorCodeCid), payChParams}
+	return mp.Build(from, mp.factory.FromSingletonAddress(actors.InitAddress), nonce, InitExec, initParams, msgOpt...)
 }
 
 var noParams []interface{}

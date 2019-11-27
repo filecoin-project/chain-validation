@@ -1,6 +1,7 @@
 package state
 
 import (
+	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
@@ -27,10 +28,10 @@ type Wrapper interface {
 
 	// Installs a new actor in the state tree.
 	// This signature will probably become a little more complex when the actor state is non-empty.
-	SetActor(address address.Address, code ActorCodeID, balance types.BigInt) (Actor, Storage, error)
+	SetActor(address address.Address, code actors.ActorCodeID, balance types.BigInt) (Actor, Storage, error)
 
 	// Installs a new singleton actor in the state tree.
-	SetSingletonActor(address SingletonActorID, balance types.BigInt) (Actor, Storage, error)
+	SetSingletonActor(address actors.SingletonActorID, balance types.BigInt) (Actor, Storage, error)
 }
 
 // Actor is an abstraction over the actor states stored in the root of the state tree.
