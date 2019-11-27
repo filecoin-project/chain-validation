@@ -1,4 +1,4 @@
-package actors
+package paych
 
 import (
 	"github.com/ipfs/go-cid"
