@@ -10,27 +10,31 @@ import (
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
-const totalFilecoin = 2000000000
-const filecoinPrecision = 1000000000000000000
+const (
+	totalFilecoin     = 2000000000
+	filecoinPrecision = 1000000000000000000
+)
 
-var TotalNetworkBalance = types.NewInt(types.NewInt(1).Mul(types.NewInt(totalFilecoin).Int, types.NewInt(0).SetUint64(filecoinPrecision)).Uint64())
+var (
+	TotalNetworkBalance = types.NewInt(types.NewInt(1).Mul(types.NewInt(totalFilecoin).Int, types.NewInt(0).SetUint64(filecoinPrecision)).Uint64())
 
-var sectorSizes = []uint64{
-	16 << 20,
-	256 << 20,
-	1 << 30,
-}
+	sectorSizes = []uint64{
+		16 << 20,
+		256 << 20,
+		1 << 30,
+	}
+)
 
-func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
+func testSetup(t testing.TB, factory Factories) (*StateDriver, types.BigInt, types.GasUnit) {
 	drv := NewStateDriver(t, factory.NewState())
-
 	gasPrice := types.NewInt(1)
-	// gas prices will be inconsistent for a while, use a big value lotus team suggests using a large value here.
-	gasLimit := types.GasUnit(1000000)
+	gasLimit := types.GasUnit(1000000000000)
+
 	_, _, err := drv.State().SetSingletonActor(actors.InitAddress, types.NewInt(0))
 	require.NoError(t, err)
 	_, _, err = drv.State().SetSingletonActor(actors.NetworkAddress, TotalNetworkBalance)
@@ -38,24 +42,17 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	_, _, err = drv.State().SetSingletonActor(actors.StoragePowerAddress, types.NewInt(0))
 	require.NoError(t, err)
 
+	return drv, gasPrice, gasLimit
+
+}
+
+func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
+	drv, gasPrice, gasLimit := testSetup(t, factory)
+
 	// miner that mines in this test
 	testMiner := drv.NewAccountActor(0)
 	// account that will own the miner
-	minerOwner := drv.NewAccountActor(20000000000)
-
-	// address of the miner created
-	minerAddr, err := address.NewIDAddress(102)
-	require.NoError(t, err)
-	// sector size of the miner created
-	sectorSize := types.NewInt(sectorSizes[0])
-	// peerID of the miner created
-	rawPeerID, err := RequireIntPeerID(t, 1).MarshalBinary()
-	require.NoError(t, err)
-	peerID := types.PeerID(rawPeerID)
-	// peerID of the miner after update
-	rawPeerID2, err := RequireIntPeerID(t, 2).MarshalBinary()
-	require.NoError(t, err)
-	peerID2 := types.PeerID(rawPeerID2)
+	minerOwner := drv.NewAccountActorBigBalance(types.NewIntFromString("2000000000000000000000000"))
 
 	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
@@ -64,7 +61,13 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	//
 	// create a storage miner
 	//
-	msg, err := producer.StoragePowerCreateStorageMiner(minerOwner, 0, minerOwner, minerOwner, sectorSize, peerID, chain.Value(2000000))
+
+	// sector size of the miner created
+	sectorSize := types.NewInt(sectorSizes[0])
+	// peerID of the miner created
+	peerID := RequireIntPeerID(t, 1)
+
+	msg, err := producer.StoragePowerCreateStorageMiner(minerOwner, 0, minerOwner, minerOwner, sectorSize.Uint64(), peerID, chain.BigValue(types.NewIntFromString("1999999995415053581179420")))
 	require.NoError(t, err)
 	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
 	require.NoError(t, err)
@@ -77,6 +80,11 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	//
 	// verify storage miners sector size
 	//
+
+	// address of the miner created by the above message
+	minerAddr, err := address.NewIDAddress(102)
+	require.NoError(t, err)
+
 	msg, err = producer.StorageMinerGetSectorSize(minerAddr, minerOwner, 1, chain.Value(2000000))
 	require.NoError(t, err)
 	msgReceipt, err = validator.ApplyMessage(exeCtx, drv.State(), msg)
@@ -142,6 +150,10 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	//
 	// update peerID
 	//
+
+	//peerID to update miner with
+	peerID2 := RequireIntPeerID(t, 2)
+
 	msg, err = producer.StorageMinerUpdatePeerID(minerAddr, minerOwner, 6, peerID2, chain.Value(2000000))
 	require.NoError(t, err)
 	msgReceipt, err = validator.ApplyMessage(exeCtx, drv.State(), msg)
@@ -163,6 +175,28 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 		ExitCode:    0,
 		ReturnValue: []byte(peerID2),
 		GasUsed:     0,
+	})
+
+	//
+	// verify storage miners state
+	//
+	minerActor, err := drv.State().Actor(minerAddr)
+	require.NoError(t, err)
+
+	minerActorStorage, err := drv.State().Storage(minerAddr)
+	require.NoError(t, err)
+
+	var minerState strgminr.StorageMinerActorState
+	require.NoError(t, minerActorStorage.Get(minerActor.Head(), &minerState))
+
+	var minerInfo strgminr.MinerInfo
+	require.NoError(t, minerActorStorage.Get(minerState.Info, &minerInfo))
+
+	drv.AssertMinerInfo(minerInfo, strgminr.MinerInfo{
+		Owner:      minerOwner,
+		Worker:     minerOwner,
+		PeerID:     peerID2,
+		SectorSize: sectorSize.Uint64(),
 	})
 
 }
