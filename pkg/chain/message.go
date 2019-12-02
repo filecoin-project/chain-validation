@@ -2,8 +2,11 @@ package chain
 
 import (
 	"github.com/ipfs/go-cid"
+	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/filecoin-project/chain-validation/pkg/state/actors"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
@@ -62,7 +65,7 @@ const (
 // validation engine.
 type MessageFactory interface {
 	MakeMessage(from, to address.Address, method MethodID, nonce uint64, value, gasPrice types.BigInt, gasLimit types.GasUnit,
-		params ...interface{}) (interface{}, error)
+		params []byte) (interface{}, error)
 	FromSingletonAddress(address actors.SingletonActorID) address.Address
 	FromActorCodeCid(cod actors.ActorCodeID) cid.Cid
 }
@@ -110,6 +113,12 @@ func Value(value uint64) MsgOpt {
 	}
 }
 
+func BigValue(value types.BigInt) MsgOpt {
+	return func(opts *msgOpts) {
+		opts.value = value
+	}
+}
+
 func GasLimit(limit uint64) MsgOpt {
 	return func(opts *msgOpts) {
 		opts.gasLimit = types.GasUnit(limit)
@@ -123,20 +132,20 @@ func GasPrice(price uint64) MsgOpt {
 }
 
 // Build creates and returns a single message, using default gas parameters unless modified by `opts`.
-func (mp *MessageProducer) Build(from, to address.Address, nonce uint64, method MethodID, params []interface{},
+func (mp *MessageProducer) Build(from, to address.Address, nonce uint64, method MethodID, params []byte,
 	opts ...MsgOpt) (interface{}, error) {
 	values := mp.defaults
 	for _, opt := range opts {
 		opt(&values)
 	}
 
-	return mp.BuildFull(from, to, method, nonce, values.value, values.gasLimit, values.gasPrice, params...)
+	return mp.BuildFull(from, to, method, nonce, values.value, values.gasLimit, values.gasPrice, params)
 }
 
 // BuildFull creates and returns a single message.
 func (mp *MessageProducer) BuildFull(from, to address.Address, method MethodID, nonce uint64, value types.BigInt,
-	gasLimit types.GasUnit, gasPrice types.BigInt, params ...interface{}) (interface{}, error) {
-	fm, err := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params...)
+	gasLimit types.GasUnit, gasPrice types.BigInt, params []byte) (interface{}, error) {
+	fm, err := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +165,7 @@ func (mp *MessageProducer) Transfer(from, to address.Address, nonce uint64, valu
 }
 
 // InitExec builds a message invoking InitActor.Exec and returns it.
-func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, params []interface{}, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, params []byte, opts ...MsgOpt) (interface{}, error) {
 	iaAddr := mp.factory.FromSingletonAddress(actors.InitAddress)
 	return mp.Build(iaAddr, from, nonce, InitExec, params, opts...)
 }
@@ -167,17 +176,32 @@ func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, params [
 
 // StoragePowerCreateStorageMiner builds a message invoking StoragePowerActor.CreateStorageMiner and returns it.
 func (mp *MessageProducer) StoragePowerCreateStorageMiner(from address.Address, nonce uint64,
-	owner address.Address, worker address.Address, sectorSize types.BigInt, peerID types.PeerID,
+	owner address.Address, worker address.Address, sectorSize uint64, peerID peer.ID,
 	opts ...MsgOpt) (interface{}, error) {
 
 	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
-	params := []interface{}{owner, worker, sectorSize, peerID}
+	params, err := types.Serialize(&strgpwr.CreateStorageMinerParams{
+		Owner:      owner,
+		Worker:     worker,
+		SectorSize: sectorSize,
+		PeerID:     peerID,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return mp.Build(from, spaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
 
-func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce uint64, delta types.BigInt, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce uint64, delta types.BigInt, nextppEnd, previousppEnd uint64, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&strgpwr.UpdateStorageParams{
+		Delta:                    delta,
+		NextProvingPeriodEnd:     nextppEnd,
+		PreviousProvingPeriodEnd: previousppEnd,
+	})
+	if err != nil {
+		return nil, err
+	}
 	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
-	params := []interface{}{delta}
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
 }
 
@@ -185,8 +209,11 @@ func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce
 // Storage Miner Actor Methods
 //
 
-func (mp *MessageProducer) StorageMinerUpdatePeerID(to, from address.Address, nonce uint64, peerID types.PeerID, opts ...MsgOpt) (interface{}, error) {
-	params := []interface{}{peerID}
+func (mp *MessageProducer) StorageMinerUpdatePeerID(to, from address.Address, nonce uint64, peerID peer.ID, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&strgminr.UpdatePeerIDParams{PeerID: peerID})
+	if err != nil {
+		return nil, err
+	}
 	return mp.Build(from, to, nonce, StorageMinerUpdatePeerID, params, opts...)
 }
 
@@ -210,16 +237,4 @@ func (mp *MessageProducer) StorageMinerGetSectorSize(to, from address.Address, n
 	return mp.Build(from, to, nonce, StorageMinerGetSectorSize, noParams, opts...)
 }
 
-//
-// Payment Channel Actor Methods
-//
-
-func (mp *MessageProducer) PaymentChannelCreate(to, from address.Address, nonce, value uint64, opts ...MsgOpt) (interface{}, error) {
-	payChParams := []interface{}{to}
-	msgOpt := append([]MsgOpt{Value(value)}, opts...)
-
-	initParams := []interface{}{mp.factory.FromActorCodeCid(actors.PaymentChannelActorCodeCid), payChParams}
-	return mp.Build(from, mp.factory.FromSingletonAddress(actors.InitAddress), nonce, InitExec, initParams, msgOpt...)
-}
-
-var noParams []interface{}
+var noParams []byte
