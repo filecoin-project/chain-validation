@@ -3,6 +3,7 @@ package chain
 import (
 	"github.com/filecoin-project/chain-validation/pkg/state"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
+	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
 // Applier applies abstract messages to states.
@@ -14,7 +15,7 @@ type Applier interface {
 type MessageReceipt struct {
 	ExitCode    uint8
 	ReturnValue []byte
-	GasUsed     state.GasUnit
+	GasUsed     types.GasUnit
 }
 
 // ExecutionContext provides the context for execution of a message.

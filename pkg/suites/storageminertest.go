@@ -2,7 +2,6 @@ package suites
 
 import (
 	"encoding/binary"
-	"math/big"
 	"testing"
 
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -12,10 +11,13 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
+	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
 const totalFilecoin = 2000000000
 const filecoinPrecision = 1000000000000000000
+
+var TotalNetworkBalance = types.NewInt(types.NewInt(1).Mul(types.NewInt(totalFilecoin).Int, types.NewInt(0).SetUint64(filecoinPrecision)).Uint64())
 
 var sectorSizes = []uint64{
 	16 << 20,
@@ -26,15 +28,14 @@ var sectorSizes = []uint64{
 func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	drv := NewStateDriver(t, factory.NewState())
 
-	gasPrice := big.NewInt(1)
+	gasPrice := types.NewInt(1)
 	// gas prices will be inconsistent for a while, use a big value lotus team suggests using a large value here.
-	gasLimit := state.GasUnit(1000000)
-	TotalNetworkBalance := big.NewInt(1).Mul(big.NewInt(totalFilecoin), big.NewInt(0).SetUint64(filecoinPrecision))
-	_, _, err := drv.State().SetSingletonActor(state.InitAddress, big.NewInt(0))
+	gasLimit := types.GasUnit(1000000)
+	_, _, err := drv.State().SetSingletonActor(state.InitAddress, types.NewInt(0))
 	require.NoError(t, err)
 	_, _, err = drv.State().SetSingletonActor(state.NetworkAddress, TotalNetworkBalance)
 	require.NoError(t, err)
-	_, _, err = drv.State().SetSingletonActor(state.StoragePowerAddress, big.NewInt(0))
+	_, _, err = drv.State().SetSingletonActor(state.StoragePowerAddress, types.NewInt(0))
 	require.NoError(t, err)
 
 	// miner that mines in this test
@@ -46,15 +47,15 @@ func CreateStorageMinerAndUpdatePeerIDTest(t testing.TB, factory Factories) {
 	minerAddr, err := address.NewIDAddress(102)
 	require.NoError(t, err)
 	// sector size of the miner created
-	sectorSize := big.NewInt(int64(sectorSizes[0]))
+	sectorSize := types.NewInt(sectorSizes[0])
 	// peerID of the miner created
 	rawPeerID, err := RequireIntPeerID(t, 1).MarshalBinary()
 	require.NoError(t, err)
-	peerID := state.PeerID(rawPeerID)
+	peerID := types.PeerID(rawPeerID)
 	// peerID of the miner after update
 	rawPeerID2, err := RequireIntPeerID(t, 2).MarshalBinary()
 	require.NoError(t, err)
-	peerID2 := state.PeerID(rawPeerID2)
+	peerID2 := types.PeerID(rawPeerID2)
 
 	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)

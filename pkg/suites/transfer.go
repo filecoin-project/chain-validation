@@ -1,7 +1,6 @@
 package suites
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,16 +8,17 @@ import (
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
 func transferTestSetup(t *testing.T, factory Factories) (*StateDriver, *chain.MessageProducer, *chain.Validator) {
 	drv := NewStateDriver(t, factory.NewState())
 
-	_, _, err := drv.State().SetSingletonActor(state.InitAddress, big.NewInt(0))
+	_, _, err := drv.State().SetSingletonActor(state.InitAddress, types.NewInt(0))
 	require.NoError(t, err)
 
-	gasPrice := big.NewInt(1)
-	gasLimit := state.GasUnit(1000)
+	gasPrice := types.NewInt(1)
+	gasLimit := types.GasUnit(1000)
 
 	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
@@ -44,7 +44,7 @@ func AccountValueTransferSuccess(t *testing.T, factory Factories, expGasUsed uin
 
 	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
 	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
 	drv.AssertBalance(alice, 1950-expGasUsed)
 	drv.AssertBalance(bob, 50)
@@ -70,7 +70,7 @@ func AccountValueTransferZeroFunds(t *testing.T, factory Factories, expGasUsed u
 
 	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
 	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
 	drv.AssertBalance(alice, 2000-expGasUsed)
 	drv.AssertBalance(bob, 0)
@@ -96,7 +96,7 @@ func AccountValueTransferOverBalanceNonZero(t *testing.T, factory Factories, exp
 
 	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
 	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
 	drv.AssertBalance(alice, 2000-expGasUsed)
 	drv.AssertBalance(bob, 0)
@@ -122,7 +122,7 @@ func AccountValueTransferOverBalanceZero(t *testing.T, factory Factories, expGas
 
 	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
 	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
 	drv.AssertBalance(alice, 0)
 	drv.AssertBalance(bob, 0)
@@ -147,7 +147,7 @@ func AccountValueTransferToSelf(t *testing.T, factory Factories, expGasUsed uint
 
 	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
 	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
 	drv.AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
@@ -173,7 +173,7 @@ func AccountValueTransferFromKnownToUnknownAccount(t *testing.T, factory Factori
 
 	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
 	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
 	drv.AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
@@ -200,7 +200,7 @@ func AccountValueTransferFromUnknownToKnownAccount(t *testing.T, factory Factori
 
 	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
 	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
 	drv.AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
@@ -230,7 +230,7 @@ func AccountValueTransferFromUnknownToUnknownAccount(t *testing.T, factory Facto
 
 	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
 	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, state.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
 
 	drv.AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.

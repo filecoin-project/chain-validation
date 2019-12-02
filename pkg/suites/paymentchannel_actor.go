@@ -1,7 +1,6 @@
 package suites
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,16 +9,17 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
+	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
 func testSetup(t *testing.T, factory Factories) (*StateDriver, *chain.MessageProducer, *chain.Validator) {
 	drv := NewStateDriver(t, factory.NewState())
 
-	_, _, err := drv.State().SetSingletonActor(state.InitAddress, big.NewInt(0))
+	_, _, err := drv.State().SetSingletonActor(state.InitAddress, types.NewInt(0))
 	require.NoError(t, err)
 
-	gasPrice := big.NewInt(1)
-	gasLimit := state.GasUnit(10000)
+	gasPrice := types.NewInt(1)
+	gasLimit := types.GasUnit(10000)
 
 	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
@@ -46,7 +46,7 @@ func PaymentChannelCreateSuccess(t *testing.T, factory Factories, expGasUsed uin
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: expPayChAddress.Bytes(),
-		GasUsed:     state.GasUnit(expGasUsed),
+		GasUsed:     types.GasUnit(expGasUsed),
 	})
 
 	// initial balance - paych amount - gas
