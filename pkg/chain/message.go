@@ -6,6 +6,7 @@ import (
 	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/address"
 )
 
 // MethodID identifies a VM actor method.
@@ -61,9 +62,9 @@ const (
 // Integrations should implement this to provide a message value that will be accepted by the
 // validation engine.
 type MessageFactory interface {
-	MakeMessage(from, to state.Address, method MethodID, nonce uint64, value, gasPrice state.AttoFIL, gasLimit state.GasUnit,
+	MakeMessage(from, to address.Address, method MethodID, nonce uint64, value, gasPrice state.AttoFIL, gasLimit state.GasUnit,
 		params ...interface{}) (interface{}, error)
-	FromSingletonAddress(address state.SingletonActorID) state.Address
+	FromSingletonAddress(address state.SingletonActorID) address.Address
 	FromActorCodeCid(cod state.ActorCodeID) cid.Cid
 }
 
@@ -123,7 +124,7 @@ func GasPrice(price uint64) MsgOpt {
 }
 
 // Build creates and returns a single message, using default gas parameters unless modified by `opts`.
-func (mp *MessageProducer) Build(from, to state.Address, nonce uint64, method MethodID, params []interface{},
+func (mp *MessageProducer) Build(from, to address.Address, nonce uint64, method MethodID, params []interface{},
 	opts ...MsgOpt) (interface{}, error) {
 	values := mp.defaults
 	for _, opt := range opts {
@@ -134,7 +135,7 @@ func (mp *MessageProducer) Build(from, to state.Address, nonce uint64, method Me
 }
 
 // BuildFull creates and returns a single message.
-func (mp *MessageProducer) BuildFull(from, to state.Address, method MethodID, nonce uint64, value state.AttoFIL,
+func (mp *MessageProducer) BuildFull(from, to address.Address, method MethodID, nonce uint64, value state.AttoFIL,
 	gasLimit state.GasUnit, gasPrice state.AttoFIL, params ...interface{}) (interface{}, error) {
 	fm, err := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params...)
 	if err != nil {
@@ -150,13 +151,13 @@ func (mp *MessageProducer) BuildFull(from, to state.Address, method MethodID, no
 //
 
 // Transfer builds a simple value transfer message and returns it.
-func (mp *MessageProducer) Transfer(from, to state.Address, nonce uint64, value uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) Transfer(from, to address.Address, nonce uint64, value uint64, opts ...MsgOpt) (interface{}, error) {
 	x := append([]MsgOpt{Value(value)}, opts...)
 	return mp.Build(from, to, nonce, NoMethod, noParams, x...)
 }
 
 // InitExec builds a message invoking InitActor.Exec and returns it.
-func (mp *MessageProducer) InitExec(from state.Address, nonce uint64, params []interface{}, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, params []interface{}, opts ...MsgOpt) (interface{}, error) {
 	iaAddr := mp.factory.FromSingletonAddress(state.InitAddress)
 	return mp.Build(iaAddr, from, nonce, InitExec, params, opts...)
 }
@@ -166,8 +167,8 @@ func (mp *MessageProducer) InitExec(from state.Address, nonce uint64, params []i
 //
 
 // StoragePowerCreateStorageMiner builds a message invoking StoragePowerActor.CreateStorageMiner and returns it.
-func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, nonce uint64,
-	owner state.Address, worker state.Address, sectorSize state.BytesAmount, peerID state.PeerID,
+func (mp *MessageProducer) StoragePowerCreateStorageMiner(from address.Address, nonce uint64,
+	owner address.Address, worker address.Address, sectorSize state.BytesAmount, peerID state.PeerID,
 	opts ...MsgOpt) (interface{}, error) {
 
 	spaAddr := mp.factory.FromSingletonAddress(state.StoragePowerAddress)
@@ -175,7 +176,7 @@ func (mp *MessageProducer) StoragePowerCreateStorageMiner(from state.Address, no
 	return mp.Build(from, spaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
 
-func (mp *MessageProducer) StoragePowerUpdateStorage(from state.Address, nonce uint64, delta state.BytesAmount, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce uint64, delta state.BytesAmount, opts ...MsgOpt) (interface{}, error) {
 	spaAddr := mp.factory.FromSingletonAddress(state.StoragePowerAddress)
 	params := []interface{}{delta}
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
@@ -185,28 +186,28 @@ func (mp *MessageProducer) StoragePowerUpdateStorage(from state.Address, nonce u
 // Storage Miner Actor Methods
 //
 
-func (mp *MessageProducer) StorageMinerUpdatePeerID(to, from state.Address, nonce uint64, peerID state.PeerID, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerUpdatePeerID(to, from address.Address, nonce uint64, peerID state.PeerID, opts ...MsgOpt) (interface{}, error) {
 	params := []interface{}{peerID}
 	return mp.Build(from, to, nonce, StorageMinerUpdatePeerID, params, opts...)
 }
 
-func (mp *MessageProducer) StorageMinerGetOwner(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerGetOwner(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetOwner, noParams, opts...)
 }
 
-func (mp *MessageProducer) StorageMinerGetPower(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerGetPower(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetPower, noParams, opts...)
 }
 
-func (mp *MessageProducer) StorageMinerGetWorkerAddr(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerGetWorkerAddr(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetWorkerAddr, noParams, opts...)
 }
 
-func (mp *MessageProducer) StorageMinerGetPeerID(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerGetPeerID(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetPeerID, noParams, opts...)
 }
 
-func (mp *MessageProducer) StorageMinerGetSectorSize(to, from state.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerGetSectorSize(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetSectorSize, noParams, opts...)
 }
 
@@ -214,7 +215,7 @@ func (mp *MessageProducer) StorageMinerGetSectorSize(to, from state.Address, non
 // Payment Channel Actor Methods
 //
 
-func (mp *MessageProducer) PaymentChannelCreate(to, from state.Address, nonce, value uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) PaymentChannelCreate(to, from address.Address, nonce, value uint64, opts ...MsgOpt) (interface{}, error) {
 	payChParams := []interface{}{to}
 	msgOpt := append([]MsgOpt{Value(value)}, opts...)
 

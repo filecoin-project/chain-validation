@@ -7,6 +7,8 @@ import (
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	"github.com/pkg/errors"
+
+	"github.com/filecoin-project/chain-validation/pkg/state/address"
 )
 
 // Type aliases for state values and message method parameters.
@@ -39,8 +41,8 @@ func EncodeValues(params ...interface{}) ([]byte, error) {
 // Given an above type encode it to CBOR.
 func EncodeValue(p interface{}) (interface{}, error) {
 	switch v := p.(type) {
-	case Address:
-		return []byte(v), nil
+	case address.Address:
+		return v, nil
 	case AttoFIL:
 		return (*v).Bytes(), nil
 	case BytesAmount:

@@ -9,10 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/address"
 )
 
 func TestExampleEncodeValues(t *testing.T) {
-	owner, err := state.NewActorAddress([]byte{1, 2, 3, 4, 5})
+	owner, err := address.NewActorAddress([]byte{1, 2, 3, 4, 5})
 	require.NoError(t, err)
 
 	sectorSize := state.BytesAmount(big.NewInt(10))
@@ -29,7 +30,7 @@ func TestExampleEncodeValues(t *testing.T) {
 
 	v := arr[0] // owner address
 	expOwner := v.([]byte)
-	assert.Equal(t, []byte(owner), expOwner)
+	assert.Equal(t, owner.Bytes(), expOwner)
 
 	v = arr[1] // sectorSize
 	expSectorSize := v.(uint64)

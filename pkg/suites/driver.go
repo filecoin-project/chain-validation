@@ -9,6 +9,7 @@ import (
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/pkg/state/address"
 )
 
 // Factories wraps up all the implementation-specific integration points.
@@ -36,7 +37,7 @@ func (d *StateDriver) State() state.Wrapper {
 }
 
 // NewAccountActor installs a new account actor, returning the address.
-func (d *StateDriver) NewAccountActor(balanceAttoFil uint64) state.Address {
+func (d *StateDriver) NewAccountActor(balanceAttoFil uint64) address.Address {
 	addr, err := d.st.NewAccountAddress()
 	require.NoError(d.tb, err)
 
@@ -46,7 +47,7 @@ func (d *StateDriver) NewAccountActor(balanceAttoFil uint64) state.Address {
 }
 
 // AssertBalance checks an actor has an expected balance.
-func (d *StateDriver) AssertBalance(addr state.Address, expected uint64) {
+func (d *StateDriver) AssertBalance(addr address.Address, expected uint64) {
 	actr, err := d.st.Actor(addr)
 	require.NoError(d.tb, err)
 	assert.Equal(d.tb, af(expected), actr.Balance())
