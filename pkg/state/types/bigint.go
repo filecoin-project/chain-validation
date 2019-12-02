@@ -35,6 +35,14 @@ func NewInt(i uint64) BigInt {
 	return BigInt{big.NewInt(0).SetUint64(i)}
 }
 
+func NewIntFromString(s string) BigInt {
+	i, ok := big.NewInt(0).SetString(s, 10)
+	if !ok {
+		panic(fmt.Sprintf("%s is invalid bigint value", s))
+	}
+	return BigInt{i}
+}
+
 func (bi *BigInt) cborBytes() []byte {
 	if bi.Int == nil {
 		return []byte{}
