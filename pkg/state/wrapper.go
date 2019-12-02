@@ -17,9 +17,6 @@ type Wrapper interface {
 	// Returns the actor state at `address` (or an error if there is none).
 	Actor(address address.Address) (Actor, error)
 
-	// Returns an abstraction over a payment channel actors state.
-	PaymentChannelActorState(address address.Address) (PaymentChannelActorState, error)
-
 	// Returns the actor storage for the actor at `address` (which is empty if there is no such actor).
 	Storage(address address.Address) (Storage, error)
 
