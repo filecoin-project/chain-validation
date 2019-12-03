@@ -3,6 +3,7 @@ package main
 import (
 	gen "github.com/whyrusleeping/cbor-gen"
 
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/initialize"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/paych"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
@@ -17,6 +18,13 @@ func main() {
 		types.Merge{},
 		types.ModVerifyParams{},
 		types.Signature{},
+	); err != nil {
+		panic(err)
+	}
+
+	// Init Actor
+	if err := gen.WriteTupleEncodersToFile("../state/actors/initialize/cbor_gen.go", "initialize",
+		initialize.ExecParams{},
 	); err != nil {
 		panic(err)
 	}

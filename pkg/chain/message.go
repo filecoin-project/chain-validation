@@ -5,6 +5,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/filecoin-project/chain-validation/pkg/state/actors"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/initialize"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
@@ -165,9 +166,16 @@ func (mp *MessageProducer) Transfer(from, to address.Address, nonce uint64, valu
 }
 
 // InitExec builds a message invoking InitActor.Exec and returns it.
-func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, params []byte, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, code actors.ActorCodeID, params []byte, opts ...MsgOpt) (interface{}, error) {
 	iaAddr := mp.factory.FromSingletonAddress(actors.InitAddress)
-	return mp.Build(iaAddr, from, nonce, InitExec, params, opts...)
+	initParams, err := types.Serialize(&initialize.ExecParams{
+		Code:   mp.factory.FromActorCodeCid(code),
+		Params: params,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(from, iaAddr, nonce, InitExec, initParams, opts...)
 }
 
 //
