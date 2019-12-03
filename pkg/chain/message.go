@@ -6,6 +6,7 @@ import (
 
 	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/initialize"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/multsig"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
@@ -49,7 +50,15 @@ const (
 	StorageMinerGetPeerID
 	StorageMinerGetSectorSize
 
-	PaymentChannelCreate
+	MultiSigConstructor
+	MultiSigPropose
+	MultiSigApprove
+	MultiSigCancel
+	MultiSigClearCompleted
+	MultiSigAddSigner
+	MultiSigRemoveSigner
+	MultiSigSwapSigner
+	MultiSigChangeRequirement
 
 	GetSectorSize
 	CronConstructor
@@ -243,6 +252,80 @@ func (mp *MessageProducer) StorageMinerGetPeerID(to, from address.Address, nonce
 
 func (mp *MessageProducer) StorageMinerGetSectorSize(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetSectorSize, noParams, opts...)
+}
+
+//
+// Multi Signature Actor Methods
+//
+
+func (mp *MessageProducer) MultiSigPropose(to, from address.Address, nonce uint64, proposeTo address.Address, proposeValue types.BigInt, proposeMethod uint64, proposeParams []byte, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&multsig.MultiSigProposeParams{
+		To:     proposeTo,
+		Value:  proposeValue,
+		Method: proposeMethod,
+		Params: proposeParams,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(from, to, nonce, MultiSigPropose, params, opts...)
+}
+
+func (mp *MessageProducer) MultiSigApprove(to, from address.Address, nonce uint64, txID uint64, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&multsig.MultiSigTxID{TxID: txID})
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(from, to, nonce, MultiSigApprove, params, opts...)
+}
+
+func (mp *MessageProducer) MultiSigCancel(to, from address.Address, nonce uint64, txID uint64, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&multsig.MultiSigTxID{TxID: txID})
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(from, to, nonce, MultiSigCancel, params, opts...)
+}
+
+func (mp *MessageProducer) MultiSigAddSigner(to, from address.Address, nonce uint64, signer address.Address, increase bool, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&multsig.MultiSigAddSignerParam{
+		Signer:   signer,
+		Increase: increase,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(from, to, nonce, MultiSigAddSigner, params, opts...)
+}
+
+func (mp *MessageProducer) MultiSigRemoveSigner(to, from address.Address, nonce uint64, signer address.Address, decrease bool, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&multsig.MultiSigRemoveSignerParam{
+		Signer:   signer,
+		Decrease: decrease,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(from, to, nonce, MultiSigRemoveSigner, params, opts...)
+}
+
+func (mp *MessageProducer) MultiSigSwapSigner(to, from address.Address, nonce uint64, swapFrom, swapTo address.Address, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&multsig.MultiSigSwapSignerParams{
+		From: swapFrom,
+		To:   swapTo,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(from, to, nonce, MultiSigSwapSigner, params, opts...)
+}
+
+func (mp *MessageProducer) MultiSigChangeRequirement(to, from address.Address, nonce uint64, req uint64, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&multsig.MultiSigChangeReqParams{Req: req})
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(from, to, nonce, MultiSigChangeRequirement, params, opts...)
 }
 
 var noParams []byte
