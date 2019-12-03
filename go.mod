@@ -13,7 +13,6 @@ require (
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 	github.com/minio/sha256-simd v0.1.0 // indirect
 	github.com/multiformats/go-multihash v0.0.5
-	github.com/pkg/errors v0.8.1
 	github.com/polydawn/refmt v0.0.0-20190221155625-df39d6c2d992
 	github.com/stretchr/testify v1.3.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20191116002219-891f55cd449d
