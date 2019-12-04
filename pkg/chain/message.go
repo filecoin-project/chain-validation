@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/initialize"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/multsig"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/paych"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
@@ -59,6 +60,13 @@ const (
 	MultiSigRemoveSigner
 	MultiSigSwapSigner
 	MultiSigChangeRequirement
+
+	PaymentChannelConstructor
+	PaymentChannelUpdate
+	PaymentChannelClose
+	PaymentChannelCollect
+	PaymentChannelGetOwner
+	PaymentChannelGetToSend
 
 	GetSectorSize
 	CronConstructor
@@ -326,6 +334,35 @@ func (mp *MessageProducer) MultiSigChangeRequirement(to, from address.Address, n
 		return nil, err
 	}
 	return mp.Build(from, to, nonce, MultiSigChangeRequirement, params, opts...)
+}
+
+//
+// Payment Channel Actor Methods
+//
+
+func (mp *MessageProducer) PaychUpdateChannelState(to, from address.Address, nonce uint64, sv types.SignedVoucher, secret, proof []byte, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&paych.PaymentChannelUpdateParams{
+		Sv:     sv,
+		Secret: secret,
+		Proof:  proof,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(from, to, nonce, PaymentChannelUpdate, params, opts...)
+}
+
+func (mp *MessageProducer) PaychClose(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+	return mp.Build(from, to, nonce, PaymentChannelUpdate, noParams, opts...)
+}
+func (mp *MessageProducer) PaychCollect(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+	return mp.Build(from, to, nonce, PaymentChannelUpdate, noParams, opts...)
+}
+func (mp *MessageProducer) PaychGetOwner(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+	return mp.Build(from, to, nonce, PaymentChannelUpdate, noParams, opts...)
+}
+func (mp *MessageProducer) PaychGetToSend(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+	return mp.Build(from, to, nonce, PaymentChannelUpdate, noParams, opts...)
 }
 
 var noParams []byte

@@ -35,6 +35,9 @@ func main() {
 		paych.PaymentInfo{},
 		paych.PaymentChannelActorState{},
 		paych.LaneState{},
+		paych.PaymentChannelConstructorParams{},
+		paych.PaymentChannelUpdateParams{},
+		paych.PaymentVerifyParams{},
 	); err != nil {
 		panic(err)
 	}
