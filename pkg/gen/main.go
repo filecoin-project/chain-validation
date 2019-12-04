@@ -18,7 +18,6 @@ func main() {
 		types.SignedVoucher{},
 		types.Merge{},
 		types.ModVerifyParams{},
-		types.Signature{},
 	); err != nil {
 		panic(err)
 	}
@@ -35,6 +34,9 @@ func main() {
 		paych.PaymentInfo{},
 		paych.PaymentChannelActorState{},
 		paych.LaneState{},
+		paych.PaymentChannelConstructorParams{},
+		paych.PaymentChannelUpdateParams{},
+		paych.PaymentVerifyParams{},
 	); err != nil {
 		panic(err)
 	}

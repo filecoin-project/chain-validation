@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/multsig"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/paych"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
@@ -105,4 +106,28 @@ func (d *StateDriver) AssertMultisigState(multisigAddr address.Address, expected
 	for _, e := range expected.Signers {
 		assert.Contains(d.tb, multisig.Signers, e, fmt.Sprintf("expected Signer: %v, actual Signer: %v", e, multisig.Signers))
 	}
+}
+
+func (d *StateDriver) AssertPayChState(paychAddr address.Address, expected paych.PaymentChannelActorState) {
+	paychActor, err := d.State().Actor(paychAddr)
+	require.NoError(d.tb, err)
+
+	paychStorage, err := d.State().Storage(paychAddr)
+	require.NoError(d.tb, err)
+
+	var paychState paych.PaymentChannelActorState
+	require.NoError(d.tb, paychStorage.Get(paychActor.Head(), &paychState))
+
+	assert.NotNil(d.tb, paychState)
+	assert.Equal(d.tb, expected.To, paychState.To, fmt.Sprintf("expected To: %v, actual To: %v", expected.To, paychState.To))
+	assert.Equal(d.tb, expected.From, paychState.From, fmt.Sprintf("expected From: %v, actual From: %v", expected.From, paychState.From))
+	assert.Equal(d.tb, expected.ClosingAt, paychState.ClosingAt, fmt.Sprintf("expected ClosingAt: %v, actual ClosingAt: %v", expected.ClosingAt, paychState.ClosingAt))
+	assert.Equal(d.tb, expected.MinCloseHeight, paychState.MinCloseHeight, fmt.Sprintf("expected MinCloseHeight: %v, actual MinCloseHeight: %v", expected.MinCloseHeight, paychState.MinCloseHeight))
+	assert.Equal(d.tb, expected.ToSend, paychState.ToSend, fmt.Sprintf("expected ToSend: %v, actual ToSend: %v", expected.ToSend, paychState.ToSend))
+
+	assert.Equal(d.tb, len(expected.LaneStates), len(paychState.LaneStates), fmt.Sprintf("expected LaneState size: %v, actual LaneState size: %v", len(expected.LaneStates), len(paychState.LaneStates)))
+	for k, _ := range expected.LaneStates {
+		assert.Equal(d.tb, expected.LaneStates[k], paychState.LaneStates[k], fmt.Sprintf("expected LaneStates: %v, actual LaneStates: %v", expected.LaneStates, paychState.LaneStates))
+	}
+
 }

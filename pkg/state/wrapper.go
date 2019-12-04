@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/ipfs/go-cid"
 
@@ -22,6 +23,9 @@ type Wrapper interface {
 
 	// Creates a new private key and returns the associated address.
 	NewAccountAddress() (address.Address, error)
+
+	// Sign data with addr's key.
+	Sign(ctx context.Context, addr address.Address, data []byte) (*types.Signature, error)
 
 	// Installs a new actor in the state tree.
 	// This signature will probably become a little more complex when the actor state is non-empty.

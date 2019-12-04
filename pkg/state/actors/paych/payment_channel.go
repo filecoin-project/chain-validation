@@ -34,3 +34,18 @@ type PaymentChannelActorState struct {
 	// waiting on refmt#35 to be fixed
 	LaneStates map[string]*LaneState
 }
+
+type PaymentChannelConstructorParams struct {
+	To address.Address
+}
+
+type PaymentChannelUpdateParams struct {
+	Sv     types.SignedVoucher
+	Secret []byte
+	Proof  []byte
+}
+
+type PaymentVerifyParams struct {
+	Extra []byte
+	Proof []byte
+}
