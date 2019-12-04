@@ -336,7 +336,6 @@ func mustCreateMultisigActor(gdg *multiSigTestingWrapper, nonce, value uint64, r
 	msgReceipt, err := gdg.Validator.ApplyMessage(gdg.ExeCtx, gdg.Driver.State(), msg)
 	require.NoError(gdg.T, err)
 
-	require.NoError(gdg.T, err)
 	gdg.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: ms.Bytes(),
