@@ -353,16 +353,16 @@ func (mp *MessageProducer) PaychUpdateChannelState(to, from address.Address, non
 }
 
 func (mp *MessageProducer) PaychClose(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
-	return mp.Build(from, to, nonce, PaymentChannelUpdate, noParams, opts...)
+	return mp.Build(from, to, nonce, PaymentChannelClose, noParams, opts...)
 }
 func (mp *MessageProducer) PaychCollect(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
-	return mp.Build(from, to, nonce, PaymentChannelUpdate, noParams, opts...)
+	return mp.Build(from, to, nonce, PaymentChannelCollect, noParams, opts...)
 }
 func (mp *MessageProducer) PaychGetOwner(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
-	return mp.Build(from, to, nonce, PaymentChannelUpdate, noParams, opts...)
+	return mp.Build(from, to, nonce, PaymentChannelGetOwner, noParams, opts...)
 }
 func (mp *MessageProducer) PaychGetToSend(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
-	return mp.Build(from, to, nonce, PaymentChannelUpdate, noParams, opts...)
+	return mp.Build(from, to, nonce, PaymentChannelGetToSend, noParams, opts...)
 }
 
 var noParams []byte
