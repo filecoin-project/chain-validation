@@ -18,7 +18,6 @@ func main() {
 		types.SignedVoucher{},
 		types.Merge{},
 		types.ModVerifyParams{},
-		types.Signature{},
 	); err != nil {
 		panic(err)
 	}
