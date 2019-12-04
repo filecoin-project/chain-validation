@@ -1,6 +1,10 @@
 package types
 
-import "github.com/filecoin-project/chain-validation/pkg/state/address"
+import (
+	"bytes"
+
+	"github.com/filecoin-project/chain-validation/pkg/state/address"
+)
 
 type SignedVoucher struct {
 	TimeLock       uint64
@@ -14,6 +18,18 @@ type SignedVoucher struct {
 	Merges []Merge
 
 	Signature *Signature
+}
+
+func (sv *SignedVoucher) SigningBytes() ([]byte, error) {
+	osv := *sv
+	osv.Signature = nil
+
+	buf := new(bytes.Buffer)
+	if err := osv.MarshalCBOR(buf); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
 
 type Merge struct {
