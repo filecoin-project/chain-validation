@@ -53,6 +53,86 @@ func StorageMarketActorConstructor(t testing.TB, factory Factories) {
 	mustCreateStorageMarketActor(w)
 }
 
+func StorageMarketBalanceUpdates(t testing.TB, factory Factories) {
+	const initialBal = 2000000000
+	const balAddAmount = 100
+	const balWithdrawAmount = 10
+
+	w := strgmrktTestSetup(t, factory)
+	smaddr := mustCreateStorageMarketActor(w)
+
+	alice := w.Driver.NewAccountActor(initialBal)
+
+	mt := strgmrkt.NewMarketTracker(w.T)
+	mt.SetMarketBalances(map[address.Address]strgmrkt.StorageParticipantBalance{
+		alice: {
+			Locked:    types.NewInt(0),
+			Available: types.NewInt(balAddAmount),
+		},
+	})
+	mustAddBalance(w, alice, 0, balAddAmount)
+	w.Driver.AssertStorageMarketState(smaddr, strgmrkt.StorageMarketState{
+		Balances:   mt.Balance,
+		Deals:      mt.Deals,
+		NextDealID: 0,
+	})
+
+	bob := w.Driver.NewAccountActor(initialBal)
+	mt.SetMarketBalances(map[address.Address]strgmrkt.StorageParticipantBalance{
+		bob: {
+			Locked:    types.NewInt(0),
+			Available: types.NewInt(balAddAmount),
+		},
+	})
+	mustAddBalance(w, bob, 0, balAddAmount)
+	w.Driver.AssertStorageMarketState(smaddr, strgmrkt.StorageMarketState{
+		Balances:   mt.Balance,
+		Deals:      mt.Deals,
+		NextDealID: 0,
+	})
+
+	mustWithdrawBalance(w, bob, 1, balWithdrawAmount)
+	mt.SetMarketBalances(map[address.Address]strgmrkt.StorageParticipantBalance{
+		bob: {
+			Locked:    types.NewInt(0),
+			Available: types.NewInt(balAddAmount - balWithdrawAmount),
+		},
+	})
+	w.Driver.AssertStorageMarketState(smaddr, strgmrkt.StorageMarketState{
+		Balances:   mt.Balance,
+		Deals:      mt.Deals,
+		NextDealID: 0,
+	})
+}
+
+func mustWithdrawBalance(w *strgmrktWrapper, from address.Address, nonce, amount uint64) {
+	msg, err := w.Producer.StorageMarketWithdrawBalance(from, nonce, types.NewInt(amount), chain.Value(0))
+	require.NoError(w.T, err)
+
+	msgReceipt, err := w.Validator.ApplyMessage(w.ExeCtx, w.Driver.State(), msg)
+	require.NoError(w.T, err)
+
+	w.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		ExitCode:    0,
+		ReturnValue: nil,
+		GasUsed:     0,
+	})
+}
+
+func mustAddBalance(w *strgmrktWrapper, from address.Address, nonce, amount uint64) {
+	msg, err := w.Producer.StorageMarketAddBalance(from, nonce, chain.Value(amount))
+	require.NoError(w.T, err)
+
+	msgReceipt, err := w.Validator.ApplyMessage(w.ExeCtx, w.Driver.State(), msg)
+	require.NoError(w.T, err)
+
+	w.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		ExitCode:    0,
+		ReturnValue: nil,
+		GasUsed:     0,
+	})
+}
+
 func mustCreateStorageMarketActor(w *strgmrktWrapper) address.Address {
 	_, _, err := w.Driver.st.SetSingletonActor(actors.StorageMarketAddress, types.NewInt(0))
 	require.NoError(w.T, err)
