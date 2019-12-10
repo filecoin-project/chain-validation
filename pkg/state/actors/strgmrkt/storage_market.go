@@ -1,9 +1,18 @@
 package strgmrkt
 
 import (
+	"context"
+	"testing"
+
+	"github.com/filecoin-project/go-amt-ipld"
+	"github.com/ipfs/go-cid"
+	ds "github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-hamt-ipld"
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	"github.com/stretchr/testify/require"
+
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
-	"github.com/ipfs/go-cid"
 )
 
 type SerializationMode = uint64
@@ -78,4 +87,63 @@ type ComputeDataCommitmentParams struct {
 
 type ProcessStorageDealsPaymentParams struct {
 	DealIDs []uint64
+}
+
+//
+// Helper methods for calculating market deal and balance cid's
+//
+
+type MarketTracker struct {
+	hamtStore *hamt.CborIpldStore
+	Balance   cid.Cid
+
+	amtStore amt.Blocks
+	Deals    cid.Cid
+
+	bs blockstore.Blockstore
+
+	T testing.TB
+}
+
+func NewMarketTracker(t testing.TB) *MarketTracker {
+	mds := ds.NewMapDatastore()
+	bs := blockstore.NewBlockstore(mds)
+
+	s := hamt.CSTFromBstore(bs)
+	nd := hamt.NewNode(s)
+	c, err := s.Put(context.Background(), nd)
+	require.NoError(t, err)
+
+	blks := amt.WrapBlockstore(bs)
+	emptyamt, err := amt.FromArray(blks, nil)
+	require.NoError(t, err)
+
+	return &MarketTracker{
+		hamtStore: s,
+		Balance:   c,
+		amtStore:  blks,
+		Deals:     emptyamt,
+		bs:        bs,
+		T:         t,
+	}
+}
+
+func (m *MarketTracker) SetMarketBalances(whom map[address.Address]StorageParticipantBalance) {
+	ctx := context.Background()
+
+	nd, err := hamt.LoadNode(ctx, m.hamtStore, m.Balance)
+	require.NoError(m.T, err)
+
+	for addr, b := range whom {
+		balance := b // to stop linter complaining
+		err = nd.Set(ctx, string(addr.Bytes()), &balance)
+		require.NoError(m.T, err)
+	}
+	err = nd.Flush(ctx)
+	require.NoError(m.T, err)
+
+	c, err := m.hamtStore.Put(ctx, nd)
+	require.NoError(m.T, err)
+
+	m.Balance = c
 }

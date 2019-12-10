@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/multsig"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/paych"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgmrkt"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
@@ -148,4 +149,20 @@ func (d *StateDriver) AssertStoragePowerState(spAddr address.Address, expected s
 	assert.Equal(d.tb, expected.LastMinerCheck, spState.LastMinerCheck, fmt.Sprintf("expected LastMinerCheck: %v, actual LastMinerCheck: %v", expected.LastMinerCheck, spState.LastMinerCheck))
 	assert.Equal(d.tb, expected.ProvingBuckets, spState.ProvingBuckets, fmt.Sprintf("expected ProvingBuckets: %v, actual ProvingBuckets: %v", expected.ProvingBuckets, spState.ProvingBuckets))
 	assert.Equal(d.tb, expected.TotalStorage, spState.TotalStorage, fmt.Sprintf("expected TotalStorage: %v, actual TotalStorage: %v", expected.TotalStorage, spState.TotalStorage))
+}
+
+func (d *StateDriver) AssertStorageMarketState(smaddr address.Address, expected strgmrkt.StorageMarketState) {
+	smActor, err := d.State().Actor(smaddr)
+	require.NoError(d.tb, err)
+
+	smStorage, err := d.State().Storage(smaddr)
+	require.NoError(d.tb, err)
+
+	var smState strgmrkt.StorageMarketState
+	require.NoError(d.tb, smStorage.Get(smActor.Head(), &smState))
+
+	assert.NotNil(d.tb, smState)
+	assert.Equal(d.tb, expected.Deals, smState.Deals, fmt.Sprintf("expected Deals: %v, actual Deals: %v", expected.Deals, smState.Deals))
+	assert.Equal(d.tb, expected.Balances, smState.Balances, fmt.Sprintf("expected Balances: %v, actual Balances: %v", expected.Balances, smState.Balances))
+	assert.Equal(d.tb, expected.NextDealID, smState.NextDealID, fmt.Sprintf("expected NextDealID: %v, actual NextDealID: %v", expected.NextDealID, smState.NextDealID))
 }

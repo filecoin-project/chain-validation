@@ -1,0 +1,68 @@
+package suites
+
+import (
+	"github.com/stretchr/testify/require"
+	"testing"
+
+	"github.com/filecoin-project/chain-validation/pkg/chain"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgmrkt"
+	"github.com/filecoin-project/chain-validation/pkg/state/address"
+	"github.com/filecoin-project/chain-validation/pkg/state/types"
+)
+
+type strgmrktWrapper struct {
+	T         testing.TB
+	Driver    *StateDriver
+	Producer  *chain.MessageProducer
+	Validator *chain.Validator
+	ExeCtx    *chain.ExecutionContext
+}
+
+func strgmrktTestSetup(t testing.TB, factory Factories) *strgmrktWrapper {
+	drv := NewStateDriver(t, factory.NewState())
+	gasPrice := types.NewInt(1)
+	gasLimit := types.GasUnit(1000000)
+
+	_, _, err := drv.State().SetSingletonActor(actors.InitAddress, types.NewInt(0))
+	require.NoError(t, err)
+	_, _, err = drv.State().SetSingletonActor(actors.BurntFundsAddress, types.NewInt(0))
+	require.NoError(t, err)
+	_, _, err = drv.State().SetSingletonActor(actors.NetworkAddress, TotalNetworkBalance)
+	require.NoError(t, err)
+	_, _, err = drv.State().SetSingletonActor(actors.StoragePowerAddress, types.NewInt(0))
+	require.NoError(t, err)
+
+	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
+	validator := chain.NewValidator(factory)
+
+	testMiner := drv.NewAccountActor(0)
+	exeCtx := chain.NewExecutionContext(1, testMiner)
+
+	return &strgmrktWrapper{
+		T:         t,
+		Driver:    drv,
+		Producer:  producer,
+		Validator: validator,
+		ExeCtx:    exeCtx,
+	}
+}
+
+func StorageMarketActorConstructor(t testing.TB, factory Factories) {
+	w := strgmrktTestSetup(t, factory)
+	mustCreateStorageMarketActor(w)
+}
+
+func mustCreateStorageMarketActor(w *strgmrktWrapper) address.Address {
+	_, _, err := w.Driver.st.SetSingletonActor(actors.StorageMarketAddress, types.NewInt(0))
+	require.NoError(w.T, err)
+
+	mt := strgmrkt.NewMarketTracker(w.T)
+	smaddr := w.Producer.SingletonAddress(actors.StorageMarketAddress)
+	w.Driver.AssertStorageMarketState(smaddr, strgmrkt.StorageMarketState{
+		Balances:   mt.Balance,
+		Deals:      mt.Deals,
+		NextDealID: 0,
+	})
+	return smaddr
+}
