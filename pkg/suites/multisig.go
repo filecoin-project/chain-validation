@@ -36,16 +36,21 @@ func MultiSigActorConstructor(t testing.TB, factory Factories) {
 	const requiredSigners = 3
 	const unlockDuration = 10
 
-	w := multiSigTestSetup(t, factory)
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress:         types.NewInt(0),
+		actors.BurntFundsAddress:   types.NewInt(0),
+		actors.StoragePowerAddress: types.NewInt(0),
+		actors.NetworkAddress:      TotalNetworkBalance,
+	})
 
-	alice := w.Driver.NewAccountActor(aliceBal)
+	alice := c.Driver().NewAccountActor(aliceBal)
 
 	multisigAddr, err := address.NewIDAddress(102)
 	require.NoError(t, err)
 
-	mustCreateMultisigActor(w, 0, valueSend, requiredSigners, unlockDuration, multisigAddr, alice)
-	w.Driver.AssertBalance(multisigAddr, valueSend)
-	w.Driver.AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
+	mustCreateMultisigActor(c, 0, valueSend, requiredSigners, unlockDuration, multisigAddr, alice)
+	c.Driver().AssertBalance(multisigAddr, valueSend)
+	c.Driver().AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
 		Signers:        []address.Address{alice},
 		Required:       requiredSigners,
 		NextTxID:       0,
@@ -62,18 +67,23 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 	const requiredSigners = 2
 	const unlockDuration = 10
 
-	w := multiSigTestSetup(t, factory)
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress:         types.NewInt(0),
+		actors.BurntFundsAddress:   types.NewInt(0),
+		actors.StoragePowerAddress: types.NewInt(0),
+		actors.NetworkAddress:      TotalNetworkBalance,
+	})
 
-	alice := w.Driver.NewAccountActor(initialBal)
-	bob := w.Driver.NewAccountActor(initialBal)
+	alice := c.Driver().NewAccountActor(initialBal)
+	bob := c.Driver().NewAccountActor(initialBal)
 
 	multisigAddr, err := address.NewIDAddress(103)
 	require.NoError(t, err)
 
 	// create a multisig actor with a balance of 'valueSend' FIL.
-	mustCreateMultisigActor(w, 0, valueSend, requiredSigners, unlockDuration, multisigAddr, alice, bob)
-	w.Driver.AssertBalance(multisigAddr, valueSend)
-	w.Driver.AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
+	mustCreateMultisigActor(c, 0, valueSend, requiredSigners, unlockDuration, multisigAddr, alice, bob)
+	c.Driver().AssertBalance(multisigAddr, valueSend)
+	c.Driver().AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
 		Signers:        []address.Address{alice, bob},
 		Required:       requiredSigners,
 		NextTxID:       0,
@@ -82,14 +92,14 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 		UnlockDuration: unlockDuration,
 		Transactions:   nil,
 	})
-	w.Driver.AssertBalance(multisigAddr, valueSend)
+	c.Driver().AssertBalance(multisigAddr, valueSend)
 
 	// alice proposes that outsider should receive 'valueSend' FIL.
 	txID0 := multsig.MultiSigTxID{TxID: 0}
-	outsider := w.Driver.NewAccountActor(initialBal)
+	outsider := c.Driver().NewAccountActor(initialBal)
 
-	mustProposeMultisigTransfer(w, 1, 0, txID0, multisigAddr, alice, outsider, valueSend)
-	w.Driver.AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
+	mustProposeMultisigTransfer(c, 1, 0, txID0, multisigAddr, alice, outsider, valueSend)
+	c.Driver().AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
 		Signers:        []address.Address{alice, bob},
 		Required:       requiredSigners,
 		NextTxID:       1,
@@ -109,34 +119,34 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 			RetCode:  0,
 		}},
 	})
-	w.Driver.AssertBalance(multisigAddr, valueSend)
+	c.Driver().AssertBalance(multisigAddr, valueSend)
 
 	// outsider proposes themselves to receive 'valueSend' FIL. This fails as they are not a signer.
-	msg, err := w.Producer.MultiSigPropose(multisigAddr, outsider, 0, outsider, types.NewInt(valueSend), 0, []byte{}, chain.Value(0))
+	msg, err := c.Producer().MultiSigPropose(multisigAddr, outsider, 0, outsider, types.NewInt(valueSend), 0, []byte{}, chain.Value(0))
 	require.NoError(t, err)
-	mr, err := w.Validator.ApplyMessage(w.ExeCtx, w.Driver.State(), msg)
-	require.EqualError(w.T, err, "not authorized (RetCode=1)")
-	w.Driver.AssertReceipt(mr, chain.MessageReceipt{
+	mr, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
+	require.EqualError(c.TB(), err, "not authorized (RetCode=1)")
+	c.Driver().AssertReceipt(mr, chain.MessageReceipt{
 		ExitCode:    1,
 		ReturnValue: nil,
 		GasUsed:     0,
 	})
-	w.Driver.AssertBalance(multisigAddr, valueSend)
+	c.Driver().AssertBalance(multisigAddr, valueSend)
 
 	// outsider approves the value transfer alice sent. This fails as they are not a signer.
-	msg, err = w.Producer.MultiSigApprove(multisigAddr, outsider, 1, txID0.TxID, chain.Value(0))
+	msg, err = c.Producer().MultiSigApprove(multisigAddr, outsider, 1, txID0.TxID, chain.Value(0))
 	require.NoError(t, err)
-	mr, err = w.Validator.ApplyMessage(w.ExeCtx, w.Driver.State(), msg)
-	require.EqualError(w.T, err, "not authorized (RetCode=1)")
-	w.Driver.AssertReceipt(mr, chain.MessageReceipt{
+	mr, err = c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
+	require.EqualError(c.TB(), err, "not authorized (RetCode=1)")
+	c.Driver().AssertReceipt(mr, chain.MessageReceipt{
 		ExitCode:    1,
 		ReturnValue: nil,
 		GasUsed:     0,
 	})
 
 	// bob approves transfer of 'valueSend' FIL to outsider.
-	mustApproveMultisigActor(w, 0, 0, multisigAddr, bob, txID0)
-	w.Driver.AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
+	mustApproveMultisigActor(c, 0, 0, multisigAddr, bob, txID0)
+	c.Driver().AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
 		Signers:        []address.Address{alice, bob},
 		Required:       requiredSigners,
 		NextTxID:       1,
@@ -156,7 +166,7 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 			RetCode:  0,
 		}},
 	})
-	w.Driver.AssertBalance(multisigAddr, 0)
+	c.Driver().AssertBalance(multisigAddr, 0)
 
 }
 
@@ -166,17 +176,23 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 	const requiredSigners = 2
 	const unlockDuration = 10
 
-	w := multiSigTestSetup(t, factory)
-	alice := w.Driver.NewAccountActor(initialBal)
-	bob := w.Driver.NewAccountActor(initialBal)
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress:         types.NewInt(0),
+		actors.BurntFundsAddress:   types.NewInt(0),
+		actors.StoragePowerAddress: types.NewInt(0),
+		actors.NetworkAddress:      TotalNetworkBalance,
+	})
+
+	alice := c.Driver().NewAccountActor(initialBal)
+	bob := c.Driver().NewAccountActor(initialBal)
 
 	multisigAddr, err := address.NewIDAddress(103)
 	require.NoError(t, err)
 
 	// create a multisig actor with a balance of 'valueSend' FIL.
-	mustCreateMultisigActor(w, 0, valueSend, requiredSigners, unlockDuration, multisigAddr, alice, bob)
-	w.Driver.AssertBalance(multisigAddr, valueSend)
-	w.Driver.AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
+	mustCreateMultisigActor(c, 0, valueSend, requiredSigners, unlockDuration, multisigAddr, alice, bob)
+	c.Driver().AssertBalance(multisigAddr, valueSend)
+	c.Driver().AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
 		Signers:        []address.Address{alice, bob},
 		Required:       requiredSigners,
 		NextTxID:       0,
@@ -188,9 +204,9 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 
 	// alice proposes that outsider should receive 'valueSend' FIL.
 	txID0 := multsig.MultiSigTxID{TxID: 0}
-	outsider := w.Driver.NewAccountActor(initialBal)
-	mustProposeMultisigTransfer(w, 1, 0, txID0, multisigAddr, alice, outsider, valueSend)
-	w.Driver.AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
+	outsider := c.Driver().NewAccountActor(initialBal)
+	mustProposeMultisigTransfer(c, 1, 0, txID0, multisigAddr, alice, outsider, valueSend)
+	c.Driver().AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
 		Signers:        []address.Address{alice, bob},
 		Required:       requiredSigners,
 		NextTxID:       1,
@@ -212,15 +228,15 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 	})
 
 	// bob cancels alice's transaction. This fails as bob did not create alice's transaction.
-	msg, err := w.Producer.MultiSigCancel(multisigAddr, bob, 0, txID0.TxID, chain.Value(0))
-	msgReceipt, err := w.Validator.ApplyMessage(w.ExeCtx, w.Driver.State(), msg)
+	msg, err := c.Producer().MultiSigCancel(multisigAddr, bob, 0, txID0.TxID, chain.Value(0))
+	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
 	require.EqualError(t, err, "cannot cancel another signers transaction (RetCode=4)")
-	w.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    4,
 		ReturnValue: nil,
 		GasUsed:     0,
 	})
-	w.Driver.AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
+	c.Driver().AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
 		Signers:        []address.Address{alice, bob},
 		Required:       requiredSigners,
 		NextTxID:       1,
@@ -243,8 +259,8 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 
 	// alice cancels their transaction. The outsider doesn't receive any FIL, the multisig actor's balance is empty, and the
 	// transaction is canceled.
-	mustCancelMultisigActor(w, 2, 0, multisigAddr, alice, txID0)
-	w.Driver.AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
+	mustCancelMultisigActor(c, 2, 0, multisigAddr, alice, txID0)
+	c.Driver().AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
 		Signers:        []address.Address{alice, bob},
 		Required:       requiredSigners,
 		NextTxID:       1,
@@ -264,57 +280,19 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 			RetCode:  0,
 		}},
 	})
-	w.Driver.AssertBalance(multisigAddr, valueSend)
-	w.Driver.AssertBalance(outsider, initialBal)
+	c.Driver().AssertBalance(multisigAddr, valueSend)
+	c.Driver().AssertBalance(outsider, initialBal)
 }
 
-type multiSigTestingWrapper struct {
-	T         testing.TB
-	Driver    *StateDriver
-	Producer  *chain.MessageProducer
-	Validator *chain.Validator
-	ExeCtx    *chain.ExecutionContext
-}
-
-func multiSigTestSetup(t testing.TB, factory Factories) *multiSigTestingWrapper {
-	drv := NewStateDriver(t, factory.NewState())
-	gasPrice := types.NewInt(1)
-	gasLimit := types.GasUnit(1000000)
-
-	_, _, err := drv.State().SetSingletonActor(actors.InitAddress, types.NewInt(0))
-	require.NoError(t, err)
-	_, _, err = drv.State().SetSingletonActor(actors.BurntFundsAddress, types.NewInt(0))
-	require.NoError(t, err)
-	_, _, err = drv.State().SetSingletonActor(actors.NetworkAddress, TotalNetworkBalance)
-	require.NoError(t, err)
-	_, _, err = drv.State().SetSingletonActor(actors.StoragePowerAddress, types.NewInt(0))
-	require.NoError(t, err)
-
-	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
-	validator := chain.NewValidator(factory)
-
-	testMiner := drv.NewAccountActor(0)
-	exeCtx := chain.NewExecutionContext(1, testMiner)
-
-	return &multiSigTestingWrapper{
-		T:         t,
-		Driver:    drv,
-		Producer:  producer,
-		Validator: validator,
-		ExeCtx:    exeCtx,
-	}
-
-}
-
-func mustProposeMultisigTransfer(gdg *multiSigTestingWrapper, nonce, value uint64, txID multsig.MultiSigTxID, to, from, proposeTo address.Address, proposeValue uint64) {
-	msg, err := gdg.Producer.MultiSigPropose(to, from, nonce, proposeTo, types.NewInt(proposeValue), 0, []byte{}, chain.Value(value))
-	msgReceipt, err := gdg.Validator.ApplyMessage(gdg.ExeCtx, gdg.Driver.State(), msg)
-	require.NoError(gdg.T, err)
+func mustProposeMultisigTransfer(gdg Candy, nonce, value uint64, txID multsig.MultiSigTxID, to, from, proposeTo address.Address, proposeValue uint64) {
+	msg, err := gdg.Producer().MultiSigPropose(to, from, nonce, proposeTo, types.NewInt(proposeValue), 0, []byte{}, chain.Value(value))
+	msgReceipt, err := gdg.Validator().ApplyMessage(gdg.ExeCtx(), gdg.Driver().State(), msg)
+	require.NoError(gdg.TB(), err)
 
 	btxid, err := types.Serialize(&txID)
-	require.NoError(gdg.T, err)
+	require.NoError(gdg.TB(), err)
 
-	gdg.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	gdg.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode: 0,
 		// since the first byte is the cbor type indicator.
 		ReturnValue: btxid[1:],
@@ -322,49 +300,49 @@ func mustProposeMultisigTransfer(gdg *multiSigTestingWrapper, nonce, value uint6
 	})
 }
 
-func mustCreateMultisigActor(gdg *multiSigTestingWrapper, nonce, value uint64, required, unlockDuration uint64, ms, creator address.Address, signers ...address.Address) {
+func mustCreateMultisigActor(gdg Candy, nonce, value uint64, required, unlockDuration uint64, ms, creator address.Address, signers ...address.Address) {
 	multiSigConstuctParams, err := types.Serialize(&multsig.MultiSigConstructorParams{
 		Signers:        append(signers, creator),
 		Required:       required,
 		UnlockDuration: unlockDuration,
 	})
-	require.NoError(gdg.T, err)
+	require.NoError(gdg.TB(), err)
 
-	msg, err := gdg.Producer.InitExec(creator, nonce, actors.MultisigActorCodeCid, multiSigConstuctParams, chain.Value(value))
-	require.NoError(gdg.T, err)
+	msg, err := gdg.Producer().InitExec(creator, nonce, actors.MultisigActorCodeCid, multiSigConstuctParams, chain.Value(value))
+	require.NoError(gdg.TB(), err)
 
-	msgReceipt, err := gdg.Validator.ApplyMessage(gdg.ExeCtx, gdg.Driver.State(), msg)
-	require.NoError(gdg.T, err)
+	msgReceipt, err := gdg.Validator().ApplyMessage(gdg.ExeCtx(), gdg.Driver().State(), msg)
+	require.NoError(gdg.TB(), err)
 
-	gdg.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	gdg.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: ms.Bytes(),
 		GasUsed:     0,
 	})
 }
 
-func mustApproveMultisigActor(gdg *multiSigTestingWrapper, nonce, value uint64, ms, from address.Address, txID multsig.MultiSigTxID) {
-	msg, err := gdg.Producer.MultiSigApprove(ms, from, nonce, txID.TxID, chain.Value(0))
-	require.NoError(gdg.T, err)
+func mustApproveMultisigActor(gdg Candy, nonce, value uint64, ms, from address.Address, txID multsig.MultiSigTxID) {
+	msg, err := gdg.Producer().MultiSigApprove(ms, from, nonce, txID.TxID, chain.Value(0))
+	require.NoError(gdg.TB(), err)
 
-	msgReceipt, err := gdg.Validator.ApplyMessage(gdg.ExeCtx, gdg.Driver.State(), msg)
-	require.NoError(gdg.T, err)
+	msgReceipt, err := gdg.Validator().ApplyMessage(gdg.ExeCtx(), gdg.Driver().State(), msg)
+	require.NoError(gdg.TB(), err)
 
-	gdg.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	gdg.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     0,
 	})
 }
 
-func mustCancelMultisigActor(gdg *multiSigTestingWrapper, nonce, value uint64, ms, from address.Address, txID multsig.MultiSigTxID) {
-	msg, err := gdg.Producer.MultiSigCancel(ms, from, nonce, txID.TxID, chain.Value(value))
-	require.NoError(gdg.T, err)
+func mustCancelMultisigActor(gdg Candy, nonce, value uint64, ms, from address.Address, txID multsig.MultiSigTxID) {
+	msg, err := gdg.Producer().MultiSigCancel(ms, from, nonce, txID.TxID, chain.Value(value))
+	require.NoError(gdg.TB(), err)
 
-	msgReceipt, err := gdg.Validator.ApplyMessage(gdg.ExeCtx, gdg.Driver.State(), msg)
-	require.NoError(gdg.T, err)
+	msgReceipt, err := gdg.Validator().ApplyMessage(gdg.ExeCtx(), gdg.Driver().State(), msg)
+	require.NoError(gdg.TB(), err)
 
-	gdg.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	gdg.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     0,
