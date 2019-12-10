@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/multsig"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/paych"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
@@ -129,5 +130,22 @@ func (d *StateDriver) AssertPayChState(paychAddr address.Address, expected paych
 	for k, _ := range expected.LaneStates {
 		assert.Equal(d.tb, expected.LaneStates[k], paychState.LaneStates[k], fmt.Sprintf("expected LaneStates: %v, actual LaneStates: %v", expected.LaneStates, paychState.LaneStates))
 	}
+}
 
+func (d *StateDriver) AssertStoragePowerState(spAddr address.Address, expected strgpwr.StoragePowerState) {
+	spActor, err := d.State().Actor(spAddr)
+	require.NoError(d.tb, err)
+
+	spStorage, err := d.State().Storage(spAddr)
+	require.NoError(d.tb, err)
+
+	var spState strgpwr.StoragePowerState
+	require.NoError(d.tb, spStorage.Get(spActor.Head(), &spState))
+
+	assert.NotNil(d.tb, spState)
+	assert.Equal(d.tb, expected.Miners, spState.Miners, fmt.Sprintf("expected Miners: %v, actual Miners: %v", expected.Miners, spState.Miners))
+	assert.Equal(d.tb, expected.MinerCount, spState.MinerCount, fmt.Sprintf("expected MinerCount: %v, actual MinerCount: %v", expected.MinerCount, spState.MinerCount))
+	assert.Equal(d.tb, expected.LastMinerCheck, spState.LastMinerCheck, fmt.Sprintf("expected LastMinerCheck: %v, actual LastMinerCheck: %v", expected.LastMinerCheck, spState.LastMinerCheck))
+	assert.Equal(d.tb, expected.ProvingBuckets, spState.ProvingBuckets, fmt.Sprintf("expected ProvingBuckets: %v, actual ProvingBuckets: %v", expected.ProvingBuckets, spState.ProvingBuckets))
+	assert.Equal(d.tb, expected.TotalStorage, spState.TotalStorage, fmt.Sprintf("expected TotalStorage: %v, actual TotalStorage: %v", expected.TotalStorage, spState.TotalStorage))
 }

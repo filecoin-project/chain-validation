@@ -230,6 +230,24 @@ func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
 }
 
+func (mp *MessageProducer) StoragePowerPledgeCollateralForSize(from address.Address, nonce uint64, size types.BigInt, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&strgpwr.PledgeCollateralParams{Size: size})
+	if err != nil {
+		return nil, err
+	}
+	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
+}
+
+func (mp *MessageProducer) StoragePowerLookupPower(from address.Address, nonce uint64, miner address.Address, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&strgpwr.PowerLookupParams{Miner: miner})
+	if err != nil {
+		return nil, err
+	}
+	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
+}
+
 //
 // Storage Miner Actor Methods
 //
