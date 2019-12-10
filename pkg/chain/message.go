@@ -173,6 +173,18 @@ func (mp *MessageProducer) BuildFull(from, to address.Address, method MethodID, 
 }
 
 //
+// Helper methods until spec defines these
+//
+
+func (mp *MessageProducer) SingletonAddress(id actors.SingletonActorID) address.Address {
+	return mp.factory.FromSingletonAddress(id)
+}
+
+func (mp *MessageProducer) ActorCid(c actors.ActorCodeID) cid.Cid {
+	return mp.factory.FromActorCodeCid(c)
+}
+
+//
 // Sugar methods for type-checked construction of specific messages.
 //
 
