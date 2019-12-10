@@ -90,7 +90,8 @@ func (t *MultiSigActorState) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
+
+	if extra > cbg.MaxLength {
 		return fmt.Errorf("t.Signers: array too large (%d)", extra)
 	}
 
@@ -165,7 +166,8 @@ func (t *MultiSigActorState) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
+
+	if extra > cbg.MaxLength {
 		return fmt.Errorf("t.Transactions: array too large (%d)", extra)
 	}
 
@@ -326,10 +328,10 @@ func (t *MTransaction) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
-		return fmt.Errorf("t.Params: array too large (%d)", extra)
-	}
 
+	if extra > cbg.ByteArrayMaxLen {
+		return fmt.Errorf("t.Params: byte array too large (%d)", extra)
+	}
 	if maj != cbg.MajByteString {
 		return fmt.Errorf("expected byte array")
 	}
@@ -343,7 +345,8 @@ func (t *MTransaction) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
+
+	if extra > cbg.MaxLength {
 		return fmt.Errorf("t.Approved: array too large (%d)", extra)
 	}
 
@@ -506,7 +509,8 @@ func (t *MultiSigConstructorParams) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
+
+	if extra > cbg.MaxLength {
 		return fmt.Errorf("t.Signers: array too large (%d)", extra)
 	}
 
@@ -741,10 +745,10 @@ func (t *MultiSigProposeParams) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
-		return fmt.Errorf("t.Params: array too large (%d)", extra)
-	}
 
+	if extra > cbg.ByteArrayMaxLen {
+		return fmt.Errorf("t.Params: byte array too large (%d)", extra)
+	}
 	if maj != cbg.MajByteString {
 		return fmt.Errorf("expected byte array")
 	}

@@ -107,10 +107,10 @@ func (t *SignedVoucher) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
-		return fmt.Errorf("t.SecretPreimage: array too large (%d)", extra)
-	}
 
+	if extra > cbg.ByteArrayMaxLen {
+		return fmt.Errorf("t.SecretPreimage: byte array too large (%d)", extra)
+	}
 	if maj != cbg.MajByteString {
 		return fmt.Errorf("expected byte array")
 	}
@@ -184,7 +184,8 @@ func (t *SignedVoucher) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
+
+	if extra > cbg.MaxLength {
 		return fmt.Errorf("t.Merges: array too large (%d)", extra)
 	}
 
@@ -356,10 +357,10 @@ func (t *ModVerifyParams) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
-		return fmt.Errorf("t.Data: array too large (%d)", extra)
-	}
 
+	if extra > cbg.ByteArrayMaxLen {
+		return fmt.Errorf("t.Data: byte array too large (%d)", extra)
+	}
 	if maj != cbg.MajByteString {
 		return fmt.Errorf("expected byte array")
 	}
