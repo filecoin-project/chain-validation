@@ -12,7 +12,6 @@ type (
 	GasUnit uint64
 
 	PubKey []byte
-	PeerID string
 )
 
 func Serialize(i cbg.CBORMarshaler) ([]byte, error) {

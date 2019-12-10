@@ -504,10 +504,10 @@ func (t *SectorPreCommitInfo) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
-		return fmt.Errorf("t.CommR: array too large (%d)", extra)
-	}
 
+	if extra > cbg.ByteArrayMaxLen {
+		return fmt.Errorf("t.CommR: byte array too large (%d)", extra)
+	}
 	if maj != cbg.MajByteString {
 		return fmt.Errorf("expected byte array")
 	}
@@ -531,7 +531,8 @@ func (t *SectorPreCommitInfo) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if extra > 8192 {
+
+	if extra > cbg.MaxLength {
 		return fmt.Errorf("t.DealIDs: array too large (%d)", extra)
 	}
 

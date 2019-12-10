@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
@@ -22,12 +23,6 @@ const (
 
 var (
 	TotalNetworkBalance = types.NewInt(types.NewInt(1).Mul(types.NewInt(totalFilecoin).Int, types.NewInt(0).SetUint64(filecoinPrecision)).Uint64())
-
-	sectorSizes = []uint64{
-		16 << 20,
-		256 << 20,
-		1 << 30,
-	}
 )
 
 func testSetup(t testing.TB, factory Factories) (*StateDriver, types.BigInt, types.GasUnit) {
@@ -63,7 +58,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	//
 
 	// sector size of the miner created
-	sectorSize := types.NewInt(sectorSizes[0])
+	sectorSize := types.NewInt(strgpwr.SectorSizes[0])
 	// peerID of the miner created
 	peerID := RequireIntPeerID(t, 1)
 

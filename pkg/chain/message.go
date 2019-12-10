@@ -173,6 +173,18 @@ func (mp *MessageProducer) BuildFull(from, to address.Address, method MethodID, 
 }
 
 //
+// Helper methods until spec defines these
+//
+
+func (mp *MessageProducer) SingletonAddress(id actors.SingletonActorID) address.Address {
+	return mp.factory.FromSingletonAddress(id)
+}
+
+func (mp *MessageProducer) ActorCid(c actors.ActorCodeID) cid.Cid {
+	return mp.factory.FromActorCodeCid(c)
+}
+
+//
 // Sugar methods for type-checked construction of specific messages.
 //
 
@@ -223,6 +235,24 @@ func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce
 		NextProvingPeriodEnd:     nextppEnd,
 		PreviousProvingPeriodEnd: previousppEnd,
 	})
+	if err != nil {
+		return nil, err
+	}
+	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
+}
+
+func (mp *MessageProducer) StoragePowerPledgeCollateralForSize(from address.Address, nonce uint64, size types.BigInt, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&strgpwr.PledgeCollateralParams{Size: size})
+	if err != nil {
+		return nil, err
+	}
+	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
+}
+
+func (mp *MessageProducer) StoragePowerLookupPower(from address.Address, nonce uint64, miner address.Address, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&strgpwr.PowerLookupParams{Miner: miner})
 	if err != nil {
 		return nil, err
 	}

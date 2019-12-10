@@ -45,6 +45,9 @@ func main() {
 	if err := gen.WriteTupleEncodersToFile("../state/actors/strgpwr/cbor_gen.go", "strgpwr",
 		strgpwr.CreateStorageMinerParams{},
 		strgpwr.UpdateStorageParams{},
+		strgpwr.StoragePowerState{},
+		strgpwr.PledgeCollateralParams{},
+		strgpwr.PowerLookupParams{},
 	); err != nil {
 		panic(err)
 	}
