@@ -1,9 +1,14 @@
 # Chain-Validation
-The intent of this library is to allow any implementation of Filecoin to import it, implement a simple “driver” interface, and then run the tests provided by the testing library, passing the driver in as the parameter. It is the responsibility of the testing library to define tests in accordance with the spec so that it may aid in verifying implementations.
 
-For a comprehensive project description refer to the [Filecoin Chain-Validation Tools Design Doc](https://docs.google.com/document/d/1o0ODvpKdWsYMK_KmK-j-uPxYei6CZAZ4n_3ilQJPn4A/edit#)
-## Goal
-This project aims to provide tools and a high-coverage suite of validation vectors for multiple Filecoin implementations:
+This library provides tools for validating the correctness of a Filecoin implementation according to the [specification](https://github.com/filecoin-project/specs). 
+
+To maintain consensus, all Filecoin implementations must produce identical state transformations for any (state, message) pair. Further, they must implement the same block reward and chain selection logic. Validating correctness in this respect requires extensive coverage over (state, message) pairs, message sequences, and blockchain structures, and is important in maintaining the security and integrity of the network.
+
+This library designed to allow any implementation of Filecoin to import it, implement a simple “driver” interface, and then run the tests provided by the testing library, passing the driver in as the parameter. 
+
+For a comprehensive project description refer to the [Filecoin Chain-Validation Tools Design Doc](https://docs.google.com/document/d/1o0ODvpKdWsYMK_KmK-j-uPxYei6CZAZ4n_3ilQJPn4A/edit#).
+
+## Goals
 - A validation library that is implementation-independent enabling validation suites to be written once and used by different Filecoin implementations.
 - High-level script-like methods for constructing long and complex message sequences, and making semantic assertions about the expected state resulting from their application.
 - High-level script-like methods for constructing complex blockchain structures containing those messages, and making assertions about the expected state from their evaluation.
@@ -14,3 +19,6 @@ This project aims to provide tools and a high-coverage suite of validation vecto
 ## Non-Goals
 - Immediate integration with Filecoin implementations not written in Go (though there should be a path towards this). Other implementations will be expected to write code for their implementation to work with this tool.
 - High-performance execution, if this comes at a cost of timeliness or comprehensiveness
+
+## Usage
+TODO
