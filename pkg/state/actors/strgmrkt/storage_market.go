@@ -1,7 +1,10 @@
 package strgmrkt
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"math/big"
 	"testing"
 
 	"github.com/filecoin-project/go-amt-ipld"
@@ -11,6 +14,7 @@ import (
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/chain-validation/pkg/state"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
@@ -24,6 +28,19 @@ const (
 type StorageDeal struct {
 	Proposal         StorageDealProposal
 	CounterSignature *types.Signature
+}
+
+func (sd *StorageDeal) Sign(ctx context.Context, from address.Address, s state.Signer) error {
+	var buf bytes.Buffer
+	if err := sd.Proposal.MarshalCBOR(&buf); err != nil {
+		return err
+	}
+	sig, err := s.Sign(ctx, from, buf.Bytes())
+	if err != nil {
+		return err
+	}
+	sd.CounterSignature = sig
+	return nil
 }
 
 type OnChainDeal struct {
@@ -53,6 +70,26 @@ type StorageDealProposal struct {
 	StorageCollateral    types.BigInt
 
 	ProposerSignature *types.Signature
+}
+
+func (sdp *StorageDealProposal) TotalStoragePrice() types.BigInt {
+	return types.BigInt{big.NewInt(0).Mul(sdp.StoragePricePerEpoch.Int, big.NewInt(0).SetUint64(sdp.Duration))}
+}
+
+func (sdp *StorageDealProposal) Sign(ctx context.Context, from address.Address, s state.Signer) error {
+	if sdp.ProposerSignature != nil {
+		return errors.New("signature already present in StorageDealProposal")
+	}
+	var buf bytes.Buffer
+	if err := sdp.MarshalCBOR(&buf); err != nil {
+		return err
+	}
+	sig, err := s.Sign(ctx, from, buf.Bytes())
+	if err != nil {
+		return err
+	}
+	sdp.ProposerSignature = sig
+	return nil
 }
 
 type StorageParticipantBalance struct {
@@ -90,7 +127,7 @@ type ProcessStorageDealsPaymentParams struct {
 }
 
 //
-// Helper methods for calculating market deal and balance cid's
+// Helper methods for calculating market balance cid's
 //
 
 type MarketTracker struct {
@@ -147,3 +184,9 @@ func (m *MarketTracker) SetMarketBalances(whom map[address.Address]StoragePartic
 
 	m.Balance = c
 }
+
+// TODO add support for calculating market deals cid's
+/*
+func (m *MarketTracker) SetMarketDeals() {
+}
+*/
