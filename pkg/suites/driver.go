@@ -1,9 +1,12 @@
 package suites
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/filecoin-project/go-amt-ipld"
+	"github.com/ipfs/go-hamt-ipld"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -13,6 +16,7 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/multsig"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/paych"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgmrkt"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
@@ -148,4 +152,68 @@ func (d *StateDriver) AssertStoragePowerState(spAddr address.Address, expected s
 	assert.Equal(d.tb, expected.LastMinerCheck, spState.LastMinerCheck, fmt.Sprintf("expected LastMinerCheck: %v, actual LastMinerCheck: %v", expected.LastMinerCheck, spState.LastMinerCheck))
 	assert.Equal(d.tb, expected.ProvingBuckets, spState.ProvingBuckets, fmt.Sprintf("expected ProvingBuckets: %v, actual ProvingBuckets: %v", expected.ProvingBuckets, spState.ProvingBuckets))
 	assert.Equal(d.tb, expected.TotalStorage, spState.TotalStorage, fmt.Sprintf("expected TotalStorage: %v, actual TotalStorage: %v", expected.TotalStorage, spState.TotalStorage))
+}
+
+func (d *StateDriver) AssertStorageMarketState(smaddr address.Address, expected strgmrkt.StorageMarketState) {
+	smActor, err := d.State().Actor(smaddr)
+	require.NoError(d.tb, err)
+
+	smStorage, err := d.State().Storage(smaddr)
+	require.NoError(d.tb, err)
+
+	var smState strgmrkt.StorageMarketState
+	require.NoError(d.tb, smStorage.Get(smActor.Head(), &smState))
+
+	assert.NotNil(d.tb, smState)
+	assert.Equal(d.tb, expected.Deals, smState.Deals, fmt.Sprintf("expected Deals: %v, actual Deals: %v", expected.Deals, smState.Deals))
+	assert.Equal(d.tb, expected.Balances, smState.Balances, fmt.Sprintf("expected Balances: %v, actual Balances: %v", expected.Balances, smState.Balances))
+	assert.Equal(d.tb, expected.NextDealID, smState.NextDealID, fmt.Sprintf("expected NextDealID: %v, actual NextDealID: %v", expected.NextDealID, smState.NextDealID))
+}
+
+func (d *StateDriver) AssertStorageMarketParticipantAvailableBalance(smaddr, participant address.Address, available types.BigInt) {
+	ctx := context.TODO()
+	smActor, err := d.State().Actor(smaddr)
+	require.NoError(d.tb, err)
+	smStorage, err := d.State().Storage(smaddr)
+	require.NoError(d.tb, err)
+	var smState strgmrkt.StorageMarketState
+	require.NoError(d.tb, smStorage.Get(smActor.Head(), &smState))
+
+	var nd hamt.Node
+	require.NoError(d.tb, smStorage.Get(smState.Balances, &nd))
+	var spb strgmrkt.StorageParticipantBalance
+	require.NoError(d.tb, nd.Find(ctx, string(participant.Bytes()), &spb))
+	assert.Equal(d.tb, available, spb.Available, fmt.Sprintf("expected Available: %v, actual Available: %v", available, spb.Available))
+}
+
+func (d *StateDriver) AssertStorageMarketParticipantLockedBalance(smaddr, participant address.Address, locked types.BigInt) {
+	ctx := context.TODO()
+	smActor, err := d.State().Actor(smaddr)
+	require.NoError(d.tb, err)
+	smStorage, err := d.State().Storage(smaddr)
+	require.NoError(d.tb, err)
+	var smState strgmrkt.StorageMarketState
+	require.NoError(d.tb, smStorage.Get(smActor.Head(), &smState))
+
+	var nd hamt.Node
+	require.NoError(d.tb, smStorage.Get(smState.Balances, &nd))
+	var spb strgmrkt.StorageParticipantBalance
+	require.NoError(d.tb, nd.Find(ctx, string(participant.Bytes()), &spb))
+	assert.Equal(d.tb, locked, spb.Locked, fmt.Sprintf("expected Locked: %v, actual Locked: %v", locked, spb.Locked))
+}
+
+func (d *StateDriver) AssertStorageMarketHasOnChainDeal(smaddr address.Address, dealID uint64, expected strgmrkt.OnChainDeal) {
+	smActor, err := d.State().Actor(smaddr)
+	require.NoError(d.tb, err)
+	smStorage, err := d.State().Storage(smaddr)
+	require.NoError(d.tb, err)
+	var smState strgmrkt.StorageMarketState
+	require.NoError(d.tb, smStorage.Get(smActor.Head(), &smState))
+
+	var nd amt.Root
+	require.NoError(d.tb, smStorage.Get(smState.Deals, &nd))
+	var actual strgmrkt.OnChainDeal
+	require.NoError(d.tb, nd.Get(dealID, &actual))
+
+	assert.Equal(d.tb, expected, actual, fmt.Sprintf("expected Deal: %v, actual Deal: %v", expected, actual))
 }

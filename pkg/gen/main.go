@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgmrkt"
 	gen "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/initialize"
@@ -48,6 +49,23 @@ func main() {
 		strgpwr.StoragePowerState{},
 		strgpwr.PledgeCollateralParams{},
 		strgpwr.PowerLookupParams{},
+	); err != nil {
+		panic(err)
+	}
+
+	// Storage Market Actor
+	if err := gen.WriteTupleEncodersToFile("../state/actors/strgmrkt/cbor_gen.go", "strgmrkt",
+		strgmrkt.OnChainDeal{},
+		strgmrkt.StorageDeal{},
+		strgmrkt.StorageMarketState{},
+		strgmrkt.StorageDealProposal{},
+		strgmrkt.WithdrawBalanceParams{},
+		strgmrkt.PublishStorageDealsParams{},
+		strgmrkt.StorageParticipantBalance{},
+		strgmrkt.ActivateStorageDealsParams{},
+		strgmrkt.PublishStorageDealResponse{},
+		strgmrkt.ComputeDataCommitmentParams{},
+		strgmrkt.ProcessStorageDealsPaymentParams{},
 	); err != nil {
 		panic(err)
 	}

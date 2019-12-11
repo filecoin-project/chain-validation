@@ -9,6 +9,7 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/multsig"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/paych"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgmrkt"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
 	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
@@ -40,9 +41,9 @@ const (
 	StorageMarketConstructor
 	StorageMarketWithdrawBalance
 	StorageMarketAddBalance
-	StorageMarketCheckLockedBalance
-	StorageMarketPublishStorageDeal
-	StorageMarketHandleCronAction
+	StorageMarketPublishStorageDeals
+	StorageMarketActivateStorageDeals
+	StorageMarketComputeDataCommitment
 
 	StorageMinerUpdatePeerID
 	StorageMinerGetOwner
@@ -205,6 +206,54 @@ func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, code act
 		return nil, err
 	}
 	return mp.Build(from, iaAddr, nonce, InitExec, initParams, opts...)
+}
+
+//
+// Storage Market Actor Methods
+//
+
+func (mp *MessageProducer) StorageMarketWithdrawBalance(from address.Address, nonce uint64, balance types.BigInt, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&strgmrkt.WithdrawBalanceParams{Balance: balance})
+	if err != nil {
+		return nil, err
+	}
+	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	return mp.Build(from, smaddr, nonce, StorageMarketWithdrawBalance, params, opts...)
+}
+
+func (mp *MessageProducer) StorageMarketAddBalance(from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	return mp.Build(from, smaddr, nonce, StorageMarketAddBalance, noParams, opts...)
+}
+
+func (mp *MessageProducer) StorageMarketPublishStorageDeals(from address.Address, nonce uint64, deals []strgmrkt.StorageDeal, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&strgmrkt.PublishStorageDealsParams{Deals: deals})
+	if err != nil {
+		return nil, err
+	}
+	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	return mp.Build(from, smaddr, nonce, StorageMarketPublishStorageDeals, params, opts...)
+}
+
+func (mp *MessageProducer) StorageMarketActivateStorageDeals(from address.Address, nonce uint64, dealIDs []uint64, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&strgmrkt.ActivateStorageDealsParams{Deals: dealIDs})
+	if err != nil {
+		return nil, err
+	}
+	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	return mp.Build(from, smaddr, nonce, StorageMarketActivateStorageDeals, params, opts...)
+}
+
+func (mp *MessageProducer) StorageMarketComputeDataCommitment(from address.Address, nonce uint64, sectorSize uint64, dealIDs []uint64, opts ...MsgOpt) (interface{}, error) {
+	params, err := types.Serialize(&strgmrkt.ComputeDataCommitmentParams{
+		DealIDs:    dealIDs,
+		SectorSize: sectorSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	return mp.Build(from, smaddr, nonce, StorageMarketComputeDataCommitment, params, opts...)
 }
 
 //

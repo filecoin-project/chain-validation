@@ -35,6 +35,10 @@ type Wrapper interface {
 	SetSingletonActor(address actors.SingletonActorID, balance types.BigInt) (Actor, Storage, error)
 }
 
+type Signer interface {
+	Sign(ctx context.Context, addr address.Address, data []byte) (*types.Signature, error)
+}
+
 // Actor is an abstraction over the actor states stored in the root of the state tree.
 type Actor interface {
 	Code() cid.Cid
