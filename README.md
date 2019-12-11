@@ -19,3 +19,6 @@ For a comprehensive project description refer to the [Filecoin Chain-Validation 
 ## Non-Goals
 - Immediate integration with Filecoin implementations not written in Go (though there should be a path towards this). Other implementations will be expected to write code for their implementation to work with this tool.
 - High-performance execution, if this comes at a cost of timeliness or comprehensiveness
+
+## Usage
+TODO
