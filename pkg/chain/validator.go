@@ -15,7 +15,7 @@ type Applier interface {
 type MessageReceipt struct {
 	ExitCode    uint8
 	ReturnValue []byte
-	GasUsed     types.GasUnit
+	GasUsed     types.BigInt
 }
 
 // ExecutionContext provides the context for execution of a message.

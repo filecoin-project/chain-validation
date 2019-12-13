@@ -166,7 +166,7 @@ func mustCreatePaychActor(c Candy, nonce, value uint64, paychAddr, creator, payc
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: paychAddr.Bytes(),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }
 
@@ -180,7 +180,7 @@ func mustUpdatePaychActor(c Candy, nonce, value uint64, to, from address.Address
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }
 
@@ -194,7 +194,7 @@ func mustClosePaych(c Candy, nonce, value uint64, paychAddr, from address.Addres
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }
 
@@ -208,7 +208,7 @@ func mustCollectPaych(c Candy, nonce, value uint64, paychAddr, from address.Addr
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 }
@@ -223,7 +223,7 @@ func assertPaychOwner(c Candy, nonce, value uint64, paychAddr, from, owner addre
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: owner.Bytes(),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }
 
@@ -237,6 +237,6 @@ func assertPaychToSend(c Candy, nonce, value uint64, paychAddr, from address.Add
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: toSend.Bytes(),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }

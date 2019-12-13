@@ -7,13 +7,6 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
-// Type aliases for state values and message method parameters.
-type (
-	GasUnit uint64
-
-	PubKey []byte
-)
-
 func Serialize(i cbg.CBORMarshaler) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	if err := i.MarshalCBOR(buf); err != nil {

@@ -137,7 +137,7 @@ func mustPublishStorageDeal(c Candy, nonce uint64, from address.Address, dealID 
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: respBytes,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 }
@@ -152,7 +152,7 @@ func mustWithdrawBalance(c Candy, from address.Address, nonce, amount uint64) {
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }
 
@@ -166,7 +166,7 @@ func mustAddBalance(c Candy, from address.Address, nonce, amount uint64) {
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }
 

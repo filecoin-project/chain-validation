@@ -103,7 +103,7 @@ const (
 // Integrations should implement this to provide a message value that will be accepted by the
 // validation engine.
 type MessageFactory interface {
-	MakeMessage(from, to address.Address, method MethodID, nonce uint64, value, gasPrice types.BigInt, gasLimit types.GasUnit, params []byte) (*Message, error)
+	MakeMessage(from, to address.Address, method MethodID, nonce uint64, value, gasPrice, gasLimit types.BigInt, params []byte) (*Message, error)
 }
 
 type ActorInfoMapping interface {
@@ -123,7 +123,7 @@ type MessageProducer struct {
 }
 
 // NewMessageProducer creates a new message producer, delegating message creation to `factory`.
-func NewMessageProducer(factory MessageFactory, ai ActorInfoMapping, defaultGasLimit types.GasUnit, defaultGasPrice types.BigInt) *MessageProducer {
+func NewMessageProducer(factory MessageFactory, ai ActorInfoMapping, defaultGasLimit, defaultGasPrice types.BigInt) *MessageProducer {
 	return &MessageProducer{
 		factory:   factory,
 		actorInfo: ai,
@@ -143,7 +143,7 @@ func (mp *MessageProducer) Messages() []*Message {
 // for concise but customizable message construction.
 type msgOpts struct {
 	value    types.BigInt
-	gasLimit types.GasUnit
+	gasLimit types.BigInt
 	gasPrice types.BigInt
 }
 
@@ -164,7 +164,7 @@ func BigValue(value types.BigInt) MsgOpt {
 
 func GasLimit(limit uint64) MsgOpt {
 	return func(opts *msgOpts) {
-		opts.gasLimit = types.GasUnit(limit)
+		opts.gasLimit = types.NewInt(limit)
 	}
 }
 
@@ -186,7 +186,7 @@ func (mp *MessageProducer) Build(from, to address.Address, nonce uint64, method 
 
 // BuildFull creates and returns a single message.
 func (mp *MessageProducer) BuildFull(from, to address.Address, method MethodID, nonce uint64, value types.BigInt,
-	gasLimit types.GasUnit, gasPrice types.BigInt, params []byte) (*Message, error) {
+	gasLimit, gasPrice types.BigInt, params []byte) (*Message, error) {
 	fm, err := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params)
 	if err != nil {
 		return nil, err

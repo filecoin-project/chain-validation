@@ -3,7 +3,6 @@ package suites
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
@@ -18,7 +17,7 @@ func transferTestSetup(t *testing.T, factory Factories) (*StateDriver, *chain.Me
 	require.NoError(t, err)
 
 	gasPrice := types.NewInt(1)
-	gasLimit := types.GasUnit(1000)
+	gasLimit := types.NewInt(1000)
 
 	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), factory.NewActorInfoMapping(), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
@@ -40,11 +39,11 @@ func AccountValueTransferSuccess(t *testing.T, factory Factories, expGasUsed uin
 
 	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
 	require.NoError(t, err)
-	require.NotNil(t, msgReceipt)
-
-	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
-	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		ExitCode:    0,
+		ReturnValue: nil,
+		GasUsed:     types.NewInt(0),
+	})
 
 	drv.AssertBalance(alice, 1950-expGasUsed)
 	drv.AssertBalance(bob, 50)
@@ -66,11 +65,11 @@ func AccountValueTransferZeroFunds(t *testing.T, factory Factories, expGasUsed u
 
 	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
 	require.NoError(t, err)
-	require.NotNil(t, msgReceipt)
-
-	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
-	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		ExitCode:    0,
+		ReturnValue: nil,
+		GasUsed:     types.NewInt(0),
+	})
 
 	drv.AssertBalance(alice, 2000-expGasUsed)
 	drv.AssertBalance(bob, 0)
@@ -92,11 +91,11 @@ func AccountValueTransferOverBalanceNonZero(t *testing.T, factory Factories, exp
 
 	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
 	require.Error(t, err)
-	require.NotNil(t, msgReceipt)
-
-	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
-	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		ExitCode:    0,
+		ReturnValue: nil,
+		GasUsed:     types.NewInt(expGasUsed),
+	})
 
 	drv.AssertBalance(alice, 2000-expGasUsed)
 	drv.AssertBalance(bob, 0)
@@ -118,11 +117,11 @@ func AccountValueTransferOverBalanceZero(t *testing.T, factory Factories, expGas
 
 	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
 	require.Error(t, err)
-	require.NotNil(t, msgReceipt)
-
-	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
-	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		ExitCode:    0,
+		ReturnValue: nil,
+		GasUsed:     types.NewInt(expGasUsed),
+	})
 
 	drv.AssertBalance(alice, 0)
 	drv.AssertBalance(bob, 0)
@@ -143,11 +142,11 @@ func AccountValueTransferToSelf(t *testing.T, factory Factories, expGasUsed uint
 
 	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
 	require.Error(t, err)
-	require.NotNil(t, msgReceipt)
-
-	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
-	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		ExitCode:    0,
+		ReturnValue: nil,
+		GasUsed:     types.NewInt(expGasUsed),
+	})
 
 	drv.AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
@@ -169,16 +168,15 @@ func AccountValueTransferFromKnownToUnknownAccount(t *testing.T, factory Factori
 
 	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
 	require.Error(t, err)
-	require.NotNil(t, msgReceipt)
-
-	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
-	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		ExitCode:    0,
+		ReturnValue: nil,
+		GasUsed:     types.NewInt(expGasUsed),
+	})
 
 	drv.AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
 	drv.AssertBalance(miner, expGasUsed)
-
 }
 
 func AccountValueTransferFromUnknownToKnownAccount(t *testing.T, factory Factories, expGasUsed uint64) {
@@ -196,16 +194,15 @@ func AccountValueTransferFromUnknownToKnownAccount(t *testing.T, factory Factori
 
 	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
 	require.Error(t, err)
-	require.NotNil(t, msgReceipt)
-
-	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
-	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		ExitCode:    0,
+		ReturnValue: nil,
+		GasUsed:     types.NewInt(expGasUsed),
+	})
 
 	drv.AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
 	drv.AssertBalance(miner, expGasUsed)
-
 }
 
 func AccountValueTransferFromUnknownToUnknownAccount(t *testing.T, factory Factories, expGasUsed uint64) {
@@ -226,14 +223,13 @@ func AccountValueTransferFromUnknownToUnknownAccount(t *testing.T, factory Facto
 
 	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
 	require.Error(t, err)
-	require.NotNil(t, msgReceipt)
-
-	assert.Equal(t, uint8(0), msgReceipt.ExitCode)
-	assert.Empty(t, msgReceipt.ReturnValue)
-	assert.Equal(t, types.GasUnit(expGasUsed), msgReceipt.GasUsed)
+	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		ExitCode:    0,
+		ReturnValue: nil,
+		GasUsed:     types.NewInt(expGasUsed),
+	})
 
 	drv.AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
 	drv.AssertBalance(miner, expGasUsed)
-
 }
