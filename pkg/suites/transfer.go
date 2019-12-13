@@ -10,226 +10,207 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
-func transferTestSetup(t *testing.T, factory Factories) (*StateDriver, *chain.MessageProducer, *chain.Validator) {
-	drv := NewStateDriver(t, factory.NewState())
-
-	_, _, err := drv.State().SetSingletonActor(actors.InitAddress, types.NewInt(0))
-	require.NoError(t, err)
-
-	gasPrice := types.NewInt(1)
-	gasLimit := types.NewInt(1000)
-
-	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), factory.NewActorInfoMapping(), gasLimit, gasPrice)
-	validator := chain.NewValidator(factory)
-
-	return drv, producer, validator
-}
-
 func AccountValueTransferSuccess(t *testing.T, factory Factories, expGasUsed uint64) {
-	drv, producer, validator := transferTestSetup(t, factory)
+	const initialBal = 20000000000
+	const transferValue = 50
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress: types.NewInt(0),
+	})
 
-	alice := drv.NewAccountActor(2000)
-	bob := drv.NewAccountActor(0)
-	miner := drv.NewAccountActor(0) // Miner owner
+	alice := c.Driver().NewAccountActor(initialBal)
+	bob := c.Driver().NewAccountActor(0)
 
-	exeCtx := chain.NewExecutionContext(1, miner)
-
-	msg, err := producer.Transfer(alice, bob, 0, 50)
+	msg, err := c.Producer().Transfer(alice, bob, 0, transferValue)
 	require.NoError(t, err)
 
-	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
+	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
 	require.NoError(t, err)
-	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(0),
 	})
 
-	drv.AssertBalance(alice, 1950-expGasUsed)
-	drv.AssertBalance(bob, 50)
+	c.Driver().AssertBalance(alice, initialBal-transferValue-expGasUsed)
+	c.Driver().AssertBalance(bob, transferValue)
 	// This should become non-zero after gas tracking and payments are integrated.
-	drv.AssertBalance(miner, expGasUsed)
+	c.Driver().AssertBalance(c.ExeCtx().MinerOwner, expGasUsed)
 }
 
 func AccountValueTransferZeroFunds(t *testing.T, factory Factories, expGasUsed uint64) {
-	drv, producer, validator := transferTestSetup(t, factory)
+	const initialBal = 20000000000
+	const transferValue = 0
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress: types.NewInt(0),
+	})
 
-	alice := drv.NewAccountActor(2000)
-	bob := drv.NewAccountActor(0)
-	miner := drv.NewAccountActor(0) // Miner owner
+	alice := c.Driver().NewAccountActor(initialBal)
+	bob := c.Driver().NewAccountActor(0)
 
-	exeCtx := chain.NewExecutionContext(1, miner)
-
-	msg, err := producer.Transfer(alice, bob, 0, 0)
+	msg, err := c.Producer().Transfer(alice, bob, 0, transferValue)
 	require.NoError(t, err)
 
-	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
+	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
 	require.NoError(t, err)
-	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(0),
 	})
 
-	drv.AssertBalance(alice, 2000-expGasUsed)
-	drv.AssertBalance(bob, 0)
+	c.Driver().AssertBalance(alice, initialBal-transferValue-expGasUsed)
+	c.Driver().AssertBalance(bob, transferValue)
 	// This should become non-zero after gas tracking and payments are integrated.
-	drv.AssertBalance(miner, expGasUsed)
+	c.Driver().AssertBalance(c.ExeCtx().MinerOwner, expGasUsed)
 }
 
 func AccountValueTransferOverBalanceNonZero(t *testing.T, factory Factories, expGasUsed uint64) {
-	drv, producer, validator := transferTestSetup(t, factory)
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress: types.NewInt(0),
+	})
 
-	alice := drv.NewAccountActor(2000)
-	bob := drv.NewAccountActor(0)
-	miner := drv.NewAccountActor(0) // Miner owner
+	alice := c.Driver().NewAccountActor(2000)
+	bob := c.Driver().NewAccountActor(0)
 
-	exeCtx := chain.NewExecutionContext(1, miner)
-
-	msg, err := producer.Transfer(alice, bob, 0, 2001)
+	msg, err := c.Producer().Transfer(alice, bob, 0, 2001)
 	require.NoError(t, err)
 
-	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
+	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
 	require.Error(t, err)
-	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(expGasUsed),
 	})
 
-	drv.AssertBalance(alice, 2000-expGasUsed)
-	drv.AssertBalance(bob, 0)
+	c.Driver().AssertBalance(alice, 2000-expGasUsed)
+	c.Driver().AssertBalance(bob, 0)
 	// This should become non-zero after gas tracking and payments are integrated.
-	drv.AssertBalance(miner, expGasUsed)
+	c.Driver().AssertBalance(c.ExeCtx().MinerOwner, expGasUsed)
 }
 
 func AccountValueTransferOverBalanceZero(t *testing.T, factory Factories, expGasUsed uint64) {
-	drv, producer, validator := transferTestSetup(t, factory)
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress: types.NewInt(0),
+	})
 
-	alice := drv.NewAccountActor(0)
-	bob := drv.NewAccountActor(0)
-	miner := drv.NewAccountActor(0) // Miner owner
+	alice := c.Driver().NewAccountActor(0)
+	bob := c.Driver().NewAccountActor(0)
 
-	exeCtx := chain.NewExecutionContext(1, miner)
-
-	msg, err := producer.Transfer(alice, bob, 0, 1)
+	msg, err := c.Producer().Transfer(alice, bob, 0, 1)
 	require.NoError(t, err)
 
-	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
+	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
 	require.Error(t, err)
-	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(expGasUsed),
 	})
 
-	drv.AssertBalance(alice, 0)
-	drv.AssertBalance(bob, 0)
+	c.Driver().AssertBalance(alice, 0)
+	c.Driver().AssertBalance(bob, 0)
 	// This should become non-zero after gas tracking and payments are integrated.
-	drv.AssertBalance(miner, expGasUsed)
+	c.Driver().AssertBalance(c.ExeCtx().MinerOwner, expGasUsed)
 }
 
 func AccountValueTransferToSelf(t *testing.T, factory Factories, expGasUsed uint64) {
-	drv, producer, validator := transferTestSetup(t, factory)
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress: types.NewInt(0),
+	})
 
-	alice := drv.NewAccountActor(1)
-	miner := drv.NewAccountActor(0) // Miner owner
+	alice := c.Driver().NewAccountActor(1)
 
-	exeCtx := chain.NewExecutionContext(1, miner)
-
-	msg, err := producer.Transfer(alice, alice, 0, 1)
+	msg, err := c.Producer().Transfer(alice, alice, 0, 1)
 	require.NoError(t, err)
 
-	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
+	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
 	require.Error(t, err)
-	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(expGasUsed),
 	})
 
-	drv.AssertBalance(alice, 1)
+	c.Driver().AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
-	drv.AssertBalance(miner, expGasUsed)
+	c.Driver().AssertBalance(c.ExeCtx().MinerOwner, expGasUsed)
 }
 
 func AccountValueTransferFromKnownToUnknownAccount(t *testing.T, factory Factories, expGasUsed uint64) {
-	drv, producer, validator := transferTestSetup(t, factory)
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress: types.NewInt(0),
+	})
 
-	alice := drv.NewAccountActor(1)
-	miner := drv.NewAccountActor(0) // Miner owner
-	unknown, err := drv.State().NewAccountAddress()
+	alice := c.Driver().NewAccountActor(1)
+	unknown, err := c.Driver().State().NewAccountAddress()
 	require.NoError(t, err)
 
-	exeCtx := chain.NewExecutionContext(1, miner)
-
-	msg, err := producer.Transfer(alice, unknown, 0, 1)
+	msg, err := c.Producer().Transfer(alice, unknown, 0, 1)
 	require.NoError(t, err)
 
-	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
+	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
 	require.Error(t, err)
-	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(expGasUsed),
 	})
 
-	drv.AssertBalance(alice, 1)
+	c.Driver().AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
-	drv.AssertBalance(miner, expGasUsed)
+	c.Driver().AssertBalance(c.ExeCtx().MinerOwner, expGasUsed)
 }
 
 func AccountValueTransferFromUnknownToKnownAccount(t *testing.T, factory Factories, expGasUsed uint64) {
-	drv, producer, validator := transferTestSetup(t, factory)
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress: types.NewInt(0),
+	})
 
-	alice := drv.NewAccountActor(1)
-	miner := drv.NewAccountActor(0) // Miner owner
-	unknown, err := drv.State().NewAccountAddress()
+	alice := c.Driver().NewAccountActor(1)
+	unknown, err := c.Driver().State().NewAccountAddress()
 	require.NoError(t, err)
 
-	exeCtx := chain.NewExecutionContext(1, miner)
-
-	msg, err := producer.Transfer(unknown, alice, 0, 1)
+	msg, err := c.Producer().Transfer(unknown, alice, 0, 1)
 	require.NoError(t, err)
 
-	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
+	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
 	require.Error(t, err)
-	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(expGasUsed),
 	})
 
-	drv.AssertBalance(alice, 1)
+	c.Driver().AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
-	drv.AssertBalance(miner, expGasUsed)
+	c.Driver().AssertBalance(c.ExeCtx().MinerOwner, expGasUsed)
 }
 
 func AccountValueTransferFromUnknownToUnknownAccount(t *testing.T, factory Factories, expGasUsed uint64) {
-	drv, producer, validator := transferTestSetup(t, factory)
+	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+		actors.InitAddress: types.NewInt(0),
+	})
 
-	alice := drv.NewAccountActor(1)
-	miner := drv.NewAccountActor(0) // Miner owner
-	unknown, err := drv.State().NewAccountAddress()
+	alice := c.Driver().NewAccountActor(1)
+	unknown, err := c.Driver().State().NewAccountAddress()
 	require.NoError(t, err)
 
-	nobody, err := drv.State().NewAccountAddress()
+	nobody, err := c.Driver().State().NewAccountAddress()
 	require.NoError(t, err)
 
-	exeCtx := chain.NewExecutionContext(1, miner)
-
-	msg, err := producer.Transfer(unknown, nobody, 0, 1)
+	msg, err := c.Producer().Transfer(unknown, nobody, 0, 1)
 	require.NoError(t, err)
 
-	msgReceipt, err := validator.ApplyMessage(exeCtx, drv.State(), msg)
+	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
 	require.Error(t, err)
-	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
+	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(expGasUsed),
 	})
 
-	drv.AssertBalance(alice, 1)
+	c.Driver().AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
-	drv.AssertBalance(miner, expGasUsed)
+	c.Driver().AssertBalance(c.ExeCtx().MinerOwner, expGasUsed)
 }
