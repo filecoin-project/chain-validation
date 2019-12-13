@@ -49,7 +49,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	// account that will own the miner
 	minerOwner := drv.NewAccountActorBigBalance(types.NewIntFromString("2000000000000000000000000"))
 
-	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
+	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), factory.NewActorInfoMapping(), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
 	exeCtx := chain.NewExecutionContext(1, testMiner)
 

@@ -33,7 +33,7 @@ func NewCandy(t testing.TB, factory Factories, singletons map[actors.SingletonAc
 
 	testMiner := drv.NewAccountActor(0)
 	exeCtx := chain.NewExecutionContext(1, testMiner)
-	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
+	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), factory.NewActorInfoMapping(), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
 
 	return &candy{

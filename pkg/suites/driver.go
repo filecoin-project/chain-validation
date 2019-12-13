@@ -26,6 +26,7 @@ import (
 type Factories interface {
 	NewState() state.Wrapper
 	NewMessageFactory(wrapper state.Wrapper) chain.MessageFactory
+	NewActorInfoMapping() chain.ActorInfoMapping
 
 	chain.Applier
 }

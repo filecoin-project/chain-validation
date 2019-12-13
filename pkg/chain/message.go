@@ -103,8 +103,10 @@ const (
 // Integrations should implement this to provide a message value that will be accepted by the
 // validation engine.
 type MessageFactory interface {
-	MakeMessage(from, to address.Address, method MethodID, nonce uint64, value, gasPrice types.BigInt, gasLimit types.GasUnit,
-		params []byte) (*Message, error)
+	MakeMessage(from, to address.Address, method MethodID, nonce uint64, value, gasPrice types.BigInt, gasLimit types.GasUnit, params []byte) (*Message, error)
+}
+
+type ActorInfoMapping interface {
 	FromSingletonAddress(address actors.SingletonActorID) address.Address
 	FromActorCodeCid(cod actors.ActorCodeID) cid.Cid
 }
@@ -113,16 +115,18 @@ type MessageFactory interface {
 // The created messages are retained for subsequent export or evaluation in a VM.
 // Actual message construction is delegated to a `MessageFactory`, and the message are opaque to the producer.
 type MessageProducer struct {
-	factory  MessageFactory
-	defaults msgOpts // Note non-pointer reference.
+	factory   MessageFactory
+	actorInfo ActorInfoMapping
+	defaults  msgOpts // Note non-pointer reference.
 
 	messages []*Message
 }
 
 // NewMessageProducer creates a new message producer, delegating message creation to `factory`.
-func NewMessageProducer(factory MessageFactory, defaultGasLimit types.GasUnit, defaultGasPrice types.BigInt) *MessageProducer {
+func NewMessageProducer(factory MessageFactory, ai ActorInfoMapping, defaultGasLimit types.GasUnit, defaultGasPrice types.BigInt) *MessageProducer {
 	return &MessageProducer{
-		factory: factory,
+		factory:   factory,
+		actorInfo: ai,
 		defaults: msgOpts{
 			gasLimit: defaultGasLimit,
 			gasPrice: defaultGasPrice,
@@ -197,11 +201,11 @@ func (mp *MessageProducer) BuildFull(from, to address.Address, method MethodID, 
 //
 
 func (mp *MessageProducer) SingletonAddress(id actors.SingletonActorID) address.Address {
-	return mp.factory.FromSingletonAddress(id)
+	return mp.actorInfo.FromSingletonAddress(id)
 }
 
 func (mp *MessageProducer) ActorCid(c actors.ActorCodeID) cid.Cid {
-	return mp.factory.FromActorCodeCid(c)
+	return mp.actorInfo.FromActorCodeCid(c)
 }
 
 //
@@ -216,9 +220,9 @@ func (mp *MessageProducer) Transfer(from, to address.Address, nonce uint64, valu
 
 // InitExec builds a message invoking InitActor.Exec and returns it.
 func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, code actors.ActorCodeID, params []byte, opts ...MsgOpt) (*Message, error) {
-	iaAddr := mp.factory.FromSingletonAddress(actors.InitAddress)
+	iaAddr := mp.actorInfo.FromSingletonAddress(actors.InitAddress)
 	initParams, err := types.Serialize(&initialize.ExecParams{
-		Code:   mp.factory.FromActorCodeCid(code),
+		Code:   mp.actorInfo.FromActorCodeCid(code),
 		Params: params,
 	})
 	if err != nil {
@@ -236,12 +240,12 @@ func (mp *MessageProducer) StorageMarketWithdrawBalance(from address.Address, no
 	if err != nil {
 		return nil, err
 	}
-	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	smaddr := mp.actorInfo.FromSingletonAddress(actors.StorageMarketAddress)
 	return mp.Build(from, smaddr, nonce, StorageMarketWithdrawBalance, params, opts...)
 }
 
 func (mp *MessageProducer) StorageMarketAddBalance(from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
-	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	smaddr := mp.actorInfo.FromSingletonAddress(actors.StorageMarketAddress)
 	return mp.Build(from, smaddr, nonce, StorageMarketAddBalance, noParams, opts...)
 }
 
@@ -250,7 +254,7 @@ func (mp *MessageProducer) StorageMarketPublishStorageDeals(from address.Address
 	if err != nil {
 		return nil, err
 	}
-	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	smaddr := mp.actorInfo.FromSingletonAddress(actors.StorageMarketAddress)
 	return mp.Build(from, smaddr, nonce, StorageMarketPublishStorageDeals, params, opts...)
 }
 
@@ -259,7 +263,7 @@ func (mp *MessageProducer) StorageMarketActivateStorageDeals(from address.Addres
 	if err != nil {
 		return nil, err
 	}
-	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	smaddr := mp.actorInfo.FromSingletonAddress(actors.StorageMarketAddress)
 	return mp.Build(from, smaddr, nonce, StorageMarketActivateStorageDeals, params, opts...)
 }
 
@@ -271,7 +275,7 @@ func (mp *MessageProducer) StorageMarketComputeDataCommitment(from address.Addre
 	if err != nil {
 		return nil, err
 	}
-	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	smaddr := mp.actorInfo.FromSingletonAddress(actors.StorageMarketAddress)
 	return mp.Build(from, smaddr, nonce, StorageMarketComputeDataCommitment, params, opts...)
 }
 
@@ -284,7 +288,7 @@ func (mp *MessageProducer) StoragePowerCreateStorageMiner(from address.Address, 
 	owner address.Address, worker address.Address, sectorSize uint64, peerID peer.ID,
 	opts ...MsgOpt) (*Message, error) {
 
-	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	spaAddr := mp.actorInfo.FromSingletonAddress(actors.StoragePowerAddress)
 	params, err := types.Serialize(&strgpwr.CreateStorageMinerParams{
 		Owner:      owner,
 		Worker:     worker,
@@ -306,7 +310,7 @@ func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce
 	if err != nil {
 		return nil, err
 	}
-	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	spaAddr := mp.actorInfo.FromSingletonAddress(actors.StoragePowerAddress)
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
 }
 
@@ -315,7 +319,7 @@ func (mp *MessageProducer) StoragePowerPledgeCollateralForSize(from address.Addr
 	if err != nil {
 		return nil, err
 	}
-	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	spaAddr := mp.actorInfo.FromSingletonAddress(actors.StoragePowerAddress)
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
 }
 
@@ -324,7 +328,7 @@ func (mp *MessageProducer) StoragePowerLookupPower(from address.Address, nonce u
 	if err != nil {
 		return nil, err
 	}
-	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	spaAddr := mp.actorInfo.FromSingletonAddress(actors.StoragePowerAddress)
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
 }
 

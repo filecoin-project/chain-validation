@@ -20,7 +20,7 @@ func transferTestSetup(t *testing.T, factory Factories) (*StateDriver, *chain.Me
 	gasPrice := types.NewInt(1)
 	gasLimit := types.GasUnit(1000)
 
-	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
+	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), factory.NewActorInfoMapping(), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
 
 	return drv, producer, validator
