@@ -104,7 +104,7 @@ func mustUpdateStoragePower(c Candy, nonce, value, delta, nextPpEnd, prevPpEnd u
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 }
@@ -119,7 +119,7 @@ func mustCreateStorageMiner(c Candy, nonce, sectorSize uint64, value types.BigIn
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: minerAddr.Bytes(),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }
 

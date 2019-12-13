@@ -24,7 +24,7 @@ func NewCandy(t testing.TB, factory Factories, singletons map[actors.SingletonAc
 
 	// TODO make these function opts
 	gasPrice := types.NewInt(1)
-	gasLimit := types.GasUnit(1000000)
+	gasLimit := types.NewInt(1000000)
 
 	for sa, balance := range singletons {
 		_, _, err := drv.State().SetSingletonActor(sa, balance)
@@ -33,7 +33,7 @@ func NewCandy(t testing.TB, factory Factories, singletons map[actors.SingletonAc
 
 	testMiner := drv.NewAccountActor(0)
 	exeCtx := chain.NewExecutionContext(1, testMiner)
-	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
+	producer := chain.NewMessageProducer(factory.NewMessageFactory(), factory.NewActorInfoMapping(), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
 
 	return &candy{

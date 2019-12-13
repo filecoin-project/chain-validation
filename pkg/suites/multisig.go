@@ -129,7 +129,7 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 	c.Driver().AssertReceipt(mr, chain.MessageReceipt{
 		ExitCode:    1,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 	c.Driver().AssertBalance(multisigAddr, valueSend)
 
@@ -141,7 +141,7 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 	c.Driver().AssertReceipt(mr, chain.MessageReceipt{
 		ExitCode:    1,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 	// bob approves transfer of 'valueSend' FIL to outsider.
@@ -234,7 +234,7 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    4,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 	c.Driver().AssertMultisigState(multisigAddr, multsig.MultiSigActorState{
 		Signers:        []address.Address{alice, bob},
@@ -296,7 +296,7 @@ func mustProposeMultisigTransfer(gdg Candy, nonce, value uint64, txID multsig.Mu
 		ExitCode: 0,
 		// since the first byte is the cbor type indicator.
 		ReturnValue: btxid[1:],
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }
 
@@ -317,7 +317,7 @@ func mustCreateMultisigActor(gdg Candy, nonce, value uint64, required, unlockDur
 	gdg.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: ms.Bytes(),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }
 
@@ -331,7 +331,7 @@ func mustApproveMultisigActor(gdg Candy, nonce, value uint64, ms, from address.A
 	gdg.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }
 
@@ -345,6 +345,6 @@ func mustCancelMultisigActor(gdg Candy, nonce, value uint64, ms, from address.Ad
 	gdg.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 }

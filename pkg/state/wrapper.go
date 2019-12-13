@@ -51,12 +51,3 @@ type Actor interface {
 type Storage interface {
 	Get(c cid.Cid, out interface{}) error
 }
-
-// PaymentChannelActorState is an abstraction over a payment channel actor's state.
-type PaymentChannelActorState interface {
-	From() address.Address
-	To() address.Address
-	ToSend() types.BigInt
-	ClosingAt() uint64
-	MinCloseHeight() uint64
-}

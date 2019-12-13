@@ -15,6 +15,26 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
+type Message struct {
+	// Address of the receiving actor.
+	To address.Address
+	// Address of the sending actor.
+	From address.Address
+	// Expected CallSeqNum of the sending actor (only for top-level messages).
+	CallSeqNum uint64
+
+	// Amount of value to transfer from sender's to receiver's balance.
+	Value types.BigInt
+
+	// Optional method to invoke on receiver, zero for a plain value send.
+	Method MethodID
+	/// Serialized parameters to the method (if method is non-zero).
+	Params []byte
+
+	GasPrice types.BigInt
+	GasLimit types.BigInt
+}
+
 // MethodID identifies a VM actor method.
 // The values here are not intended to match the spec's method IDs, though once implementations
 // converge on those we could make it so.
@@ -83,8 +103,10 @@ const (
 // Integrations should implement this to provide a message value that will be accepted by the
 // validation engine.
 type MessageFactory interface {
-	MakeMessage(from, to address.Address, method MethodID, nonce uint64, value, gasPrice types.BigInt, gasLimit types.GasUnit,
-		params []byte) (interface{}, error)
+	MakeMessage(from, to address.Address, method MethodID, nonce uint64, value, gasPrice, gasLimit types.BigInt, params []byte) (*Message, error)
+}
+
+type ActorInfoMapping interface {
 	FromSingletonAddress(address actors.SingletonActorID) address.Address
 	FromActorCodeCid(cod actors.ActorCodeID) cid.Cid
 }
@@ -93,16 +115,18 @@ type MessageFactory interface {
 // The created messages are retained for subsequent export or evaluation in a VM.
 // Actual message construction is delegated to a `MessageFactory`, and the message are opaque to the producer.
 type MessageProducer struct {
-	factory  MessageFactory
-	defaults msgOpts // Note non-pointer reference.
+	factory   MessageFactory
+	actorInfo ActorInfoMapping
+	defaults  msgOpts // Note non-pointer reference.
 
-	messages []interface{}
+	messages []*Message
 }
 
 // NewMessageProducer creates a new message producer, delegating message creation to `factory`.
-func NewMessageProducer(factory MessageFactory, defaultGasLimit types.GasUnit, defaultGasPrice types.BigInt) *MessageProducer {
+func NewMessageProducer(factory MessageFactory, ai ActorInfoMapping, defaultGasLimit, defaultGasPrice types.BigInt) *MessageProducer {
 	return &MessageProducer{
-		factory: factory,
+		factory:   factory,
+		actorInfo: ai,
 		defaults: msgOpts{
 			gasLimit: defaultGasLimit,
 			gasPrice: defaultGasPrice,
@@ -111,15 +135,15 @@ func NewMessageProducer(factory MessageFactory, defaultGasLimit types.GasUnit, d
 }
 
 // Messages returns a slice containing all messages created by the producer.
-func (mp *MessageProducer) Messages() []interface{} {
-	return mp.messages[:]
+func (mp *MessageProducer) Messages() []*Message {
+	return mp.messages
 }
 
 // msgOpts specifies value and gas parameters for a message, supporting a functional options pattern
 // for concise but customizable message construction.
 type msgOpts struct {
 	value    types.BigInt
-	gasLimit types.GasUnit
+	gasLimit types.BigInt
 	gasPrice types.BigInt
 }
 
@@ -140,7 +164,7 @@ func BigValue(value types.BigInt) MsgOpt {
 
 func GasLimit(limit uint64) MsgOpt {
 	return func(opts *msgOpts) {
-		opts.gasLimit = types.GasUnit(limit)
+		opts.gasLimit = types.NewInt(limit)
 	}
 }
 
@@ -151,8 +175,7 @@ func GasPrice(price uint64) MsgOpt {
 }
 
 // Build creates and returns a single message, using default gas parameters unless modified by `opts`.
-func (mp *MessageProducer) Build(from, to address.Address, nonce uint64, method MethodID, params []byte,
-	opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) Build(from, to address.Address, nonce uint64, method MethodID, params []byte, opts ...MsgOpt) (*Message, error) {
 	values := mp.defaults
 	for _, opt := range opts {
 		opt(&values)
@@ -163,7 +186,7 @@ func (mp *MessageProducer) Build(from, to address.Address, nonce uint64, method 
 
 // BuildFull creates and returns a single message.
 func (mp *MessageProducer) BuildFull(from, to address.Address, method MethodID, nonce uint64, value types.BigInt,
-	gasLimit types.GasUnit, gasPrice types.BigInt, params []byte) (interface{}, error) {
+	gasLimit, gasPrice types.BigInt, params []byte) (*Message, error) {
 	fm, err := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params)
 	if err != nil {
 		return nil, err
@@ -178,11 +201,11 @@ func (mp *MessageProducer) BuildFull(from, to address.Address, method MethodID, 
 //
 
 func (mp *MessageProducer) SingletonAddress(id actors.SingletonActorID) address.Address {
-	return mp.factory.FromSingletonAddress(id)
+	return mp.actorInfo.FromSingletonAddress(id)
 }
 
 func (mp *MessageProducer) ActorCid(c actors.ActorCodeID) cid.Cid {
-	return mp.factory.FromActorCodeCid(c)
+	return mp.actorInfo.FromActorCodeCid(c)
 }
 
 //
@@ -190,16 +213,16 @@ func (mp *MessageProducer) ActorCid(c actors.ActorCodeID) cid.Cid {
 //
 
 // Transfer builds a simple value transfer message and returns it.
-func (mp *MessageProducer) Transfer(from, to address.Address, nonce uint64, value uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) Transfer(from, to address.Address, nonce uint64, value uint64, opts ...MsgOpt) (*Message, error) {
 	x := append([]MsgOpt{Value(value)}, opts...)
 	return mp.Build(from, to, nonce, NoMethod, noParams, x...)
 }
 
 // InitExec builds a message invoking InitActor.Exec and returns it.
-func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, code actors.ActorCodeID, params []byte, opts ...MsgOpt) (interface{}, error) {
-	iaAddr := mp.factory.FromSingletonAddress(actors.InitAddress)
+func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, code actors.ActorCodeID, params []byte, opts ...MsgOpt) (*Message, error) {
+	iaAddr := mp.actorInfo.FromSingletonAddress(actors.InitAddress)
 	initParams, err := types.Serialize(&initialize.ExecParams{
-		Code:   mp.factory.FromActorCodeCid(code),
+		Code:   mp.actorInfo.FromActorCodeCid(code),
 		Params: params,
 	})
 	if err != nil {
@@ -212,39 +235,39 @@ func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, code act
 // Storage Market Actor Methods
 //
 
-func (mp *MessageProducer) StorageMarketWithdrawBalance(from address.Address, nonce uint64, balance types.BigInt, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMarketWithdrawBalance(from address.Address, nonce uint64, balance types.BigInt, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&strgmrkt.WithdrawBalanceParams{Balance: balance})
 	if err != nil {
 		return nil, err
 	}
-	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	smaddr := mp.actorInfo.FromSingletonAddress(actors.StorageMarketAddress)
 	return mp.Build(from, smaddr, nonce, StorageMarketWithdrawBalance, params, opts...)
 }
 
-func (mp *MessageProducer) StorageMarketAddBalance(from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
-	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+func (mp *MessageProducer) StorageMarketAddBalance(from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
+	smaddr := mp.actorInfo.FromSingletonAddress(actors.StorageMarketAddress)
 	return mp.Build(from, smaddr, nonce, StorageMarketAddBalance, noParams, opts...)
 }
 
-func (mp *MessageProducer) StorageMarketPublishStorageDeals(from address.Address, nonce uint64, deals []strgmrkt.StorageDeal, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMarketPublishStorageDeals(from address.Address, nonce uint64, deals []strgmrkt.StorageDeal, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&strgmrkt.PublishStorageDealsParams{Deals: deals})
 	if err != nil {
 		return nil, err
 	}
-	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	smaddr := mp.actorInfo.FromSingletonAddress(actors.StorageMarketAddress)
 	return mp.Build(from, smaddr, nonce, StorageMarketPublishStorageDeals, params, opts...)
 }
 
-func (mp *MessageProducer) StorageMarketActivateStorageDeals(from address.Address, nonce uint64, dealIDs []uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMarketActivateStorageDeals(from address.Address, nonce uint64, dealIDs []uint64, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&strgmrkt.ActivateStorageDealsParams{Deals: dealIDs})
 	if err != nil {
 		return nil, err
 	}
-	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	smaddr := mp.actorInfo.FromSingletonAddress(actors.StorageMarketAddress)
 	return mp.Build(from, smaddr, nonce, StorageMarketActivateStorageDeals, params, opts...)
 }
 
-func (mp *MessageProducer) StorageMarketComputeDataCommitment(from address.Address, nonce uint64, sectorSize uint64, dealIDs []uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMarketComputeDataCommitment(from address.Address, nonce uint64, sectorSize uint64, dealIDs []uint64, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&strgmrkt.ComputeDataCommitmentParams{
 		DealIDs:    dealIDs,
 		SectorSize: sectorSize,
@@ -252,7 +275,7 @@ func (mp *MessageProducer) StorageMarketComputeDataCommitment(from address.Addre
 	if err != nil {
 		return nil, err
 	}
-	smaddr := mp.factory.FromSingletonAddress(actors.StorageMarketAddress)
+	smaddr := mp.actorInfo.FromSingletonAddress(actors.StorageMarketAddress)
 	return mp.Build(from, smaddr, nonce, StorageMarketComputeDataCommitment, params, opts...)
 }
 
@@ -263,9 +286,9 @@ func (mp *MessageProducer) StorageMarketComputeDataCommitment(from address.Addre
 // StoragePowerCreateStorageMiner builds a message invoking StoragePowerActor.CreateStorageMiner and returns it.
 func (mp *MessageProducer) StoragePowerCreateStorageMiner(from address.Address, nonce uint64,
 	owner address.Address, worker address.Address, sectorSize uint64, peerID peer.ID,
-	opts ...MsgOpt) (interface{}, error) {
+	opts ...MsgOpt) (*Message, error) {
 
-	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	spaAddr := mp.actorInfo.FromSingletonAddress(actors.StoragePowerAddress)
 	params, err := types.Serialize(&strgpwr.CreateStorageMinerParams{
 		Owner:      owner,
 		Worker:     worker,
@@ -278,7 +301,7 @@ func (mp *MessageProducer) StoragePowerCreateStorageMiner(from address.Address, 
 	return mp.Build(from, spaAddr, nonce, StoragePowerCreateStorageMiner, params, opts...)
 }
 
-func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce uint64, delta types.BigInt, nextppEnd, previousppEnd uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce uint64, delta types.BigInt, nextppEnd, previousppEnd uint64, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&strgpwr.UpdateStorageParams{
 		Delta:                    delta,
 		NextProvingPeriodEnd:     nextppEnd,
@@ -287,25 +310,25 @@ func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce
 	if err != nil {
 		return nil, err
 	}
-	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	spaAddr := mp.actorInfo.FromSingletonAddress(actors.StoragePowerAddress)
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
 }
 
-func (mp *MessageProducer) StoragePowerPledgeCollateralForSize(from address.Address, nonce uint64, size types.BigInt, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StoragePowerPledgeCollateralForSize(from address.Address, nonce uint64, size types.BigInt, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&strgpwr.PledgeCollateralParams{Size: size})
 	if err != nil {
 		return nil, err
 	}
-	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	spaAddr := mp.actorInfo.FromSingletonAddress(actors.StoragePowerAddress)
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
 }
 
-func (mp *MessageProducer) StoragePowerLookupPower(from address.Address, nonce uint64, miner address.Address, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StoragePowerLookupPower(from address.Address, nonce uint64, miner address.Address, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&strgpwr.PowerLookupParams{Miner: miner})
 	if err != nil {
 		return nil, err
 	}
-	spaAddr := mp.factory.FromSingletonAddress(actors.StoragePowerAddress)
+	spaAddr := mp.actorInfo.FromSingletonAddress(actors.StoragePowerAddress)
 	return mp.Build(from, spaAddr, nonce, StoragePowerUpdatePower, params, opts...)
 }
 
@@ -313,7 +336,7 @@ func (mp *MessageProducer) StoragePowerLookupPower(from address.Address, nonce u
 // Storage Miner Actor Methods
 //
 
-func (mp *MessageProducer) StorageMinerUpdatePeerID(to, from address.Address, nonce uint64, peerID peer.ID, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerUpdatePeerID(to, from address.Address, nonce uint64, peerID peer.ID, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&strgminr.UpdatePeerIDParams{PeerID: peerID})
 	if err != nil {
 		return nil, err
@@ -321,23 +344,23 @@ func (mp *MessageProducer) StorageMinerUpdatePeerID(to, from address.Address, no
 	return mp.Build(from, to, nonce, StorageMinerUpdatePeerID, params, opts...)
 }
 
-func (mp *MessageProducer) StorageMinerGetOwner(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerGetOwner(to, from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetOwner, noParams, opts...)
 }
 
-func (mp *MessageProducer) StorageMinerGetPower(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerGetPower(to, from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetPower, noParams, opts...)
 }
 
-func (mp *MessageProducer) StorageMinerGetWorkerAddr(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerGetWorkerAddr(to, from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetWorkerAddr, noParams, opts...)
 }
 
-func (mp *MessageProducer) StorageMinerGetPeerID(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerGetPeerID(to, from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetPeerID, noParams, opts...)
 }
 
-func (mp *MessageProducer) StorageMinerGetSectorSize(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) StorageMinerGetSectorSize(to, from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
 	return mp.Build(from, to, nonce, StorageMinerGetSectorSize, noParams, opts...)
 }
 
@@ -345,7 +368,7 @@ func (mp *MessageProducer) StorageMinerGetSectorSize(to, from address.Address, n
 // Multi Signature Actor Methods
 //
 
-func (mp *MessageProducer) MultiSigPropose(to, from address.Address, nonce uint64, proposeTo address.Address, proposeValue types.BigInt, proposeMethod uint64, proposeParams []byte, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) MultiSigPropose(to, from address.Address, nonce uint64, proposeTo address.Address, proposeValue types.BigInt, proposeMethod uint64, proposeParams []byte, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&multsig.MultiSigProposeParams{
 		To:     proposeTo,
 		Value:  proposeValue,
@@ -358,7 +381,7 @@ func (mp *MessageProducer) MultiSigPropose(to, from address.Address, nonce uint6
 	return mp.Build(from, to, nonce, MultiSigPropose, params, opts...)
 }
 
-func (mp *MessageProducer) MultiSigApprove(to, from address.Address, nonce uint64, txID uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) MultiSigApprove(to, from address.Address, nonce uint64, txID uint64, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&multsig.MultiSigTxID{TxID: txID})
 	if err != nil {
 		return nil, err
@@ -366,7 +389,7 @@ func (mp *MessageProducer) MultiSigApprove(to, from address.Address, nonce uint6
 	return mp.Build(from, to, nonce, MultiSigApprove, params, opts...)
 }
 
-func (mp *MessageProducer) MultiSigCancel(to, from address.Address, nonce uint64, txID uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) MultiSigCancel(to, from address.Address, nonce uint64, txID uint64, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&multsig.MultiSigTxID{TxID: txID})
 	if err != nil {
 		return nil, err
@@ -374,7 +397,7 @@ func (mp *MessageProducer) MultiSigCancel(to, from address.Address, nonce uint64
 	return mp.Build(from, to, nonce, MultiSigCancel, params, opts...)
 }
 
-func (mp *MessageProducer) MultiSigAddSigner(to, from address.Address, nonce uint64, signer address.Address, increase bool, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) MultiSigAddSigner(to, from address.Address, nonce uint64, signer address.Address, increase bool, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&multsig.MultiSigAddSignerParam{
 		Signer:   signer,
 		Increase: increase,
@@ -385,7 +408,7 @@ func (mp *MessageProducer) MultiSigAddSigner(to, from address.Address, nonce uin
 	return mp.Build(from, to, nonce, MultiSigAddSigner, params, opts...)
 }
 
-func (mp *MessageProducer) MultiSigRemoveSigner(to, from address.Address, nonce uint64, signer address.Address, decrease bool, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) MultiSigRemoveSigner(to, from address.Address, nonce uint64, signer address.Address, decrease bool, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&multsig.MultiSigRemoveSignerParam{
 		Signer:   signer,
 		Decrease: decrease,
@@ -396,7 +419,7 @@ func (mp *MessageProducer) MultiSigRemoveSigner(to, from address.Address, nonce 
 	return mp.Build(from, to, nonce, MultiSigRemoveSigner, params, opts...)
 }
 
-func (mp *MessageProducer) MultiSigSwapSigner(to, from address.Address, nonce uint64, swapFrom, swapTo address.Address, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) MultiSigSwapSigner(to, from address.Address, nonce uint64, swapFrom, swapTo address.Address, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&multsig.MultiSigSwapSignerParams{
 		From: swapFrom,
 		To:   swapTo,
@@ -407,7 +430,7 @@ func (mp *MessageProducer) MultiSigSwapSigner(to, from address.Address, nonce ui
 	return mp.Build(from, to, nonce, MultiSigSwapSigner, params, opts...)
 }
 
-func (mp *MessageProducer) MultiSigChangeRequirement(to, from address.Address, nonce uint64, req uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) MultiSigChangeRequirement(to, from address.Address, nonce uint64, req uint64, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&multsig.MultiSigChangeReqParams{Req: req})
 	if err != nil {
 		return nil, err
@@ -419,7 +442,7 @@ func (mp *MessageProducer) MultiSigChangeRequirement(to, from address.Address, n
 // Payment Channel Actor Methods
 //
 
-func (mp *MessageProducer) PaychUpdateChannelState(to, from address.Address, nonce uint64, sv types.SignedVoucher, secret, proof []byte, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) PaychUpdateChannelState(to, from address.Address, nonce uint64, sv types.SignedVoucher, secret, proof []byte, opts ...MsgOpt) (*Message, error) {
 	params, err := types.Serialize(&paych.PaymentChannelUpdateParams{
 		Sv:     sv,
 		Secret: secret,
@@ -431,16 +454,16 @@ func (mp *MessageProducer) PaychUpdateChannelState(to, from address.Address, non
 	return mp.Build(from, to, nonce, PaymentChannelUpdate, params, opts...)
 }
 
-func (mp *MessageProducer) PaychClose(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) PaychClose(to, from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
 	return mp.Build(from, to, nonce, PaymentChannelClose, noParams, opts...)
 }
-func (mp *MessageProducer) PaychCollect(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) PaychCollect(to, from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
 	return mp.Build(from, to, nonce, PaymentChannelCollect, noParams, opts...)
 }
-func (mp *MessageProducer) PaychGetOwner(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) PaychGetOwner(to, from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
 	return mp.Build(from, to, nonce, PaymentChannelGetOwner, noParams, opts...)
 }
-func (mp *MessageProducer) PaychGetToSend(to, from address.Address, nonce uint64, opts ...MsgOpt) (interface{}, error) {
+func (mp *MessageProducer) PaychGetToSend(to, from address.Address, nonce uint64, opts ...MsgOpt) (*Message, error) {
 	return mp.Build(from, to, nonce, PaymentChannelGetToSend, noParams, opts...)
 }
 

@@ -25,10 +25,10 @@ var (
 	TotalNetworkBalance = types.NewInt(types.NewInt(1).Mul(types.NewInt(totalFilecoin).Int, types.NewInt(0).SetUint64(filecoinPrecision)).Uint64())
 )
 
-func testSetup(t testing.TB, factory Factories) (*StateDriver, types.BigInt, types.GasUnit) {
+func testSetup(t testing.TB, factory Factories) (*StateDriver, types.BigInt, types.BigInt) {
 	drv := NewStateDriver(t, factory.NewState())
 	gasPrice := types.NewInt(1)
-	gasLimit := types.GasUnit(1000000000000)
+	gasLimit := types.NewInt(1000000000000)
 
 	_, _, err := drv.State().SetSingletonActor(actors.InitAddress, types.NewInt(0))
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	// account that will own the miner
 	minerOwner := drv.NewAccountActorBigBalance(types.NewIntFromString("2000000000000000000000000"))
 
-	producer := chain.NewMessageProducer(factory.NewMessageFactory(drv.State()), gasLimit, gasPrice)
+	producer := chain.NewMessageProducer(factory.NewMessageFactory(), factory.NewActorInfoMapping(), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
 	exeCtx := chain.NewExecutionContext(1, testMiner)
 
@@ -69,7 +69,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: []byte{0, 102},
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 	//
@@ -87,7 +87,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: sectorSize.Bytes(),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 	//
@@ -100,7 +100,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: minerOwner.Bytes(),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 	//
@@ -113,7 +113,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: []byte{},
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 	//
@@ -126,7 +126,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: minerOwner.Bytes(),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 	//
@@ -139,7 +139,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: []byte(peerID),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 	//
@@ -156,7 +156,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: []byte(nil),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 	//
@@ -169,7 +169,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 	drv.AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: []byte(peerID2),
-		GasUsed:     0,
+		GasUsed:     types.NewInt(0),
 	})
 
 	//
