@@ -8,7 +8,7 @@ import (
 
 // Applier applies abstract messages to states.
 type Applier interface {
-	ApplyMessage(context *ExecutionContext, state state.Wrapper, msg interface{}) (MessageReceipt, error)
+	ApplyMessage(context *ExecutionContext, state state.Wrapper, msg *Message) (MessageReceipt, error)
 }
 
 // MessageReceipt is the return value of message application.
@@ -40,6 +40,6 @@ func NewValidator(executor Applier) *Validator {
 }
 
 // ApplyMessages applies a message to a state
-func (v *Validator) ApplyMessage(context *ExecutionContext, state state.Wrapper, message interface{}) (MessageReceipt, error) {
+func (v *Validator) ApplyMessage(context *ExecutionContext, state state.Wrapper, message *Message) (MessageReceipt, error) {
 	return v.applier.ApplyMessage(context, state, message)
 }
