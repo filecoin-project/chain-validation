@@ -25,7 +25,7 @@ import (
 // Factories wraps up all the implementation-specific integration points.
 type Factories interface {
 	NewState() state.Wrapper
-	NewMessageFactory(wrapper state.Wrapper) chain.MessageFactory
+	NewMessageFactory() chain.MessageFactory
 	NewActorInfoMapping() chain.ActorInfoMapping
 
 	chain.Applier
