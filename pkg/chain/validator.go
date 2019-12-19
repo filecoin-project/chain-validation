@@ -1,8 +1,9 @@
 package chain
 
 import (
+	"github.com/filecoin-project/go-address"
+
 	"github.com/filecoin-project/chain-validation/pkg/state"
-	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 

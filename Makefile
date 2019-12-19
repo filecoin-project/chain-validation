@@ -27,3 +27,6 @@ build: $(SUBMODULES)
 clean:
 	rm -f .filecoin-build
 	rm -f .update-modules
+
+gen:
+	go run ./pkg/gen/main.go

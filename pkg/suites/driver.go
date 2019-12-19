@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-amt-ipld"
 	"github.com/ipfs/go-hamt-ipld"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,6 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgmrkt"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
-	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
