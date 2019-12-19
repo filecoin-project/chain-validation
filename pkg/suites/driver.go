@@ -132,7 +132,7 @@ func (d *StateDriver) AssertPayChState(paychAddr address.Address, expected paych
 	assert.Equal(d.tb, expected.ToSend, paychState.ToSend, fmt.Sprintf("expected ToSend: %v, actual ToSend: %v", expected.ToSend, paychState.ToSend))
 
 	assert.Equal(d.tb, len(expected.LaneStates), len(paychState.LaneStates), fmt.Sprintf("expected LaneState size: %v, actual LaneState size: %v", len(expected.LaneStates), len(paychState.LaneStates)))
-	for k, _ := range expected.LaneStates {
+	for k := range expected.LaneStates {
 		assert.Equal(d.tb, expected.LaneStates[k], paychState.LaneStates[k], fmt.Sprintf("expected LaneStates: %v, actual LaneStates: %v", expected.LaneStates, paychState.LaneStates))
 	}
 }

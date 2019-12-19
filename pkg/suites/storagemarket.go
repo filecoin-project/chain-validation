@@ -134,6 +134,7 @@ func mustPublishStorageDeal(c Candy, nonce uint64, from address.Address, dealID 
 	require.NoError(c.TB(), err)
 
 	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
+	require.NoError(c.TB(), err)
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: respBytes,

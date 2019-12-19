@@ -73,7 +73,9 @@ type StorageDealProposal struct {
 }
 
 func (sdp *StorageDealProposal) TotalStoragePrice() types.BigInt {
-	return types.BigInt{big.NewInt(0).Mul(sdp.StoragePricePerEpoch.Int, big.NewInt(0).SetUint64(sdp.Duration))}
+	return types.BigInt{
+		Int: big.NewInt(0).Mul(sdp.StoragePricePerEpoch.Int, big.NewInt(0).SetUint64(sdp.Duration)),
+	}
 }
 
 func (sdp *StorageDealProposal) Sign(ctx context.Context, from address.Address, s state.Signer) error {
