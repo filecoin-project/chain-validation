@@ -12,7 +12,6 @@ For best results, before submitting a PR, make sure:
 1. It has met all acceptance criteria for the issue.
 1. It addresses only the one issue and does not make other, irrelevant changes.
 1. Your code conforms to our coding style guide.
-1. You have adequate test coverage (this should be indicated by CI results anyway).
 1. If you like, check out [current PRs](https://github.com/filecoin-project/chain-validation/pulls) to see how others do it.
 
 Special Note:
