@@ -3,7 +3,7 @@ package types
 import (
 	"bytes"
 
-	"github.com/filecoin-project/chain-validation/pkg/state/address"
+	"github.com/filecoin-project/go-address"
 )
 
 type SignedVoucher struct {

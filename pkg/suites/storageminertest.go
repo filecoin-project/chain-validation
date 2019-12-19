@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"testing"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/libp2p/go-libp2p-core/peer"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,6 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
-	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
@@ -200,7 +200,7 @@ func CreateStorageMinerAndUpdatePeerID(t testing.TB, factory Factories) {
 func RequireIntPeerID(t testing.TB, i int64) peer.ID {
 	buf := make([]byte, 16)
 	n := binary.PutVarint(buf, i)
-	h, err := mh.Sum(buf[:n], mh.ID, -1)
+	h, err := mh.Sum(buf[:n], mh.IDENTITY, -1)
 	require.NoError(t, err)
 	pid, err := peer.IDFromBytes(h)
 	require.NoError(t, err)

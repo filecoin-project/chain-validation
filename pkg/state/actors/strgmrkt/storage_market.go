@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-amt-ipld"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -15,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/pkg/state"
-	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
@@ -73,7 +73,9 @@ type StorageDealProposal struct {
 }
 
 func (sdp *StorageDealProposal) TotalStoragePrice() types.BigInt {
-	return types.BigInt{big.NewInt(0).Mul(sdp.StoragePricePerEpoch.Int, big.NewInt(0).SetUint64(sdp.Duration))}
+	return types.BigInt{
+		Int: big.NewInt(0).Mul(sdp.StoragePricePerEpoch.Int, big.NewInt(0).SetUint64(sdp.Duration)),
+	}
 }
 
 func (sdp *StorageDealProposal) Sign(ctx context.Context, from address.Address, s state.Signer) error {

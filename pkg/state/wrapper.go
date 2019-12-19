@@ -2,10 +2,10 @@ package state
 
 import (
 	"context"
-	"github.com/filecoin-project/chain-validation/pkg/state/actors"
+	"github.com/filecoin-project/go-address"
 	"github.com/ipfs/go-cid"
 
-	"github.com/filecoin-project/chain-validation/pkg/state/address"
+	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 

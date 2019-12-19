@@ -105,7 +105,7 @@ func Decode(buf []byte) (ints []uint64, err error) {
 	var runLength int
 	done := false
 
-	for done == false {
+	for done == false { // nolint: gosimple
 		y := take(1)
 		switch y {
 		case 1:

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-amt-ipld"
 	"github.com/ipfs/go-hamt-ipld"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,6 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgmrkt"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
-	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
@@ -132,7 +132,7 @@ func (d *StateDriver) AssertPayChState(paychAddr address.Address, expected paych
 	assert.Equal(d.tb, expected.ToSend, paychState.ToSend, fmt.Sprintf("expected ToSend: %v, actual ToSend: %v", expected.ToSend, paychState.ToSend))
 
 	assert.Equal(d.tb, len(expected.LaneStates), len(paychState.LaneStates), fmt.Sprintf("expected LaneState size: %v, actual LaneState size: %v", len(expected.LaneStates), len(paychState.LaneStates)))
-	for k, _ := range expected.LaneStates {
+	for k := range expected.LaneStates {
 		assert.Equal(d.tb, expected.LaneStates[k], paychState.LaneStates[k], fmt.Sprintf("expected LaneStates: %v, actual LaneStates: %v", expected.LaneStates, paychState.LaneStates))
 	}
 }

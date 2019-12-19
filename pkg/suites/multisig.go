@@ -3,12 +3,12 @@ package suites
 import (
 	"testing"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors"
 	"github.com/filecoin-project/chain-validation/pkg/state/actors/multsig"
-	"github.com/filecoin-project/chain-validation/pkg/state/address"
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
@@ -229,6 +229,7 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 
 	// bob cancels alice's transaction. This fails as bob did not create alice's transaction.
 	msg, err := c.Producer().MultiSigCancel(multisigAddr, bob, 0, txID0.TxID, chain.Value(0))
+	require.NoError(t, err)
 	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
 	require.EqualError(t, err, "cannot cancel another signers transaction (RetCode=4)")
 	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
@@ -286,6 +287,7 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 
 func mustProposeMultisigTransfer(gdg Candy, nonce, value uint64, txID multsig.MultiSigTxID, to, from, proposeTo address.Address, proposeValue uint64) {
 	msg, err := gdg.Producer().MultiSigPropose(to, from, nonce, proposeTo, types.NewInt(proposeValue), 0, []byte{}, chain.Value(value))
+	require.NoError(gdg.TB(), err)
 	msgReceipt, err := gdg.Validator().ApplyMessage(gdg.ExeCtx(), gdg.Driver().State(), msg)
 	require.NoError(gdg.TB(), err)
 
