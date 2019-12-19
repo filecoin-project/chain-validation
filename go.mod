@@ -28,3 +28,5 @@ require (
 	golang.org/x/sys v0.0.0-20190826190057-c7b8b68b1456 // indirect
 	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898
 )
+
+replace github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi
