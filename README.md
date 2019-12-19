@@ -1,4 +1,6 @@
 # Chain-Validation
+[![](https://img.shields.io/badge/made%20by-Protocol%20Labs-blue.svg?style=flat-square)](http://ipn.io)
+[![CircleCI](https://circleci.com/gh/filecoin-project/chain-validation.svg?style=svg)](https://circleci.com/gh/filecoin-project/chain-validation)
 
 This library provides tools for validating the correctness of a Filecoin implementation according to the [specification](https://github.com/filecoin-project/specs). 
 
@@ -21,7 +23,7 @@ For a comprehensive project description refer to the [Filecoin Chain-Validation 
 - High-performance execution, if this comes at a cost of timeliness or comprehensiveness
 
 ## Usage
-In order for you Filecoin implementation to use this package it will need to satisfy the following interfaces, described in top-down order:
+In order for your Filecoin implementation to use this package it will need to satisfy the following interfaces, described in top-down order:
 
 #### Factories
 
