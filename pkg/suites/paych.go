@@ -2,6 +2,7 @@ package suites
 
 import (
 	"context"
+	"github.com/filecoin-project/chain-validation/pkg/state"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
@@ -20,23 +21,23 @@ func PayChActorConstructor(t testing.TB, factory Factories) {
 	const initialBal = 200000000000
 	const valueSend = 10
 
-	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+	td := NewTestDriver(t, factory, map[actors.SingletonActorID]types.BigInt{
 		actors.InitAddress:         types.NewInt(0),
 		actors.BurntFundsAddress:   types.NewInt(0),
 		actors.StoragePowerAddress: types.NewInt(0),
 		actors.NetworkAddress:      TotalNetworkBalance,
 	})
 
-	alice := c.Driver().NewAccountActor(initialBal)
-	bob := c.Driver().NewAccountActor(initialBal)
+	alice := td.Driver().NewAccountActor(initialBal)
+	bob := td.Driver().NewAccountActor(initialBal)
 
 	paychAddr, err := address.NewIDAddress(103)
 	require.NoError(t, err)
 
 	// alice creates a payment channel with bob.
-	mustCreatePaychActor(c, 0, valueSend, paychAddr, alice, bob)
-	c.Driver().AssertBalance(paychAddr, valueSend)
-	c.Driver().AssertPayChState(paychAddr, paych.PaymentChannelActorState{
+	mustCreatePaychActor(td, 0, valueSend, paychAddr, alice, bob)
+	td.Driver().AssertBalance(paychAddr, valueSend)
+	td.Driver().AssertPayChState(paychAddr, paych.PaymentChannelActorState{
 		From:           alice,
 		To:             bob,
 		ToSend:         types.NewInt(0),
@@ -52,23 +53,23 @@ func PayChActorUpdate(t testing.TB, factory Factories) {
 	const paychVoucherAmount = 50
 	const paychUpdateBal = 100
 
-	c := NewCandy(t, factory, map[actors.SingletonActorID]types.BigInt{
+	td := NewTestDriver(t, factory, map[actors.SingletonActorID]types.BigInt{
 		actors.InitAddress:         types.NewInt(0),
 		actors.BurntFundsAddress:   types.NewInt(0),
 		actors.StoragePowerAddress: types.NewInt(0),
 		actors.NetworkAddress:      TotalNetworkBalance,
 	})
 
-	alice := c.Driver().NewAccountActor(initialBal)
-	bob := c.Driver().NewAccountActor(initialBal)
+	alice := td.Driver().NewAccountActor(initialBal)
+	bob := td.Driver().NewAccountActor(initialBal)
 
 	paychAddr, err := address.NewIDAddress(103)
 	require.NoError(t, err)
 
 	// alice creates a payment channel with bob.
-	mustCreatePaychActor(c, 0, paychInitBal, paychAddr, alice, bob)
-	c.Driver().AssertBalance(paychAddr, paychInitBal)
-	c.Driver().AssertPayChState(paychAddr, paych.PaymentChannelActorState{
+	mustCreatePaychActor(td, 0, paychInitBal, paychAddr, alice, bob)
+	td.Driver().AssertBalance(paychAddr, paychInitBal)
+	td.Driver().AssertPayChState(paychAddr, paych.PaymentChannelActorState{
 		From:           alice,
 		To:             bob,
 		ToSend:         types.NewInt(0),
@@ -83,16 +84,16 @@ func PayChActorUpdate(t testing.TB, factory Factories) {
 	}
 	signMe, err := sv.SigningBytes()
 	require.NoError(t, err)
-	sig, err := c.Driver().State().Sign(context.TODO(), alice, signMe)
+	sig, err := td.Driver().State().Sign(context.TODO(), alice, signMe)
 	require.NoError(t, err)
 	sv.Signature = sig
 
 	// unused but required
 	proof, secret := []byte{}, []byte{}
 	// alice updates the payment channel
-	mustUpdatePaychActor(c, 1, paychUpdateBal, paychAddr, alice, proof, secret, *sv)
-	c.Driver().AssertBalance(paychAddr, paychUpdateBal)
-	c.Driver().AssertPayChState(paychAddr, paych.PaymentChannelActorState{
+	mustUpdatePaychActor(td, 1, paychUpdateBal, paychAddr, alice, proof, secret, *sv)
+	td.Driver().AssertBalance(paychAddr, paychUpdateBal)
+	td.Driver().AssertPayChState(paychAddr, paych.PaymentChannelActorState{
 		From:           alice,
 		To:             bob,
 		ToSend:         types.NewInt(paychVoucherAmount),
@@ -108,16 +109,16 @@ func PayChActorUpdate(t testing.TB, factory Factories) {
 	})
 
 	// alice asserts that they own the channel and the amount to send is correct.
-	assertPaychOwner(c, 2, 0, paychAddr, alice, alice)
-	assertPaychToSend(c, 3, 0, paychAddr, alice, types.NewInt(paychVoucherAmount))
+	assertPaychOwner(td, 2, 0, paychAddr, alice, alice)
+	assertPaychToSend(td, 3, 0, paychAddr, alice, types.NewInt(paychVoucherAmount))
 
 	// alice closes the channel
-	mustClosePaych(c, 4, 0, paychAddr, alice)
-	c.Driver().AssertPayChState(paychAddr, paych.PaymentChannelActorState{
+	mustClosePaych(td, 4, 0, paychAddr, alice)
+	td.Driver().AssertPayChState(paychAddr, paych.PaymentChannelActorState{
 		From:           alice,
 		To:             bob,
 		ToSend:         types.NewInt(paychVoucherAmount),
-		ClosingAt:      PaymentChannelClosingDelay + c.ExeCtx().Epoch,
+		ClosingAt:      PaymentChannelClosingDelay + td.ExeCtx().Epoch,
 		MinCloseHeight: 0,
 		LaneStates: map[string]*paych.LaneState{
 			"0": {
@@ -129,11 +130,11 @@ func PayChActorUpdate(t testing.TB, factory Factories) {
 	})
 
 	// advance the ChainEpoch to cause the channel to close
-	c.ExeCtx().Epoch += PaymentChannelClosingDelay
+	td.ExeCtx().Epoch += PaymentChannelClosingDelay
 	// bob collects the payment from alice
 	const gasPaiedByBob = 360
-	mustCollectPaych(c, 0, 0, paychAddr, bob)
-	c.Driver().AssertPayChState(paychAddr, paych.PaymentChannelActorState{
+	mustCollectPaych(td, 0, 0, paychAddr, bob)
+	td.Driver().AssertPayChState(paychAddr, paych.PaymentChannelActorState{
 		From:           alice,
 		To:             bob,
 		ToSend:         types.NewInt(0), // the funds must have moved to bob.
@@ -149,63 +150,63 @@ func PayChActorUpdate(t testing.TB, factory Factories) {
 	})
 
 	// This will break if gas ever changes..and it will..
-	c.Driver().AssertBalance(bob, initialBal+paychVoucherAmount-gasPaiedByBob)
+	td.Driver().AssertBalance(bob, initialBal+paychVoucherAmount-gasPaiedByBob)
 
 }
 
-func mustCreatePaychActor(c Candy, nonce, value uint64, paychAddr, creator, paychTo address.Address) {
-	paychConstructParams, err := types.Serialize(&paych.PaymentChannelConstructorParams{To: paychTo})
-	require.NoError(c.TB(), err)
+func mustCreatePaychActor(td TestDriver, nonce, value uint64, paychAddr, creator, paychTo address.Address) {
+	paychConstructParams, err := state.Serialize(&paych.PaymentChannelConstructorParams{To: paychTo})
+	require.NoError(td.TB(), err)
 
-	msg, err := c.Producer().InitExec(creator, nonce, actors.PaymentChannelActorCodeCid, paychConstructParams, chain.Value(value))
-	require.NoError(c.TB(), err)
+	msg, err := td.Producer().InitExec(creator, nonce, actors.PaymentChannelActorCodeCid, paychConstructParams, chain.Value(value))
+	require.NoError(td.TB(), err)
 
-	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
-	require.NoError(c.TB(), err)
+	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	require.NoError(td.TB(), err)
 
-	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
+	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: paychAddr.Bytes(),
 		GasUsed:     types.NewInt(0),
 	})
 }
 
-func mustUpdatePaychActor(c Candy, nonce, value uint64, to, from address.Address, secret, proof []byte, sv types.SignedVoucher) {
-	msg, err := c.Producer().PaychUpdateChannelState(to, from, nonce, sv, secret, proof, chain.Value(value))
-	require.NoError(c.TB(), err)
+func mustUpdatePaychActor(td TestDriver, nonce, value uint64, to, from address.Address, secret, proof []byte, sv types.SignedVoucher) {
+	msg, err := td.Producer().PaychUpdateChannelState(to, from, nonce, sv, secret, proof, chain.Value(value))
+	require.NoError(td.TB(), err)
 
-	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
-	require.NoError(c.TB(), err)
+	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	require.NoError(td.TB(), err)
 
-	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
+	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(0),
 	})
 }
 
-func mustClosePaych(c Candy, nonce, value uint64, paychAddr, from address.Address) {
-	msg, err := c.Producer().PaychClose(paychAddr, from, nonce, chain.Value(value))
-	require.NoError(c.TB(), err)
+func mustClosePaych(td TestDriver, nonce, value uint64, paychAddr, from address.Address) {
+	msg, err := td.Producer().PaychClose(paychAddr, from, nonce, chain.Value(value))
+	require.NoError(td.TB(), err)
 
-	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
-	require.NoError(c.TB(), err)
+	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	require.NoError(td.TB(), err)
 
-	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
+	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(0),
 	})
 }
 
-func mustCollectPaych(c Candy, nonce, value uint64, paychAddr, from address.Address) {
-	msg, err := c.Producer().PaychCollect(paychAddr, from, nonce, chain.Value(value))
-	require.NoError(c.TB(), err)
+func mustCollectPaych(td TestDriver, nonce, value uint64, paychAddr, from address.Address) {
+	msg, err := td.Producer().PaychCollect(paychAddr, from, nonce, chain.Value(value))
+	require.NoError(td.TB(), err)
 
-	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
-	require.NoError(c.TB(), err)
+	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	require.NoError(td.TB(), err)
 
-	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
+	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
 		GasUsed:     types.NewInt(0),
@@ -213,28 +214,28 @@ func mustCollectPaych(c Candy, nonce, value uint64, paychAddr, from address.Addr
 
 }
 
-func assertPaychOwner(c Candy, nonce, value uint64, paychAddr, from, owner address.Address) {
-	msg, err := c.Producer().PaychGetOwner(paychAddr, from, nonce, chain.Value(value))
-	require.NoError(c.TB(), err)
+func assertPaychOwner(td TestDriver, nonce, value uint64, paychAddr, from, owner address.Address) {
+	msg, err := td.Producer().PaychGetOwner(paychAddr, from, nonce, chain.Value(value))
+	require.NoError(td.TB(), err)
 
-	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
-	require.NoError(c.TB(), err)
+	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	require.NoError(td.TB(), err)
 
-	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
+	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: owner.Bytes(),
 		GasUsed:     types.NewInt(0),
 	})
 }
 
-func assertPaychToSend(c Candy, nonce, value uint64, paychAddr, from address.Address, toSend types.BigInt) {
-	msg, err := c.Producer().PaychGetToSend(paychAddr, from, nonce, chain.Value(value))
-	require.NoError(c.TB(), err)
+func assertPaychToSend(td TestDriver, nonce, value uint64, paychAddr, from address.Address, toSend types.BigInt) {
+	msg, err := td.Producer().PaychGetToSend(paychAddr, from, nonce, chain.Value(value))
+	require.NoError(td.TB(), err)
 
-	msgReceipt, err := c.Validator().ApplyMessage(c.ExeCtx(), c.Driver().State(), msg)
-	require.NoError(c.TB(), err)
+	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	require.NoError(td.TB(), err)
 
-	c.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
+	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: toSend.Bytes(),
 		GasUsed:     types.NewInt(0),
