@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"github.com/filecoin-project/chain-validation/pkg/state"
 	"github.com/filecoin-project/go-address"
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -221,7 +222,7 @@ func (mp *MessageProducer) Transfer(from, to address.Address, nonce uint64, valu
 // InitExec builds a message invoking InitActor.Exec and returns it.
 func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, code actors.ActorCodeID, params []byte, opts ...MsgOpt) (*Message, error) {
 	iaAddr := mp.actorInfo.FromSingletonAddress(actors.InitAddress)
-	initParams, err := types.Serialize(&initialize.ExecParams{
+	initParams, err := state.Serialize(&initialize.ExecParams{
 		Code:   mp.actorInfo.FromActorCodeCid(code),
 		Params: params,
 	})
@@ -236,7 +237,7 @@ func (mp *MessageProducer) InitExec(from address.Address, nonce uint64, code act
 //
 
 func (mp *MessageProducer) StorageMarketWithdrawBalance(from address.Address, nonce uint64, balance types.BigInt, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&strgmrkt.WithdrawBalanceParams{Balance: balance})
+	params, err := state.Serialize(&strgmrkt.WithdrawBalanceParams{Balance: balance})
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +251,7 @@ func (mp *MessageProducer) StorageMarketAddBalance(from address.Address, nonce u
 }
 
 func (mp *MessageProducer) StorageMarketPublishStorageDeals(from address.Address, nonce uint64, deals []strgmrkt.StorageDeal, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&strgmrkt.PublishStorageDealsParams{Deals: deals})
+	params, err := state.Serialize(&strgmrkt.PublishStorageDealsParams{Deals: deals})
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +260,7 @@ func (mp *MessageProducer) StorageMarketPublishStorageDeals(from address.Address
 }
 
 func (mp *MessageProducer) StorageMarketActivateStorageDeals(from address.Address, nonce uint64, dealIDs []uint64, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&strgmrkt.ActivateStorageDealsParams{Deals: dealIDs})
+	params, err := state.Serialize(&strgmrkt.ActivateStorageDealsParams{Deals: dealIDs})
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +269,7 @@ func (mp *MessageProducer) StorageMarketActivateStorageDeals(from address.Addres
 }
 
 func (mp *MessageProducer) StorageMarketComputeDataCommitment(from address.Address, nonce uint64, sectorSize uint64, dealIDs []uint64, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&strgmrkt.ComputeDataCommitmentParams{
+	params, err := state.Serialize(&strgmrkt.ComputeDataCommitmentParams{
 		DealIDs:    dealIDs,
 		SectorSize: sectorSize,
 	})
@@ -289,7 +290,7 @@ func (mp *MessageProducer) StoragePowerCreateStorageMiner(from address.Address, 
 	opts ...MsgOpt) (*Message, error) {
 
 	spaAddr := mp.actorInfo.FromSingletonAddress(actors.StoragePowerAddress)
-	params, err := types.Serialize(&strgpwr.CreateStorageMinerParams{
+	params, err := state.Serialize(&strgpwr.CreateStorageMinerParams{
 		Owner:      owner,
 		Worker:     worker,
 		SectorSize: sectorSize,
@@ -302,7 +303,7 @@ func (mp *MessageProducer) StoragePowerCreateStorageMiner(from address.Address, 
 }
 
 func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce uint64, delta types.BigInt, nextppEnd, previousppEnd uint64, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&strgpwr.UpdateStorageParams{
+	params, err := state.Serialize(&strgpwr.UpdateStorageParams{
 		Delta:                    delta,
 		NextProvingPeriodEnd:     nextppEnd,
 		PreviousProvingPeriodEnd: previousppEnd,
@@ -315,7 +316,7 @@ func (mp *MessageProducer) StoragePowerUpdateStorage(from address.Address, nonce
 }
 
 func (mp *MessageProducer) StoragePowerPledgeCollateralForSize(from address.Address, nonce uint64, size types.BigInt, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&strgpwr.PledgeCollateralParams{Size: size})
+	params, err := state.Serialize(&strgpwr.PledgeCollateralParams{Size: size})
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +325,7 @@ func (mp *MessageProducer) StoragePowerPledgeCollateralForSize(from address.Addr
 }
 
 func (mp *MessageProducer) StoragePowerLookupPower(from address.Address, nonce uint64, miner address.Address, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&strgpwr.PowerLookupParams{Miner: miner})
+	params, err := state.Serialize(&strgpwr.PowerLookupParams{Miner: miner})
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +338,7 @@ func (mp *MessageProducer) StoragePowerLookupPower(from address.Address, nonce u
 //
 
 func (mp *MessageProducer) StorageMinerUpdatePeerID(to, from address.Address, nonce uint64, peerID peer.ID, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&strgminr.UpdatePeerIDParams{PeerID: peerID})
+	params, err := state.Serialize(&strgminr.UpdatePeerIDParams{PeerID: peerID})
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +370,7 @@ func (mp *MessageProducer) StorageMinerGetSectorSize(to, from address.Address, n
 //
 
 func (mp *MessageProducer) MultiSigPropose(to, from address.Address, nonce uint64, proposeTo address.Address, proposeValue types.BigInt, proposeMethod uint64, proposeParams []byte, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&multsig.MultiSigProposeParams{
+	params, err := state.Serialize(&multsig.MultiSigProposeParams{
 		To:     proposeTo,
 		Value:  proposeValue,
 		Method: proposeMethod,
@@ -382,7 +383,7 @@ func (mp *MessageProducer) MultiSigPropose(to, from address.Address, nonce uint6
 }
 
 func (mp *MessageProducer) MultiSigApprove(to, from address.Address, nonce uint64, txID uint64, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&multsig.MultiSigTxID{TxID: txID})
+	params, err := state.Serialize(&multsig.MultiSigTxID{TxID: txID})
 	if err != nil {
 		return nil, err
 	}
@@ -390,7 +391,7 @@ func (mp *MessageProducer) MultiSigApprove(to, from address.Address, nonce uint6
 }
 
 func (mp *MessageProducer) MultiSigCancel(to, from address.Address, nonce uint64, txID uint64, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&multsig.MultiSigTxID{TxID: txID})
+	params, err := state.Serialize(&multsig.MultiSigTxID{TxID: txID})
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +399,7 @@ func (mp *MessageProducer) MultiSigCancel(to, from address.Address, nonce uint64
 }
 
 func (mp *MessageProducer) MultiSigAddSigner(to, from address.Address, nonce uint64, signer address.Address, increase bool, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&multsig.MultiSigAddSignerParam{
+	params, err := state.Serialize(&multsig.MultiSigAddSignerParam{
 		Signer:   signer,
 		Increase: increase,
 	})
@@ -409,7 +410,7 @@ func (mp *MessageProducer) MultiSigAddSigner(to, from address.Address, nonce uin
 }
 
 func (mp *MessageProducer) MultiSigRemoveSigner(to, from address.Address, nonce uint64, signer address.Address, decrease bool, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&multsig.MultiSigRemoveSignerParam{
+	params, err := state.Serialize(&multsig.MultiSigRemoveSignerParam{
 		Signer:   signer,
 		Decrease: decrease,
 	})
@@ -420,7 +421,7 @@ func (mp *MessageProducer) MultiSigRemoveSigner(to, from address.Address, nonce 
 }
 
 func (mp *MessageProducer) MultiSigSwapSigner(to, from address.Address, nonce uint64, swapFrom, swapTo address.Address, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&multsig.MultiSigSwapSignerParams{
+	params, err := state.Serialize(&multsig.MultiSigSwapSignerParams{
 		From: swapFrom,
 		To:   swapTo,
 	})
@@ -431,7 +432,7 @@ func (mp *MessageProducer) MultiSigSwapSigner(to, from address.Address, nonce ui
 }
 
 func (mp *MessageProducer) MultiSigChangeRequirement(to, from address.Address, nonce uint64, req uint64, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&multsig.MultiSigChangeReqParams{Req: req})
+	params, err := state.Serialize(&multsig.MultiSigChangeReqParams{Req: req})
 	if err != nil {
 		return nil, err
 	}
@@ -443,7 +444,7 @@ func (mp *MessageProducer) MultiSigChangeRequirement(to, from address.Address, n
 //
 
 func (mp *MessageProducer) PaychUpdateChannelState(to, from address.Address, nonce uint64, sv types.SignedVoucher, secret, proof []byte, opts ...MsgOpt) (*Message, error) {
-	params, err := types.Serialize(&paych.PaymentChannelUpdateParams{
+	params, err := state.Serialize(&paych.PaymentChannelUpdateParams{
 		Sv:     sv,
 		Secret: secret,
 		Proof:  proof,

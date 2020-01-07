@@ -10,8 +10,7 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
-// I kinda hate this name
-type Candy interface {
+type TestDriver interface {
 	TB() testing.TB
 	Driver() *StateDriver
 	Producer() *chain.MessageProducer
@@ -19,7 +18,7 @@ type Candy interface {
 	ExeCtx() *chain.ExecutionContext
 }
 
-func NewCandy(t testing.TB, factory Factories, singletons map[actors.SingletonActorID]types.BigInt) Candy {
+func NewTestDriver(t testing.TB, factory Factories, singletons map[actors.SingletonActorID]types.BigInt) TestDriver {
 	drv := NewStateDriver(t, factory.NewState())
 
 	// TODO make these function opts
@@ -36,7 +35,7 @@ func NewCandy(t testing.TB, factory Factories, singletons map[actors.SingletonAc
 	producer := chain.NewMessageProducer(factory.NewMessageFactory(), factory.NewActorInfoMapping(), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
 
-	return &candy{
+	return &testDriver{
 		t:         t,
 		driver:    drv,
 		producer:  producer,
@@ -45,7 +44,7 @@ func NewCandy(t testing.TB, factory Factories, singletons map[actors.SingletonAc
 	}
 }
 
-type candy struct {
+type testDriver struct {
 	t         testing.TB
 	driver    *StateDriver
 	producer  *chain.MessageProducer
@@ -53,22 +52,22 @@ type candy struct {
 	exeCtx    *chain.ExecutionContext
 }
 
-func (c candy) TB() testing.TB {
+func (c testDriver) TB() testing.TB {
 	return c.t
 }
 
-func (c candy) Driver() *StateDriver {
+func (c testDriver) Driver() *StateDriver {
 	return c.driver
 }
 
-func (c candy) Producer() *chain.MessageProducer {
+func (c testDriver) Producer() *chain.MessageProducer {
 	return c.producer
 }
 
-func (c candy) Validator() *chain.Validator {
+func (c testDriver) Validator() *chain.Validator {
 	return c.validator
 }
 
-func (c candy) ExeCtx() *chain.ExecutionContext {
+func (c testDriver) ExeCtx() *chain.ExecutionContext {
 	return c.exeCtx
 }
