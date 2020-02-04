@@ -3,11 +3,12 @@ package suites
 import (
 	"testing"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/stretchr/testify/require"
 
+	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+
 	"github.com/filecoin-project/chain-validation/pkg/chain"
-	"github.com/filecoin-project/chain-validation/pkg/state/actors"
-	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
 type TestDriver interface {
@@ -18,12 +19,12 @@ type TestDriver interface {
 	ExeCtx() *chain.ExecutionContext
 }
 
-func NewTestDriver(t testing.TB, factory Factories, singletons map[actors.SingletonActorID]types.BigInt) TestDriver {
+func NewTestDriver(t testing.TB, factory Factories, singletons map[address.Address]big_spec.Int) TestDriver {
 	drv := NewStateDriver(t, factory.NewState())
 
 	// TODO make these function opts
-	gasPrice := types.NewInt(1)
-	gasLimit := types.NewInt(1000000)
+	gasPrice := big_spec.NewInt(1)
+	gasLimit := big_spec.NewInt(1000000)
 
 	for sa, balance := range singletons {
 		_, _, err := drv.State().SetSingletonActor(sa, balance)
@@ -32,7 +33,7 @@ func NewTestDriver(t testing.TB, factory Factories, singletons map[actors.Single
 
 	testMiner := drv.NewAccountActor(0)
 	exeCtx := chain.NewExecutionContext(1, testMiner)
-	producer := chain.NewMessageProducer(factory.NewMessageFactory(), factory.NewActorInfoMapping(), gasLimit, gasPrice)
+	producer := chain.NewMessageProducer(factory.NewMessageFactory(), gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
 
 	return &testDriver{
