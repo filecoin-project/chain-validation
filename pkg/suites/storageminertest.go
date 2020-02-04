@@ -1,5 +1,7 @@
 package suites
 
+// TODO uncomment when ready to implement
+/*
 import (
 	"encoding/binary"
 	"testing"
@@ -17,12 +19,12 @@ import (
 )
 
 const (
-	totalFilecoin     = 2000000000
+	totalFilecoin     = 2_000_000_000
 	filecoinPrecision = 1000000000000000000
 )
 
 var (
-	TotalNetworkBalance = types.NewInt(types.NewInt(1).Mul(types.NewInt(totalFilecoin).Int, types.NewInt(0).SetUint64(filecoinPrecision)).Uint64())
+	totalNetworkBalance = types.NewInt(types.NewInt(1).Mul(types.NewInt(totalFilecoin).Int, types.NewInt(0).SetUint64(filecoinPrecision)).Uint64())
 )
 
 func testSetup(t testing.TB, factory Factories) (*StateDriver, types.BigInt, types.BigInt) {
@@ -32,7 +34,7 @@ func testSetup(t testing.TB, factory Factories) (*StateDriver, types.BigInt, typ
 
 	_, _, err := drv.State().SetSingletonActor(actors.InitAddress, types.NewInt(0))
 	require.NoError(t, err)
-	_, _, err = drv.State().SetSingletonActor(actors.NetworkAddress, TotalNetworkBalance)
+	_, _, err = drv.State().SetSingletonActor(actors.NetworkAddress, totalNetworkBalance)
 	require.NoError(t, err)
 	_, _, err = drv.State().SetSingletonActor(actors.StoragePowerAddress, types.NewInt(0))
 	require.NoError(t, err)
@@ -206,3 +208,4 @@ func RequireIntPeerID(t testing.TB, i int64) peer.ID {
 	require.NoError(t, err)
 	return pid
 }
+*/

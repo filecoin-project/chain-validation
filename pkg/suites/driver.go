@@ -1,32 +1,25 @@
 package suites
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-amt-ipld"
-	"github.com/ipfs/go-hamt-ipld"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
+
 	"github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/state"
-	"github.com/filecoin-project/chain-validation/pkg/state/actors"
-	"github.com/filecoin-project/chain-validation/pkg/state/actors/multsig"
-	"github.com/filecoin-project/chain-validation/pkg/state/actors/paych"
-	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgminr"
-	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgmrkt"
-	"github.com/filecoin-project/chain-validation/pkg/state/actors/strgpwr"
-	"github.com/filecoin-project/chain-validation/pkg/state/types"
 )
 
 // Factories wraps up all the implementation-specific integration points.
 type Factories interface {
 	NewState() state.Wrapper
 	NewMessageFactory() chain.MessageFactory
-	NewActorInfoMapping() chain.ActorInfoMapping
 
 	chain.Applier
 }
@@ -48,30 +41,29 @@ func (d *StateDriver) State() state.Wrapper {
 }
 
 // NewAccountActor installs a new account actor, returning the address.
-func (d *StateDriver) NewAccountActor(balanceAttoFil uint64) address.Address {
+func (d *StateDriver) NewAccountActor(balanceAttoFil int64) address.Address {
 	addr, err := d.st.NewAccountAddress()
 	require.NoError(d.tb, err)
 
-	_, _, err = d.st.SetActor(addr, actors.AccountActorCodeCid, types.NewInt(balanceAttoFil))
+	_, _, err = d.st.SetActor(addr, builtin_spec.AccountActorCodeID, big_spec.NewInt(balanceAttoFil))
 	require.NoError(d.tb, err)
 	return addr
 }
 
-func (d *StateDriver) NewAccountActorBigBalance(balanceAttoFil types.BigInt) address.Address {
+func (d *StateDriver) NewAccountActorBigBalance(balanceAttoFil big_spec.Int) address.Address {
 	addr, err := d.st.NewAccountAddress()
 	require.NoError(d.tb, err)
 
-	_, _, err = d.st.SetActor(addr, actors.AccountActorCodeCid, balanceAttoFil)
+	_, _, err = d.st.SetActor(addr, builtin_spec.AccountActorCodeID, balanceAttoFil)
 	require.NoError(d.tb, err)
 	return addr
 }
 
-// TODO add an assertBalancChanged method that can be used until gas is worked out. will need to track previous balances, could be tricky.
 // AssertBalance checks an actor has an expected balance.
-func (d *StateDriver) AssertBalance(addr address.Address, expected uint64) {
+func (d *StateDriver) AssertBalance(addr address.Address, expected int64) {
 	actr, err := d.st.Actor(addr)
 	require.NoError(d.tb, err)
-	assert.Equal(d.tb, types.NewInt(expected), actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
+	assert.Equal(d.tb, big_spec.NewInt(expected), actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
 }
 
 // AssertReceipt checks that a receipt is not nill and has values equal to `expected`.
@@ -83,35 +75,36 @@ func (d *StateDriver) AssertReceipt(receipt, expected chain.MessageReceipt) {
 	assert.Equal(d.tb, expected.ExitCode, receipt.ExitCode, fmt.Sprintf("expected exit code: %v, actual exit code: %v", expected.ExitCode, receipt.ExitCode))
 }
 
-func (d *StateDriver) AssertMinerInfo(miner, expected strgminr.MinerInfo) {
-	assert.NotNil(d.tb, miner)
-	assert.Equal(d.tb, expected.PeerID, miner.PeerID, fmt.Sprintf("expected peerID: %v, actual peerID: %v", expected.PeerID, miner.PeerID))
-	assert.Equal(d.tb, expected.Owner, miner.Owner, fmt.Sprintf("expected owner: %v, actual owner: %v", expected.Owner, miner.Owner))
-	assert.Equal(d.tb, expected.SectorSize, miner.SectorSize, fmt.Sprintf("expected sector size: %v, actual sector size: %v", expected.SectorSize, miner.SectorSize))
-	assert.Equal(d.tb, expected.Worker, miner.Worker, fmt.Sprintf("expected worker: %v, actual worker: %v", expected.Worker, miner.Worker))
-}
-
-func (d *StateDriver) AssertMultisigState(multisigAddr address.Address, expected multsig.MultiSigActorState) {
+func (d *StateDriver) AssertMultisigState(multisigAddr address.Address, expected multisig_spec.MultiSigActorState) {
 	multisigActor, err := d.State().Actor(multisigAddr)
 	require.NoError(d.tb, err)
 
 	multisigStorage, err := d.State().Storage(multisigAddr)
 	require.NoError(d.tb, err)
 
-	var multisig multsig.MultiSigActorState
+	var multisig multisig_spec.MultiSigActorState
 	require.NoError(d.tb, multisigStorage.Get(multisigActor.Head(), &multisig))
 
 	assert.NotNil(d.tb, multisig)
 	assert.Equal(d.tb, expected.InitialBalance, multisig.InitialBalance, fmt.Sprintf("expected InitialBalance: %v, actual InitialBalance: %v", expected.InitialBalance, multisig.InitialBalance))
-	assert.Equal(d.tb, expected.NextTxID, multisig.NextTxID, fmt.Sprintf("expected NextTxID: %v, actual NextTxID: %v", expected.NextTxID, multisig.NextTxID))
-	assert.Equal(d.tb, expected.Required, multisig.Required, fmt.Sprintf("expected Required: %v, actual Required: %v", expected.Required, multisig.Required))
-	assert.Equal(d.tb, expected.StartingBlock, multisig.StartingBlock, fmt.Sprintf("expected StartingBlock: %v, actual StartingBlock: %v", expected.StartingBlock, multisig.StartingBlock))
-	assert.Equal(d.tb, expected.Transactions, multisig.Transactions, fmt.Sprintf("expected Transactions: %v, actual Transactions: %v", expected.Transactions, multisig.Transactions))
+	assert.Equal(d.tb, expected.NextTxnID, multisig.NextTxnID, fmt.Sprintf("expected NextTxnID: %v, actual NextTxnID: %v", expected.NextTxnID, multisig.NextTxnID))
+	assert.Equal(d.tb, expected.NumApprovalsThreshold, multisig.NumApprovalsThreshold, fmt.Sprintf("expected NumApprovalsThreshold: %v, actual NumApprovalsThreshold: %v", expected.NumApprovalsThreshold, multisig.NumApprovalsThreshold))
+	assert.Equal(d.tb, expected.StartEpoch, multisig.StartEpoch, fmt.Sprintf("expected StartEpoch: %v, actual StartEpoch: %v", expected.StartEpoch, multisig.StartEpoch))
+	assert.Equal(d.tb, expected.PendingTxns, multisig.PendingTxns, fmt.Sprintf("expected PendingTxns: %v, actual PendingTxns: %v", expected.PendingTxns, multisig.PendingTxns))
 	assert.Equal(d.tb, expected.UnlockDuration, multisig.UnlockDuration, fmt.Sprintf("expected UnlockDuration: %v, actual UnlockDuration: %v", expected.UnlockDuration, multisig.UnlockDuration))
 
 	for _, e := range expected.Signers {
 		assert.Contains(d.tb, multisig.Signers, e, fmt.Sprintf("expected Signer: %v, actual Signer: %v", e, multisig.Signers))
 	}
+}
+
+/*
+func (d *StateDriver) AssertMinerInfo(miner, expected strgminr.MinerInfo) {
+	assert.NotNil(d.tb, miner)
+	assert.Equal(d.tb, expected.PeerID, miner.PeerID, fmt.Sprintf("expected peerID: %v, actual peerID: %v", expected.PeerID, miner.PeerID))
+	assert.Equal(d.tb, expected.Owner, miner.Owner, fmt.Sprintf("expected owner: %v, actual owner: %v", expected.Owner, miner.Owner))
+	assert.Equal(d.tb, expected.SectorSize, miner.SectorSize, fmt.Sprintf("expected sector size: %v, actual sector size: %v", expected.SectorSize, miner.SectorSize))
+	assert.Equal(d.tb, expected.Worker, miner.Worker, fmt.Sprintf("expected worker: %v, actual worker: %v", expected.Worker, miner.Worker))
 }
 
 func (d *StateDriver) AssertPayChState(paychAddr address.Address, expected paych.PaymentChannelActorState) {
@@ -171,7 +164,7 @@ func (d *StateDriver) AssertStorageMarketState(smaddr address.Address, expected 
 	assert.Equal(d.tb, expected.NextDealID, smState.NextDealID, fmt.Sprintf("expected NextDealID: %v, actual NextDealID: %v", expected.NextDealID, smState.NextDealID))
 }
 
-func (d *StateDriver) AssertStorageMarketParticipantAvailableBalance(smaddr, participant address.Address, available types.BigInt) {
+func (d *StateDriver) AssertStorageMarketParticipantAvailableBalance(smaddr, participant address.Address, available big_spec.Int) {
 	ctx := context.TODO()
 	smActor, err := d.State().Actor(smaddr)
 	require.NoError(d.tb, err)
@@ -187,7 +180,7 @@ func (d *StateDriver) AssertStorageMarketParticipantAvailableBalance(smaddr, par
 	assert.Equal(d.tb, available, spb.Available, fmt.Sprintf("expected Available: %v, actual Available: %v", available, spb.Available))
 }
 
-func (d *StateDriver) AssertStorageMarketParticipantLockedBalance(smaddr, participant address.Address, locked types.BigInt) {
+func (d *StateDriver) AssertStorageMarketParticipantLockedBalance(smaddr, participant address.Address, locked big_spec.Int) {
 	ctx := context.TODO()
 	smActor, err := d.State().Actor(smaddr)
 	require.NoError(d.tb, err)
@@ -218,3 +211,5 @@ func (d *StateDriver) AssertStorageMarketHasOnChainDeal(smaddr address.Address, 
 
 	assert.Equal(d.tb, expected, actual, fmt.Sprintf("expected Deal: %v, actual Deal: %v", expected, actual))
 }
+
+*/
