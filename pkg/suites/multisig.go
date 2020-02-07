@@ -1,11 +1,13 @@
 package suites
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
 
 	address "github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	block "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
@@ -21,23 +23,16 @@ import (
 	state "github.com/filecoin-project/chain-validation/pkg/state"
 )
 
-/*
+var EmptyRetrunValueBytes []byte
 
-****************************************************************************************************************************************
-Taken from deprecated spec definition: https://filecoin-project.github.io/specs/docs/systems/filecoin_token/multisig/multisig_actor_old/
-****************************************************************************************************************************************
-
-A basic multisig account actor. Allows sending of messages like a normal account actor, but with the requirement of
-M of N parties agreeing to the operation. Completed and/or cancelled operations stick around in the actors state until
-explicitly cleared out. Proposers may cancel transactions they propose, or transactions by proposers who are no longer
-approved signers.
-
-Self modification methods (add/remove signer, change requirement) are called by doing a multisig transaction invoking
-the desired method on the contract itself. This means the ‘signature threshold’ logic only needs to be implemented
-once, in one place.
-
-The initialize actor is used to create new instances of the multisig.
-*/
+func init() {
+	buf := new(bytes.Buffer)
+	err := adt_spec.EmptyValue{}.MarshalCBOR(buf)
+	if err != nil {
+		panic(err)
+	}
+	EmptyRetrunValueBytes = buf.Bytes()
+}
 
 type mockStore struct {
 	data map[cid.Cid]block.Block
@@ -174,9 +169,8 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 	msg, err := td.Producer().MultiSigPropose(multisigAddr, outsider, 0, outsider, abi_spec.NewTokenAmount(valueSend), 0, []byte{}, chain.Value(0))
 	require.NoError(t, err)
 	mr, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
-	require.EqualError(td.TB(), err, "not authorized (RetCode=1)")
 	td.Driver().AssertReceipt(mr, chain.MessageReceipt{
-		ExitCode:    1,
+		ExitCode:    exitcode.ErrForbidden,
 		ReturnValue: nil,
 		GasUsed:     big_spec.NewInt(0),
 	})
@@ -186,20 +180,20 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 	msg, err = td.Producer().MultiSigApprove(multisigAddr, outsider, 1, txID0, chain.Value(0))
 	require.NoError(t, err)
 	mr, err = td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
-	require.EqualError(td.TB(), err, "not authorized (RetCode=1)")
 	td.Driver().AssertReceipt(mr, chain.MessageReceipt{
-		ExitCode:    1,
+		ExitCode:    exitcode.ErrForbidden,
 		ReturnValue: nil,
 		GasUsed:     big_spec.NewInt(0),
 	})
 
+	txID1 := multisig_spec.TxnID(1)
 	// bob approves transfer of 'valueSend' FIL to outsider.
 	mustApproveMultisigActor(td, 0, 0, multisigAddr, bob, txID0)
 	require.NoError(t, pendingTxMap.Delete(txID0))
 	td.Driver().AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
 		Signers:               []address.Address{alice, bob},
 		NumApprovalsThreshold: requiredSigners,
-		NextTxnID:             txID0,
+		NextTxnID:             txID1,
 		InitialBalance:        abi_spec.NewTokenAmount(valueSend),
 		StartEpoch:            1,
 		UnlockDuration:        unlockDuration,
@@ -272,9 +266,8 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 	msg, err := td.Producer().MultiSigCancel(multisigAddr, bob, 0, txID0, chain.Value(0))
 	require.NoError(t, err)
 	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
-	require.EqualError(t, err, "cannot cancel another signers transaction (RetCode=4)")
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
-		ExitCode:    4,
+		ExitCode:    exitcode.ErrForbidden,
 		ReturnValue: nil,
 		GasUsed:     big_spec.NewInt(0),
 	})
@@ -353,7 +346,7 @@ func mustApproveMultisigActor(td TestDriver, nonce, value int64, ms, from addres
 
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
-		ReturnValue: nil,
+		ReturnValue: EmptyRetrunValueBytes,
 		GasUsed:     big_spec.NewInt(0),
 	})
 }
@@ -367,7 +360,7 @@ func mustCancelMultisigActor(td TestDriver, nonce, value int64, ms, from address
 
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
-		ReturnValue: nil,
+		ReturnValue: EmptyRetrunValueBytes,
 		GasUsed:     big_spec.NewInt(0),
 	})
 }

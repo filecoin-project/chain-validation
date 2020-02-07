@@ -3,6 +3,7 @@ package chain
 import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/specs-actors/actors/abi/big"
+	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/pkg/state"
 )
@@ -14,7 +15,7 @@ type Applier interface {
 
 // MessageReceipt is the return value of message application.
 type MessageReceipt struct {
-	ExitCode    uint8
+	ExitCode    exitcode.ExitCode
 	ReturnValue []byte
 	GasUsed     big.Int
 }
