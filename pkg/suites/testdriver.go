@@ -33,7 +33,7 @@ func NewTestDriver(t testing.TB, factory Factories, singletons map[address.Addre
 
 	testMiner := drv.NewAccountActor(0)
 	exeCtx := chain.NewExecutionContext(1, testMiner)
-	producer := chain.NewMessageProducer(factory.NewMessageFactory(), gasLimit, gasPrice)
+	producer := chain.NewMessageProducer(gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)
 
 	return &testDriver{

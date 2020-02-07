@@ -81,7 +81,7 @@ func PayChActorUpdate(t testing.TB, factory Factories) {
 	})
 
 	sv := &types.SignedVoucher{
-		Nonce:  0,
+		CallSeqNum:  0,
 		Amount: types.NewInt(paychVoucherAmount),
 	}
 	signMe, err := sv.SigningBytes()
@@ -105,7 +105,7 @@ func PayChActorUpdate(t testing.TB, factory Factories) {
 			"0": {
 				Redeemed: types.NewInt(paychVoucherAmount),
 				Closed:   false,
-				Nonce:    0,
+				CallSeqNum:    0,
 			},
 		},
 	})
@@ -126,7 +126,7 @@ func PayChActorUpdate(t testing.TB, factory Factories) {
 			"0": {
 				Redeemed: types.NewInt(paychVoucherAmount),
 				Closed:   false,
-				Nonce:    0,
+				CallSeqNum:    0,
 			},
 		},
 	})
@@ -146,7 +146,7 @@ func PayChActorUpdate(t testing.TB, factory Factories) {
 			"0": {
 				Redeemed: types.NewInt(paychVoucherAmount),
 				Closed:   false,
-				Nonce:    0,
+				CallSeqNum:    0,
 			},
 		},
 	})

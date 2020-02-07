@@ -33,27 +33,35 @@ type Message struct {
 	GasLimit big_spec.Int
 }
 
-// MessageFactory creates a concrete, but opaque, message object.
-// Integrations should implement this to provide a message value that will be accepted by the
-// validation engine.
-type MessageFactory interface {
-	MakeMessage(from, to address.Address, method abi_spec.MethodNum, nonce int64, value, gasPrice, gasLimit big_spec.Int, params []byte) (*Message, error)
+type MessageFactory struct{}
+
+func (b *MessageFactory) MakeMessage(from, to address.Address, method abi_spec.MethodNum, callSeq int64, value, gasPrice, gasLimit big_spec.Int, params []byte) *Message {
+	return &Message{
+		To:         to,
+		From:       from,
+		CallSeqNum: callSeq,
+		Value:      value,
+		Method:     method,
+		Params:     params,
+		GasPrice:   gasPrice,
+		GasLimit:   gasLimit,
+	}
 }
 
 // MessageProducer presents a convenient API for scripting the creation of long and complex message sequences.
 // The created messages are retained for subsequent export or evaluation in a VM.
-// Actual message construction is delegated to a `MessageFactory`, and the message are opaque to the producer.
+// Actual message construction is delegated to a `MessageFactory`.
 type MessageProducer struct {
-	factory  MessageFactory
+	factory  *MessageFactory
 	defaults msgOpts // Note non-pointer reference.
 
 	messages []*Message
 }
 
 // NewMessageProducer creates a new message producer, delegating message creation to `factory`.
-func NewMessageProducer(factory MessageFactory, defaultGasLimit, defaultGasPrice big_spec.Int) *MessageProducer {
+func NewMessageProducer(defaultGasLimit, defaultGasPrice big_spec.Int) *MessageProducer {
 	return &MessageProducer{
-		factory: factory,
+		factory: &MessageFactory{},
 		defaults: msgOpts{
 			gasLimit: defaultGasLimit,
 			gasPrice: defaultGasPrice,
@@ -101,6 +109,13 @@ func GasPrice(price int64) MsgOpt {
 	}
 }
 
+// BuildFull creates and returns a single message.
+func (mp *MessageProducer) BuildFull(from, to address.Address, method abi_spec.MethodNum, nonce int64, value, gasLimit, gasPrice big_spec.Int, params []byte) (*Message, error) {
+	fm := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params)
+	mp.messages = append(mp.messages, fm)
+	return fm, nil
+}
+
 // Build creates and returns a single message, using default gas parameters unless modified by `opts`.
 func (mp *MessageProducer) Build(from, to address.Address, nonce int64, method abi_spec.MethodNum, params []byte, opts ...MsgOpt) (*Message, error) {
 	values := mp.defaults
@@ -109,17 +124,6 @@ func (mp *MessageProducer) Build(from, to address.Address, nonce int64, method a
 	}
 
 	return mp.BuildFull(from, to, method, nonce, values.value, values.gasLimit, values.gasPrice, params)
-}
-
-// BuildFull creates and returns a single message.
-func (mp *MessageProducer) BuildFull(from, to address.Address, method abi_spec.MethodNum, nonce int64, value, gasLimit, gasPrice big_spec.Int, params []byte) (*Message, error) {
-	fm, err := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params)
-	if err != nil {
-		return nil, err
-	}
-
-	mp.messages = append(mp.messages, fm)
-	return fm, nil
 }
 
 //
