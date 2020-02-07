@@ -43,7 +43,7 @@ type Signer interface {
 type Actor interface {
 	Code() cid.Cid
 	Head() cid.Cid
-	Nonce() uint64
+	CallSeqNum() int64
 	Balance() big_spec.Int
 }
 
