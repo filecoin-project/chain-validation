@@ -1,22 +1,22 @@
 package suites
 
-// TODO uncomment when ready to implement
-/*
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	require "github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/chain-validation/pkg/chain"
-	"github.com/filecoin-project/chain-validation/pkg/state/actors"
-	"github.com/filecoin-project/chain-validation/pkg/state/types"
+	address "github.com/filecoin-project/go-address"
+	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+
+	chain "github.com/filecoin-project/chain-validation/pkg/chain"
 )
 
-func AccountValueTransferSuccess(t *testing.T, factory Factories, expGasUsed uint64) {
+func AccountValueTransferSuccess(t *testing.T, factory Factories, expGasUsed int64) {
 	const initialBal = 20000000000
 	const transferValue = 50
-	td := NewTestDriver(t, factory, map[actors.SingletonActorID]types.BigInt{
-		actors.InitAddress: types.NewInt(0),
+	td := NewTestDriver(t, factory, map[address.Address]big_spec.Int{
+		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
 	alice := td.Driver().NewAccountActor(initialBal)
@@ -30,7 +30,7 @@ func AccountValueTransferSuccess(t *testing.T, factory Factories, expGasUsed uin
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     types.NewInt(0),
+		GasUsed:     big_spec.Zero(),
 	})
 
 	td.Driver().AssertBalance(alice, initialBal-transferValue-expGasUsed)
@@ -39,11 +39,11 @@ func AccountValueTransferSuccess(t *testing.T, factory Factories, expGasUsed uin
 	td.Driver().AssertBalance(td.ExeCtx().MinerOwner, expGasUsed)
 }
 
-func AccountValueTransferZeroFunds(t *testing.T, factory Factories, expGasUsed uint64) {
+func AccountValueTransferZeroFunds(t *testing.T, factory Factories, expGasUsed int64) {
 	const initialBal = 20000000000
 	const transferValue = 0
-	td := NewTestDriver(t, factory, map[actors.SingletonActorID]types.BigInt{
-		actors.InitAddress: types.NewInt(0),
+	td := NewTestDriver(t, factory, map[address.Address]big_spec.Int{
+		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
 	alice := td.Driver().NewAccountActor(initialBal)
@@ -57,7 +57,7 @@ func AccountValueTransferZeroFunds(t *testing.T, factory Factories, expGasUsed u
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     types.NewInt(0),
+		GasUsed:     big_spec.Zero(),
 	})
 
 	td.Driver().AssertBalance(alice, initialBal-transferValue-expGasUsed)
@@ -66,9 +66,9 @@ func AccountValueTransferZeroFunds(t *testing.T, factory Factories, expGasUsed u
 	td.Driver().AssertBalance(td.ExeCtx().MinerOwner, expGasUsed)
 }
 
-func AccountValueTransferOverBalanceNonZero(t *testing.T, factory Factories, expGasUsed uint64) {
-	td := NewTestDriver(t, factory, map[actors.SingletonActorID]types.BigInt{
-		actors.InitAddress: types.NewInt(0),
+func AccountValueTransferOverBalanceNonZero(t *testing.T, factory Factories, expGasUsed int64) {
+	td := NewTestDriver(t, factory, map[address.Address]big_spec.Int{
+		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
 	alice := td.Driver().NewAccountActor(2000)
@@ -82,7 +82,7 @@ func AccountValueTransferOverBalanceNonZero(t *testing.T, factory Factories, exp
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     types.NewInt(expGasUsed),
+		GasUsed:     big_spec.NewInt(expGasUsed),
 	})
 
 	td.Driver().AssertBalance(alice, 2000-expGasUsed)
@@ -91,9 +91,9 @@ func AccountValueTransferOverBalanceNonZero(t *testing.T, factory Factories, exp
 	td.Driver().AssertBalance(td.ExeCtx().MinerOwner, expGasUsed)
 }
 
-func AccountValueTransferOverBalanceZero(t *testing.T, factory Factories, expGasUsed uint64) {
-	td := NewTestDriver(t, factory, map[actors.SingletonActorID]types.BigInt{
-		actors.InitAddress: types.NewInt(0),
+func AccountValueTransferOverBalanceZero(t *testing.T, factory Factories, expGasUsed int64) {
+	td := NewTestDriver(t, factory, map[address.Address]big_spec.Int{
+		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
 	alice := td.Driver().NewAccountActor(0)
@@ -107,7 +107,7 @@ func AccountValueTransferOverBalanceZero(t *testing.T, factory Factories, expGas
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     types.NewInt(expGasUsed),
+		GasUsed:     big_spec.NewInt(expGasUsed),
 	})
 
 	td.Driver().AssertBalance(alice, 0)
@@ -116,9 +116,9 @@ func AccountValueTransferOverBalanceZero(t *testing.T, factory Factories, expGas
 	td.Driver().AssertBalance(td.ExeCtx().MinerOwner, expGasUsed)
 }
 
-func AccountValueTransferToSelf(t *testing.T, factory Factories, expGasUsed uint64) {
-	td := NewTestDriver(t, factory, map[actors.SingletonActorID]types.BigInt{
-		actors.InitAddress: types.NewInt(0),
+func AccountValueTransferToSelf(t *testing.T, factory Factories, expGasUsed int64) {
+	td := NewTestDriver(t, factory, map[address.Address]big_spec.Int{
+		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
 	alice := td.Driver().NewAccountActor(1)
@@ -131,7 +131,7 @@ func AccountValueTransferToSelf(t *testing.T, factory Factories, expGasUsed uint
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     types.NewInt(expGasUsed),
+		GasUsed:     big_spec.NewInt(expGasUsed),
 	})
 
 	td.Driver().AssertBalance(alice, 1)
@@ -139,9 +139,9 @@ func AccountValueTransferToSelf(t *testing.T, factory Factories, expGasUsed uint
 	td.Driver().AssertBalance(td.ExeCtx().MinerOwner, expGasUsed)
 }
 
-func AccountValueTransferFromKnownToUnknownAccount(t *testing.T, factory Factories, expGasUsed uint64) {
-	td := NewTestDriver(t, factory, map[actors.SingletonActorID]types.BigInt{
-		actors.InitAddress: types.NewInt(0),
+func AccountValueTransferFromKnownToUnknownAccount(t *testing.T, factory Factories, expGasUsed int64) {
+	td := NewTestDriver(t, factory, map[address.Address]big_spec.Int{
+		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
 	alice := td.Driver().NewAccountActor(1)
@@ -156,7 +156,7 @@ func AccountValueTransferFromKnownToUnknownAccount(t *testing.T, factory Factori
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     types.NewInt(expGasUsed),
+		GasUsed:     big_spec.NewInt(expGasUsed),
 	})
 
 	td.Driver().AssertBalance(alice, 1)
@@ -164,9 +164,9 @@ func AccountValueTransferFromKnownToUnknownAccount(t *testing.T, factory Factori
 	td.Driver().AssertBalance(td.ExeCtx().MinerOwner, expGasUsed)
 }
 
-func AccountValueTransferFromUnknownToKnownAccount(t *testing.T, factory Factories, expGasUsed uint64) {
-	td := NewTestDriver(t, factory, map[actors.SingletonActorID]types.BigInt{
-		actors.InitAddress: types.NewInt(0),
+func AccountValueTransferFromUnknownToKnownAccount(t *testing.T, factory Factories, expGasUsed int64) {
+	td := NewTestDriver(t, factory, map[address.Address]big_spec.Int{
+		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
 	alice := td.Driver().NewAccountActor(1)
@@ -181,7 +181,7 @@ func AccountValueTransferFromUnknownToKnownAccount(t *testing.T, factory Factori
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     types.NewInt(expGasUsed),
+		GasUsed:     big_spec.NewInt(expGasUsed),
 	})
 
 	td.Driver().AssertBalance(alice, 1)
@@ -189,9 +189,9 @@ func AccountValueTransferFromUnknownToKnownAccount(t *testing.T, factory Factori
 	td.Driver().AssertBalance(td.ExeCtx().MinerOwner, expGasUsed)
 }
 
-func AccountValueTransferFromUnknownToUnknownAccount(t *testing.T, factory Factories, expGasUsed uint64) {
-	td := NewTestDriver(t, factory, map[actors.SingletonActorID]types.BigInt{
-		actors.InitAddress: types.NewInt(0),
+func AccountValueTransferFromUnknownToUnknownAccount(t *testing.T, factory Factories, expGasUsed int64) {
+	td := NewTestDriver(t, factory, map[address.Address]big_spec.Int{
+		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
 	alice := td.Driver().NewAccountActor(1)
@@ -209,12 +209,10 @@ func AccountValueTransferFromUnknownToUnknownAccount(t *testing.T, factory Facto
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
 		ReturnValue: nil,
-		GasUsed:     types.NewInt(expGasUsed),
+		GasUsed:     big_spec.NewInt(expGasUsed),
 	})
 
 	td.Driver().AssertBalance(alice, 1)
 	// This should become non-zero after gas tracking and payments are integrated.
 	td.Driver().AssertBalance(td.ExeCtx().MinerOwner, expGasUsed)
 }
-
-*/
