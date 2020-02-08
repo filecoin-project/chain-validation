@@ -85,9 +85,9 @@ type msgOpts struct {
 // MsgOpt is an option configuring message value or gas parameters.
 type MsgOpt func(*msgOpts)
 
-func Value(value int64) MsgOpt {
+func Value(value big_spec.Int) MsgOpt {
 	return func(opts *msgOpts) {
-		opts.value = big_spec.NewInt(value)
+		opts.value = value
 	}
 }
 
@@ -131,7 +131,7 @@ func (mp *MessageProducer) Build(from, to address.Address, nonce int64, method a
 //
 
 // Transfer builds a simple value transfer message and returns it.
-func (mp *MessageProducer) Transfer(from, to address.Address, nonce int64, value int64, opts ...MsgOpt) (*Message, error) {
+func (mp *MessageProducer) Transfer(from, to address.Address, nonce int64, value abi_spec.TokenAmount, opts ...MsgOpt) (*Message, error) {
 	x := append([]MsgOpt{Value(value)}, opts...)
 	return mp.Build(from, to, nonce, builtin_spec.MethodSend, noParams, x...)
 }
@@ -236,13 +236,8 @@ func (mp *MessageProducer) StorageMinerGetWorkerAddr(to, from address.Address, n
 // Multi Signature Actor Methods
 //
 
-func (mp *MessageProducer) MultiSigPropose(to, from address.Address, nonce int64, proposeTo address.Address, proposeValue big_spec.Int, proposeMethod abi_spec.MethodNum, proposeParams []byte, opts ...MsgOpt) (*Message, error) {
-	params, err := state.Serialize(&multisig_spec.ProposeParams{
-		To:     proposeTo,
-		Value:  proposeValue,
-		Method: proposeMethod,
-		Params: proposeParams,
-	})
+func (mp *MessageProducer) MultiSigPropose(to, from address.Address, nonce int64, pparams *multisig_spec.ProposeParams, opts ...MsgOpt) (*Message, error) {
+	params, err := state.Serialize(pparams)
 	if err != nil {
 		return nil, err
 	}

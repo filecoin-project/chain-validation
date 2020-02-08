@@ -40,17 +40,17 @@ func StorageMarketBalanceUpdates(t testing.TB, factory Factories) {
 	})
 	smaddr := mustCreateStorageMarketActor(td)
 
-	alice := td.Driver().NewAccountActor(initialBal)
-	bob := td.Driver().NewAccountActor(initialBal)
+	alice := td.Driver.NewAccountActor(initialBal)
+	bob := td.Driver.NewAccountActor(initialBal)
 
 	mustAddBalance(td, alice, 0, balAddAmount)
-	td.Driver().AssertStorageMarketParticipantAvailableBalance(smaddr, alice, types.NewInt(balAddAmount))
+	td.Driver.AssertStorageMarketParticipantAvailableBalance(smaddr, alice, types.NewInt(balAddAmount))
 
 	mustAddBalance(td, bob, 0, balAddAmount)
-	td.Driver().AssertStorageMarketParticipantAvailableBalance(smaddr, bob, types.NewInt(balAddAmount))
+	td.Driver.AssertStorageMarketParticipantAvailableBalance(smaddr, bob, types.NewInt(balAddAmount))
 
 	mustWithdrawBalance(td, bob, 1, balWithdrawAmount)
-	td.Driver().AssertStorageMarketParticipantAvailableBalance(smaddr, bob, types.NewInt(balAddAmount-balWithdrawAmount))
+	td.Driver.AssertStorageMarketParticipantAvailableBalance(smaddr, bob, types.NewInt(balAddAmount-balWithdrawAmount))
 }
 
 func StorageMarketStoragePublishDeal(t testing.TB, factory Factories) {
@@ -74,11 +74,11 @@ func StorageMarketStoragePublishDeal(t testing.TB, factory Factories) {
 	smaddr := mustCreateStorageMarketActor(td)
 
 	// create an account to own a miner.
-	minerOwner := td.Driver().NewAccountActorBigBalance(types.NewIntFromString(initialBal))
+	minerOwner := td.Driver.NewAccountActorBigBalance(types.NewIntFromString(initialBal))
 
 	mustAddBalance(td, minerOwner, 0, dealCost)
-	td.Driver().AssertStorageMarketParticipantAvailableBalance(smaddr, minerOwner, types.NewInt(dealCost))
-	td.Driver().AssertStorageMarketParticipantLockedBalance(smaddr, minerOwner, types.NewInt(0))
+	td.Driver.AssertStorageMarketParticipantAvailableBalance(smaddr, minerOwner, types.NewInt(dealCost))
+	td.Driver.AssertStorageMarketParticipantLockedBalance(smaddr, minerOwner, types.NewInt(0))
 
 	peerID0 := RequireIntPeerID(t, 0)
 	minerAddr, err := address.NewIDAddress(102)
@@ -86,10 +86,10 @@ func StorageMarketStoragePublishDeal(t testing.TB, factory Factories) {
 	mustCreateStorageMiner(td, 1, strgpwr.SectorSizes[0], types.NewIntFromString("1999999995415053581179420"), minerAddr, minerOwner, minerOwner, minerOwner, peerID0)
 
 	// create a client and sign the deal
-	client := td.Driver().NewAccountActorBigBalance(types.NewIntFromString(initialBal))
+	client := td.Driver.NewAccountActorBigBalance(types.NewIntFromString(initialBal))
 	mustAddBalance(td, client, 0, dealCost)
-	td.Driver().AssertStorageMarketParticipantAvailableBalance(smaddr, client, types.NewInt(dealCost))
-	td.Driver().AssertStorageMarketParticipantLockedBalance(smaddr, client, types.NewInt(0))
+	td.Driver.AssertStorageMarketParticipantAvailableBalance(smaddr, client, types.NewInt(dealCost))
+	td.Driver.AssertStorageMarketParticipantLockedBalance(smaddr, client, types.NewInt(0))
 
 	dealProposal := strgmrkt.StorageDealProposal{
 		PieceRef:             []byte{1},
@@ -102,27 +102,27 @@ func StorageMarketStoragePublishDeal(t testing.TB, factory Factories) {
 		StoragePricePerEpoch: types.NewInt(pricePerEpoch),
 		StorageCollateral:    types.NewInt(collateral),
 	}
-	err = dealProposal.Sign(ctx, client, td.Driver().State())
+	err = dealProposal.Sign(ctx, client, td.Driver.State())
 	require.NoError(t, err)
 
 	// miner signs the deal
 	storageDeal := strgmrkt.StorageDeal{
 		Proposal: dealProposal,
 	}
-	err = storageDeal.Sign(ctx, minerOwner, td.Driver().State())
+	err = storageDeal.Sign(ctx, minerOwner, td.Driver.State())
 	require.NoError(t, err)
 
 	mustPublishStorageDeal(td, 1, client, dealID, storageDeal)
 
-	td.Driver().AssertStorageMarketHasOnChainDeal(smaddr, dealID, strgmrkt.OnChainDeal{
+	td.Driver.AssertStorageMarketHasOnChainDeal(smaddr, dealID, strgmrkt.OnChainDeal{
 		Deal:            storageDeal,
 		ActivationEpoch: 0,
 	})
-	td.Driver().AssertStorageMarketParticipantAvailableBalance(smaddr, client, types.NewInt(dealCost-dealProposal.TotalStoragePrice().Uint64()))
-	td.Driver().AssertStorageMarketParticipantAvailableBalance(smaddr, minerOwner, types.NewInt(dealCost-collateral))
+	td.Driver.AssertStorageMarketParticipantAvailableBalance(smaddr, client, types.NewInt(dealCost-dealProposal.TotalStoragePrice().Uint64()))
+	td.Driver.AssertStorageMarketParticipantAvailableBalance(smaddr, minerOwner, types.NewInt(dealCost-collateral))
 
-	td.Driver().AssertStorageMarketParticipantLockedBalance(smaddr, client, types.NewInt(dealCost))
-	td.Driver().AssertStorageMarketParticipantLockedBalance(smaddr, minerOwner, types.NewInt(collateral))
+	td.Driver.AssertStorageMarketParticipantLockedBalance(smaddr, client, types.NewInt(dealCost))
+	td.Driver.AssertStorageMarketParticipantLockedBalance(smaddr, minerOwner, types.NewInt(collateral))
 }
 
 func mustPublishStorageDeal(td TestDriver, nonce uint64, from address.Address, dealID uint64, storageDeal strgmrkt.StorageDeal) {
@@ -133,10 +133,10 @@ func mustPublishStorageDeal(td TestDriver, nonce uint64, from address.Address, d
 	respBytes, err := state.Serialize(&pubDealResp)
 	require.NoError(td.TB(), err)
 
-	msg, err := td.Producer().StorageMarketPublishStorageDeals(from, nonce, []strgmrkt.StorageDeal{storageDeal}, chain.Value(0))
+	msg, err := td.Producer.StorageMarketPublishStorageDeals(from, nonce, []strgmrkt.StorageDeal{storageDeal}, chain.Value(0))
 	require.NoError(td.TB(), err)
 
-	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver().State(), msg)
 	require.NoError(td.TB(), err)
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
@@ -147,10 +147,10 @@ func mustPublishStorageDeal(td TestDriver, nonce uint64, from address.Address, d
 }
 
 func mustWithdrawBalance(td TestDriver, from address.Address, nonce, amount uint64) {
-	msg, err := td.Producer().StorageMarketWithdrawBalance(from, nonce, types.NewInt(amount), chain.Value(0))
+	msg, err := td.Producer.StorageMarketWithdrawBalance(from, nonce, types.NewInt(amount), chain.Value(0))
 	require.NoError(td.TB(), err)
 
-	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver().State(), msg)
 	require.NoError(td.TB(), err)
 
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
@@ -161,10 +161,10 @@ func mustWithdrawBalance(td TestDriver, from address.Address, nonce, amount uint
 }
 
 func mustAddBalance(td TestDriver, from address.Address, nonce, amount uint64) {
-	msg, err := td.Producer().StorageMarketAddBalance(from, nonce, chain.Value(amount))
+	msg, err := td.Producer.StorageMarketAddBalance(from, nonce, chain.Value(amount))
 	require.NoError(td.TB(), err)
 
-	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver().State(), msg)
 	require.NoError(td.TB(), err)
 
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
@@ -179,7 +179,7 @@ func mustCreateStorageMarketActor(td TestDriver) address.Address {
 	require.NoError(td.TB(), err)
 
 	mt := strgmrkt.NewMarketTracker(td.TB())
-	smaddr := td.Producer().SingletonAddress(actors.StorageMarketAddress)
+	smaddr := td.Producer.SingletonAddress(actors.StorageMarketAddress)
 	td.Driver().AssertStorageMarketState(smaddr, strgmrkt.StorageMarketState{
 		Balances:   mt.Balance,
 		Deals:      mt.Deals,
