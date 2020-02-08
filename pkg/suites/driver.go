@@ -1,10 +1,13 @@
 package suites
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
+	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
+	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -40,16 +43,7 @@ func (d *StateDriver) State() state.Wrapper {
 }
 
 // NewAccountActor installs a new account actor, returning the address.
-func (d *StateDriver) NewAccountActor(balanceAttoFil int64) address.Address {
-	addr, err := d.st.NewAccountAddress()
-	require.NoError(d.tb, err)
-
-	_, _, err = d.st.SetActor(addr, builtin_spec.AccountActorCodeID, big_spec.NewInt(balanceAttoFil))
-	require.NoError(d.tb, err)
-	return addr
-}
-
-func (d *StateDriver) NewAccountActorBigBalance(balanceAttoFil big_spec.Int) address.Address {
+func (d *StateDriver) NewAccountActor(balanceAttoFil abi_spec.TokenAmount) address.Address {
 	addr, err := d.st.NewAccountAddress()
 	require.NoError(d.tb, err)
 
@@ -59,37 +53,55 @@ func (d *StateDriver) NewAccountActorBigBalance(balanceAttoFil big_spec.Int) add
 }
 
 // AssertBalance checks an actor has an expected balance.
-func (d *StateDriver) AssertBalance(addr address.Address, expected int64) {
+func (d *StateDriver) AssertBalance(addr address.Address, expected big_spec.Int) {
 	actr, err := d.st.Actor(addr)
 	require.NoError(d.tb, err)
-	assert.Equal(d.tb, big_spec.NewInt(expected), actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
+	assert.Equal(d.tb, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
 }
 
 // AssertReceipt checks that a receipt is not nill and has values equal to `expected`.
 func (d *StateDriver) AssertReceipt(receipt, expected chain.MessageReceipt) {
 	assert.NotNil(d.tb, receipt)
-	// leave gas uncheck for now as it is not speced
-	//assert.Equal(d.tb, expected.GasUsed, receipt.GasUsed, fmt.Sprintf("expected gas: %v, actual gas: %v", expected.ExitCode, receipt.GasUsed))
+	assert.Equal(d.tb, expected.GasUsed, receipt.GasUsed, fmt.Sprintf("expected gas: %v, actual gas: %v", expected.ExitCode, receipt.GasUsed))
 	assert.Equal(d.tb, expected.ReturnValue, receipt.ReturnValue, fmt.Sprintf("expected return value: %v, actual return value: %v", expected.ReturnValue, receipt.ReturnValue))
 	assert.Equal(d.tb, expected.ExitCode, receipt.ExitCode, fmt.Sprintf("expected exit code: %v, actual exit code: %v", expected.ExitCode, receipt.ExitCode))
+}
+
+func (d *StateDriver) AssertMultisigTransaction(multisigAddr address.Address, txnID multisig_spec.TxnID, txn multisig_spec.MultiSigTransaction) {
+	multisigActor, err := d.State().Actor(multisigAddr)
+	require.NoError(d.tb, err)
+
+	strg, err := d.State().Storage()
+	require.NoError(d.tb, err)
+
+	var multisig multisig_spec.MultiSigActorState
+	require.NoError(d.tb, strg.Get(context.Background(), multisigActor.Head(), &multisig))
+
+	txnMap := adt_spec.AsMap(strg, multisig.PendingTxns)
+	var actualTxn multisig_spec.MultiSigTransaction
+	found, err := txnMap.Get(txnID, &actualTxn)
+	assert.NoError(d.tb, err)
+	assert.True(d.tb, found)
+
+	assert.Equal(d.tb, txn, actualTxn)
 }
 
 func (d *StateDriver) AssertMultisigState(multisigAddr address.Address, expected multisig_spec.MultiSigActorState) {
 	multisigActor, err := d.State().Actor(multisigAddr)
 	require.NoError(d.tb, err)
 
-	multisigStorage, err := d.State().Storage(multisigAddr)
+	strg, err := d.State().Storage()
 	require.NoError(d.tb, err)
 
 	var multisig multisig_spec.MultiSigActorState
-	require.NoError(d.tb, multisigStorage.Get(multisigActor.Head(), &multisig))
+	require.NoError(d.tb, strg.Get(context.Background(), multisigActor.Head(), &multisig))
 
 	assert.NotNil(d.tb, multisig)
 	assert.Equal(d.tb, expected.InitialBalance, multisig.InitialBalance, fmt.Sprintf("expected InitialBalance: %v, actual InitialBalance: %v", expected.InitialBalance, multisig.InitialBalance))
 	assert.Equal(d.tb, expected.NextTxnID, multisig.NextTxnID, fmt.Sprintf("expected NextTxnID: %v, actual NextTxnID: %v", expected.NextTxnID, multisig.NextTxnID))
 	assert.Equal(d.tb, expected.NumApprovalsThreshold, multisig.NumApprovalsThreshold, fmt.Sprintf("expected NumApprovalsThreshold: %v, actual NumApprovalsThreshold: %v", expected.NumApprovalsThreshold, multisig.NumApprovalsThreshold))
 	assert.Equal(d.tb, expected.StartEpoch, multisig.StartEpoch, fmt.Sprintf("expected StartEpoch: %v, actual StartEpoch: %v", expected.StartEpoch, multisig.StartEpoch))
-	assert.Equal(d.tb, expected.PendingTxns, multisig.PendingTxns, fmt.Sprintf("expected PendingTxns: %v, actual PendingTxns: %v", expected.PendingTxns, multisig.PendingTxns))
+	//assert.Equal(d.tb, expected.PendingTxns, multisig.PendingTxns, fmt.Sprintf("expected PendingTxns: %v, actual PendingTxns: %v", expected.PendingTxns, multisig.PendingTxns))
 	assert.Equal(d.tb, expected.UnlockDuration, multisig.UnlockDuration, fmt.Sprintf("expected UnlockDuration: %v, actual UnlockDuration: %v", expected.UnlockDuration, multisig.UnlockDuration))
 
 	for _, e := range expected.Signers {
