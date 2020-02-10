@@ -98,10 +98,10 @@ func StoragePowerActorUpdateStorage(t testing.TB, factory Factories) {
 }
 
 func mustUpdateStoragePower(td TestDriver, nonce, value, delta, nextPpEnd, prevPpEnd uint64, minerAddr address.Address) {
-	msg, err := td.Producer().StoragePowerUpdateStorage(minerAddr, nonce, types.NewInt(delta), nextPpEnd, prevPpEnd, chain.Value(value))
+	msg, err := td.Producer.StoragePowerUpdateStorage(minerAddr, nonce, types.NewInt(delta), nextPpEnd, prevPpEnd, chain.Value(value))
 	require.NoError(td.TB(), err)
 
-	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver().State(), msg)
 	require.NoError(td.TB(), err)
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
 		ExitCode:    0,
@@ -112,10 +112,10 @@ func mustUpdateStoragePower(td TestDriver, nonce, value, delta, nextPpEnd, prevP
 }
 
 func mustCreateStorageMiner(td TestDriver, nonce, sectorSize uint64, value types.BigInt, minerAddr, from, owner, worker address.Address, pid peer.ID) {
-	msg, err := td.Producer().StoragePowerCreateStorageMiner(from, nonce, owner, worker, sectorSize, pid, chain.BigValue(value))
+	msg, err := td.Producer.StoragePowerCreateStorageMiner(from, nonce, owner, worker, sectorSize, pid, chain.BigValue(value))
 	require.NoError(td.TB(), err)
 
-	msgReceipt, err := td.Validator().ApplyMessage(td.ExeCtx(), td.Driver().State(), msg)
+	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver().State(), msg)
 	require.NoError(td.TB(), err)
 
 	td.Driver().AssertReceipt(msgReceipt, chain.MessageReceipt{
@@ -131,7 +131,7 @@ func mustCreateStoragePowerActor(td TestDriver) address.Address {
 	require.NoError(td.TB(), err)
 
 	ms := strgpwr.NewMinerSet(td.TB())
-	spAddr := td.Producer().SingletonAddress(actors.StoragePowerAddress)
+	spAddr := td.Producer.SingletonAddress(actors.StoragePowerAddress)
 	td.Driver().AssertStoragePowerState(spAddr, strgpwr.StoragePowerState{
 		Miners:         ms.MinerCid,
 		ProvingBuckets: ms.ProvingBucketsCid,

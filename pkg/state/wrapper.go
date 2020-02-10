@@ -7,6 +7,7 @@ import (
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 	cid "github.com/ipfs/go-cid"
+	cbor "github.com/ipfs/go-ipld-cbor"
 )
 
 // Wrapper abstracts the inspection and mutation of an implementation-specific state tree and storage.
@@ -19,7 +20,7 @@ type Wrapper interface {
 	Actor(address address.Address) (Actor, error)
 
 	// Returns the actor storage for the actor at `address` (which is empty if there is no such actor).
-	Storage(address address.Address) (Storage, error)
+	Storage() (Storage, error)
 
 	// Creates a new private key and returns the associated address.
 	NewAccountAddress() (address.Address, error)
@@ -47,7 +48,7 @@ type Actor interface {
 	Balance() big_spec.Int
 }
 
-// Storage provides a key/value store for actor state.
 type Storage interface {
-	Get(c cid.Cid, out interface{}) error
+	cbor.IpldStore
+	Context() context.Context
 }
