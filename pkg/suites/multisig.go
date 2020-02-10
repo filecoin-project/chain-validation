@@ -30,7 +30,7 @@ func MultiSigActorConstructor(t testing.TB, factory Factories) {
 	})
 
 	// creator of the multisig actor
-	alice := td.Driver.NewAccountActor(aliceBal)
+	alice := td.Driver.NewAccountActor(SECP, aliceBal)
 
 	// expected address of the actor
 	multisigAddr, err := address.NewIDAddress(102)
@@ -57,11 +57,11 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 	})
 
 	// Signers
-	alice := td.Driver.NewAccountActor(initialBal)
-	bob := td.Driver.NewAccountActor(initialBal)
+	alice := td.Driver.NewAccountActor(SECP, initialBal)
+	bob := td.Driver.NewAccountActor(SECP, initialBal)
 
 	// Not Signer
-	outsider := td.Driver.NewAccountActor(initialBal)
+	outsider := td.Driver.NewAccountActor(SECP, initialBal)
 
 	// Multisig actor address
 	multisigAddr, err := address.NewIDAddress(104)
@@ -150,9 +150,9 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 		builtin_spec.RewardActorAddr:       TotalNetworkBalance,
 	})
 
-	alice := td.Driver.NewAccountActor(initialBal)
-	bob := td.Driver.NewAccountActor(initialBal)
-	outsider := td.Driver.NewAccountActor(initialBal)
+	alice := td.Driver.NewAccountActor(SECP, initialBal)
+	bob := td.Driver.NewAccountActor(SECP, initialBal)
+	outsider := td.Driver.NewAccountActor(SECP, initialBal)
 
 	multisigAddr, err := address.NewIDAddress(104)
 	require.NoError(t, err)

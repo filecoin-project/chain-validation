@@ -22,8 +22,11 @@ type Wrapper interface {
 	// Returns the actor storage for the actor at `address` (which is empty if there is no such actor).
 	Storage() (Storage, error)
 
-	// Creates a new private key and returns the associated address.
-	NewAccountAddress() (address.Address, error)
+	// Creates a new secp private key and returns the associated address.
+	NewSecp256k1AccountAddress() address.Address
+
+	// Creates a new BLS private key and returns the associated address.
+	NewBLSAccountAddress() address.Address
 
 	// Sign data with addr's key.
 	Sign(ctx context.Context, addr address.Address, data []byte) (*crypto_spec.Signature, error)

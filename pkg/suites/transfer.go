@@ -23,8 +23,8 @@ func AccountValueTransferSuccess(t *testing.T, factory Factories) {
 		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
-	alice := td.Driver.NewAccountActor(aliceBal)
-	bob := td.Driver.NewAccountActor(bobBal)
+	alice := td.Driver.NewAccountActor(SECP, aliceBal)
+	bob := td.Driver.NewAccountActor(SECP, bobBal)
 
 	msg, err := td.Producer.Transfer(alice, bob, 0, transferValue)
 	require.NoError(t, err)
@@ -52,8 +52,8 @@ func AccountValueTransferZeroFunds(t *testing.T, factory Factories) {
 		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
-	alice := td.Driver.NewAccountActor(aliceBal)
-	bob := td.Driver.NewAccountActor(bobBal)
+	alice := td.Driver.NewAccountActor(SECP, aliceBal)
+	bob := td.Driver.NewAccountActor(SECP, bobBal)
 
 	msg, err := td.Producer.Transfer(alice, bob, 0, transferValue)
 	require.NoError(t, err)
@@ -81,8 +81,8 @@ func AccountValueTransferOverBalanceNonZero(t *testing.T, factory Factories) {
 		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
-	alice := td.Driver.NewAccountActor(aliceBal)
-	bob := td.Driver.NewAccountActor(bobBal)
+	alice := td.Driver.NewAccountActor(SECP, aliceBal)
+	bob := td.Driver.NewAccountActor(SECP, bobBal)
 
 	msg, err := td.Producer.Transfer(alice, bob, 0, transferAmnt)
 	require.NoError(t, err)
@@ -110,8 +110,8 @@ func AccountValueTransferOverBalanceZero(t *testing.T, factory Factories) {
 		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
-	alice := td.Driver.NewAccountActor(aliceBal)
-	bob := td.Driver.NewAccountActor(bobBal)
+	alice := td.Driver.NewAccountActor(SECP, aliceBal)
+	bob := td.Driver.NewAccountActor(SECP, bobBal)
 
 	msg, err := td.Producer.Transfer(alice, bob, 0, transferAmnt)
 	require.NoError(t, err)
@@ -138,7 +138,7 @@ func AccountValueTransferToSelf(t *testing.T, factory Factories) {
 		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
-	alice := td.Driver.NewAccountActor(aliceBal)
+	alice := td.Driver.NewAccountActor(SECP, aliceBal)
 
 	msg, err := td.Producer.Transfer(alice, alice, 0, transferAmnt)
 	require.NoError(t, err)
@@ -164,10 +164,9 @@ func AccountValueTransferFromKnownToUnknownAccount(t *testing.T, factory Factori
 		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
-	alice := td.Driver.NewAccountActor(aliceBal)
+	alice := td.Driver.NewAccountActor(SECP, aliceBal)
 
-	unknown, err := td.Driver.State().NewAccountAddress()
-	require.NoError(t, err)
+	unknown := td.Driver.State().NewSecp256k1AccountAddress()
 
 	msg, err := td.Producer.Transfer(alice, unknown, 0, transferAmnt)
 	require.NoError(t, err)
@@ -193,9 +192,8 @@ func AccountValueTransferFromUnknownToKnownAccount(t *testing.T, factory Factori
 		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
-	alice := td.Driver.NewAccountActor(aliceBal)
-	unknown, err := td.Driver.State().NewAccountAddress()
-	require.NoError(t, err)
+	alice := td.Driver.NewAccountActor(SECP, aliceBal)
+	unknown := td.Driver.State().NewSecp256k1AccountAddress()
 
 	msg, err := td.Producer.Transfer(unknown, alice, 0, transferAmnt)
 	require.NoError(t, err)
@@ -220,11 +218,8 @@ func AccountValueTransferFromUnknownToUnknownAccount(t *testing.T, factory Facto
 		builtin_spec.InitActorAddr: big_spec.Zero(),
 	})
 
-	unknown, err := td.Driver.State().NewAccountAddress()
-	require.NoError(t, err)
-
-	nobody, err := td.Driver.State().NewAccountAddress()
-	require.NoError(t, err)
+	unknown := td.Driver.State().NewSecp256k1AccountAddress()
+	nobody := td.Driver.State().NewSecp256k1AccountAddress()
 
 	msg, err := td.Producer.Transfer(unknown, nobody, 0, transferAmnt)
 	require.NoError(t, err)
