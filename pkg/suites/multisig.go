@@ -76,7 +76,7 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 
 	// setup propose expected values and params
 	txID0 := multisig_spec.TxnID(0)
-	pparams := &multisig_spec.ProposeParams{
+	pparams := multisig_spec.ProposeParams{
 		To:     outsider,
 		Value:  valueSend,
 		Method: builtin_spec.MethodSend,
@@ -96,12 +96,12 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 	// outsider proposes themselves to receive 'valueSend' FIL. This fails as they are not a signer.
 	td.ApplyMessageExpectReceipt(
 		func() (*chain.Message, error) {
-			return td.Producer.MultiSigPropose(multisigAddr, outsider, 0, &multisig_spec.ProposeParams{
+			return td.Producer.MultiSigPropose(multisigAddr, outsider, multisig_spec.ProposeParams{
 				To:     outsider,
 				Value:  valueSend,
 				Method: builtin_spec.MethodSend,
 				Params: []byte{},
-			}, chain.Value(big_spec.Zero()))
+			}, chain.Value(big_spec.Zero()), chain.Nonce(0))
 		},
 		chain.MessageReceipt{
 			ExitCode:    exitcode_spec.ErrForbidden,
@@ -113,7 +113,7 @@ func MultiSigActorProposeApprove(t testing.TB, factory Factories) {
 	// outsider approves the value transfer alice sent. This fails as they are not a signer.
 	td.ApplyMessageExpectReceipt(
 		func() (*chain.Message, error) {
-			return td.Producer.MultiSigApprove(multisigAddr, outsider, 1, txID0, chain.Value(big_spec.Zero()))
+			return td.Producer.MultiSigApprove(multisigAddr, outsider, txID0, chain.Value(big_spec.Zero()), chain.Nonce(1))
 		},
 		chain.MessageReceipt{
 			ExitCode:    exitcode_spec.ErrForbidden,
@@ -166,7 +166,7 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 
 	// alice proposes that outsider should receive 'valueSend' FIL.
 	txID0 := multisig_spec.TxnID(0)
-	pparams := &multisig_spec.ProposeParams{
+	pparams := multisig_spec.ProposeParams{
 		To:     outsider,
 		Value:  valueSend,
 		Method: builtin_spec.MethodSend,
@@ -186,7 +186,7 @@ func MultiSigActorProposeCancel(t testing.TB, factory Factories) {
 	// bob cancels alice's transaction. This fails as bob did not create alice's transaction.
 	td.ApplyMessageExpectReceipt(
 		func() (*chain.Message, error) {
-			return td.Producer.MultiSigCancel(multisigAddr, bob, 0, txID0, chain.Value(big_spec.Zero()))
+			return td.Producer.MultiSigCancel(multisigAddr, bob, txID0, chain.Value(big_spec.Zero()), chain.Nonce(0))
 		},
 		chain.MessageReceipt{
 			ExitCode:    exitcode_spec.ErrForbidden,

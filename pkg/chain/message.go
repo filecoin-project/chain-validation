@@ -35,7 +35,7 @@ type Message struct {
 
 type MessageFactory struct{}
 
-func (b *MessageFactory) MakeMessage(from, to address.Address, method abi_spec.MethodNum, callSeq int64, value, gasPrice, gasLimit big_spec.Int, params []byte) *Message {
+func (b *MessageFactory) MakeMessage(to, from address.Address, method abi_spec.MethodNum, callSeq int64, value, gasPrice, gasLimit big_spec.Int, params []byte) *Message {
 	return &Message{
 		To:         to,
 		From:       from,
@@ -77,6 +77,7 @@ func (mp *MessageProducer) Messages() []*Message {
 // msgOpts specifies value and gas parameters for a message, supporting a functional options pattern
 // for concise but customizable message construction.
 type msgOpts struct {
+	nonce    int64
 	value    big_spec.Int
 	gasLimit big_spec.Int
 	gasPrice big_spec.Int
@@ -91,9 +92,9 @@ func Value(value big_spec.Int) MsgOpt {
 	}
 }
 
-func BigValue(value big_spec.Int) MsgOpt {
+func Nonce(n int64) MsgOpt {
 	return func(opts *msgOpts) {
-		opts.value = value
+		opts.nonce = n
 	}
 }
 
@@ -110,20 +111,20 @@ func GasPrice(price int64) MsgOpt {
 }
 
 // BuildFull creates and returns a single message.
-func (mp *MessageProducer) BuildFull(from, to address.Address, method abi_spec.MethodNum, nonce int64, value, gasLimit, gasPrice big_spec.Int, params []byte) (*Message, error) {
-	fm := mp.factory.MakeMessage(from, to, method, nonce, value, gasPrice, gasLimit, params)
+func (mp *MessageProducer) BuildFull(to, from address.Address, method abi_spec.MethodNum, nonce int64, value, gasLimit, gasPrice big_spec.Int, params []byte) *Message {
+	fm := mp.factory.MakeMessage(to, from, method, nonce, value, gasPrice, gasLimit, params)
 	mp.messages = append(mp.messages, fm)
-	return fm, nil
+	return fm
 }
 
 // Build creates and returns a single message, using default gas parameters unless modified by `opts`.
-func (mp *MessageProducer) Build(from, to address.Address, nonce int64, method abi_spec.MethodNum, params []byte, opts ...MsgOpt) (*Message, error) {
+func (mp *MessageProducer) Build(to, from address.Address, method abi_spec.MethodNum, params []byte, opts ...MsgOpt) *Message {
 	values := mp.defaults
 	for _, opt := range opts {
 		opt(&values)
 	}
 
-	return mp.BuildFull(from, to, method, nonce, values.value, values.gasLimit, values.gasPrice, params)
+	return mp.BuildFull(to, from, method, values.nonce, values.value, values.gasLimit, values.gasPrice, params)
 }
 
 //
@@ -131,9 +132,8 @@ func (mp *MessageProducer) Build(from, to address.Address, nonce int64, method a
 //
 
 // Transfer builds a simple value transfer message and returns it.
-func (mp *MessageProducer) Transfer(from, to address.Address, nonce int64, value abi_spec.TokenAmount, opts ...MsgOpt) (*Message, error) {
-	x := append([]MsgOpt{Value(value)}, opts...)
-	return mp.Build(from, to, nonce, builtin_spec.MethodSend, noParams, x...)
+func (mp *MessageProducer) Transfer(to, from address.Address, opts ...MsgOpt) *Message {
+	return mp.Build(to, from, builtin_spec.MethodSend, noParams, opts...)
 }
 
 //
@@ -143,12 +143,12 @@ func (mp *MessageProducer) Transfer(from, to address.Address, nonce int64, value
 // TODO add the rest of the actor methods
 
 // InitExec builds a message invoking InitActor.Exec and returns it.
-func (mp *MessageProducer) InitExec(from address.Address, nonce int64, code cid.Cid, params []byte, opts ...MsgOpt) (*Message, error) {
+func (mp *MessageProducer) InitExec(from address.Address, code cid.Cid, params []byte, opts ...MsgOpt) (*Message, error) {
 	initParams, err := state.Serialize(&init_spec.ExecParams{CodeID: code, ConstructorParams: params})
 	if err != nil {
 		return nil, err
 	}
-	return mp.Build(from, builtin_spec.InitActorAddr, nonce, builtin_spec.MethodsInit.Exec, initParams, opts...)
+	return mp.Build(builtin_spec.InitActorAddr, from, builtin_spec.MethodsInit.Exec, initParams, opts...), nil
 }
 
 //
@@ -236,60 +236,60 @@ func (mp *MessageProducer) StorageMinerGetWorkerAddr(to, from address.Address, n
 // Multi Signature Actor Methods
 //
 
-func (mp *MessageProducer) MultiSigPropose(to, from address.Address, nonce int64, pparams *multisig_spec.ProposeParams, opts ...MsgOpt) (*Message, error) {
-	params, err := state.Serialize(pparams)
+func (mp *MessageProducer) MultiSigPropose(to, from address.Address, params multisig_spec.ProposeParams, opts ...MsgOpt) (*Message, error) {
+	ser, err := state.Serialize(&params)
 	if err != nil {
 		return nil, err
 	}
-	return mp.Build(from, to, nonce, builtin_spec.MethodsMultisig.Propose, params, opts...)
+	return mp.Build(to, from, builtin_spec.MethodsMultisig.Propose, ser, opts...), nil
 }
 
-func (mp *MessageProducer) MultiSigApprove(to, from address.Address, nonce int64, txID multisig_spec.TxnID, opts ...MsgOpt) (*Message, error) {
+func (mp *MessageProducer) MultiSigApprove(to, from address.Address, txID multisig_spec.TxnID, opts ...MsgOpt) (*Message, error) {
+	ser, err := state.Serialize(&multisig_spec.TxnIDParams{ID: txID})
+	if err != nil {
+		return nil, err
+	}
+	return mp.Build(to, from, builtin_spec.MethodsMultisig.Approve, ser, opts...), nil
+}
+
+func (mp *MessageProducer) MultiSigCancel(to, from address.Address, txID multisig_spec.TxnID, opts ...MsgOpt) (*Message, error) {
 	params, err := state.Serialize(&multisig_spec.TxnIDParams{ID: txID})
 	if err != nil {
 		return nil, err
 	}
-	return mp.Build(from, to, nonce, builtin_spec.MethodsMultisig.Approve, params, opts...)
+	return mp.Build(to, from, builtin_spec.MethodsMultisig.Cancel, params, opts...), nil
 }
 
-func (mp *MessageProducer) MultiSigCancel(to, from address.Address, nonce int64, txID multisig_spec.TxnID, opts ...MsgOpt) (*Message, error) {
-	params, err := state.Serialize(&multisig_spec.TxnIDParams{ID: txID})
+func (mp *MessageProducer) MultiSigAddSigner(to, from address.Address, params multisig_spec.AddSignerParams, opts ...MsgOpt) (*Message, error) {
+	ser, err := state.Serialize(&params)
 	if err != nil {
 		return nil, err
 	}
-	return mp.Build(from, to, nonce, builtin_spec.MethodsMultisig.Cancel, params, opts...)
+	return mp.Build(to, from, builtin_spec.MethodsMultisig.AddSigner, ser, opts...), nil
 }
 
-func (mp *MessageProducer) MultiSigAddSigner(to, from address.Address, nonce int64, signer address.Address, increase bool, opts ...MsgOpt) (*Message, error) {
-	params, err := state.Serialize(&multisig_spec.AddSignerParams{Signer: signer, Increase: increase})
+func (mp *MessageProducer) MultiSigRemoveSigner(to, from address.Address, params multisig_spec.RemoveSignerParams, opts ...MsgOpt) (*Message, error) {
+	ser, err := state.Serialize(&params)
 	if err != nil {
 		return nil, err
 	}
-	return mp.Build(from, to, nonce, builtin_spec.MethodsMultisig.AddSigner, params, opts...)
+	return mp.Build(to, from, builtin_spec.MethodsMultisig.RemoveSigner, ser, opts...), nil
 }
 
-func (mp *MessageProducer) MultiSigRemoveSigner(to, from address.Address, nonce int64, signer address.Address, decrease bool, opts ...MsgOpt) (*Message, error) {
-	params, err := state.Serialize(&multisig_spec.RemoveSignerParams{Signer: signer, Decrease: decrease})
+func (mp *MessageProducer) MultiSigSwapSigner(to, from address.Address, params multisig_spec.SwapSignerParams, opts ...MsgOpt) (*Message, error) {
+	ser, err := state.Serialize(&params)
 	if err != nil {
 		return nil, err
 	}
-	return mp.Build(from, to, nonce, builtin_spec.MethodsMultisig.RemoveSigner, params, opts...)
+	return mp.Build(to, from, builtin_spec.MethodsMultisig.SwapSigner, ser, opts...), nil
 }
 
-func (mp *MessageProducer) MultiSigSwapSigner(to, from address.Address, nonce int64, swapFrom, swapTo address.Address, opts ...MsgOpt) (*Message, error) {
-	params, err := state.Serialize(&multisig_spec.SwapSignerParams{From: swapFrom, To: swapTo})
+func (mp *MessageProducer) MultiSigChangeApprovalsThreshold(to, from address.Address, threshold int64, opts ...MsgOpt) (*Message, error) {
+	ser, err := state.Serialize(&multisig_spec.ChangeNumApprovalsThresholdParams{NewThreshold: threshold})
 	if err != nil {
 		return nil, err
 	}
-	return mp.Build(from, to, nonce, builtin_spec.MethodsMultisig.SwapSigner, params, opts...)
-}
-
-func (mp *MessageProducer) MultiSigChangeApprovalsThreshold(to, from address.Address, nonce int64, req int64, opts ...MsgOpt) (*Message, error) {
-	params, err := state.Serialize(&multisig_spec.ChangeNumApprovalsThresholdParams{NewThreshold: req})
-	if err != nil {
-		return nil, err
-	}
-	return mp.Build(from, to, nonce, builtin_spec.MethodsMultisig.ChangeNumApprovalsThreshold, params, opts...)
+	return mp.Build(to, from, builtin_spec.MethodsMultisig.ChangeNumApprovalsThreshold, ser, opts...), nil
 }
 
 //

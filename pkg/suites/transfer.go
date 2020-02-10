@@ -26,8 +26,7 @@ func AccountValueTransferSuccess(t *testing.T, factory Factories) {
 	alice := td.Driver.NewAccountActor(SECP, aliceBal)
 	bob := td.Driver.NewAccountActor(SECP, bobBal)
 
-	msg, err := td.Producer.Transfer(alice, bob, 0, transferValue)
-	require.NoError(t, err)
+	msg := td.Producer.Transfer(bob, alice, chain.Value(transferValue), chain.Nonce(0))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.NoError(t, err)
@@ -55,8 +54,7 @@ func AccountValueTransferZeroFunds(t *testing.T, factory Factories) {
 	alice := td.Driver.NewAccountActor(SECP, aliceBal)
 	bob := td.Driver.NewAccountActor(SECP, bobBal)
 
-	msg, err := td.Producer.Transfer(alice, bob, 0, transferValue)
-	require.NoError(t, err)
+	msg := td.Producer.Transfer(bob, alice, chain.Value(transferValue), chain.Nonce(0))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.NoError(t, err)
@@ -84,8 +82,7 @@ func AccountValueTransferOverBalanceNonZero(t *testing.T, factory Factories) {
 	alice := td.Driver.NewAccountActor(SECP, aliceBal)
 	bob := td.Driver.NewAccountActor(SECP, bobBal)
 
-	msg, err := td.Producer.Transfer(alice, bob, 0, transferAmnt)
-	require.NoError(t, err)
+	msg := td.Producer.Transfer(bob, alice, chain.Value(transferAmnt), chain.Nonce(0))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.Error(t, err)
@@ -113,8 +110,7 @@ func AccountValueTransferOverBalanceZero(t *testing.T, factory Factories) {
 	alice := td.Driver.NewAccountActor(SECP, aliceBal)
 	bob := td.Driver.NewAccountActor(SECP, bobBal)
 
-	msg, err := td.Producer.Transfer(alice, bob, 0, transferAmnt)
-	require.NoError(t, err)
+	msg := td.Producer.Transfer(bob, alice, chain.Value(transferAmnt), chain.Nonce(0))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.Error(t, err)
@@ -140,8 +136,7 @@ func AccountValueTransferToSelf(t *testing.T, factory Factories) {
 
 	alice := td.Driver.NewAccountActor(SECP, aliceBal)
 
-	msg, err := td.Producer.Transfer(alice, alice, 0, transferAmnt)
-	require.NoError(t, err)
+	msg := td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.Error(t, err)
@@ -168,8 +163,7 @@ func AccountValueTransferFromKnownToUnknownAccount(t *testing.T, factory Factori
 
 	unknown := td.Driver.State().NewSecp256k1AccountAddress()
 
-	msg, err := td.Producer.Transfer(alice, unknown, 0, transferAmnt)
-	require.NoError(t, err)
+	msg := td.Producer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.Error(t, err)
@@ -195,8 +189,7 @@ func AccountValueTransferFromUnknownToKnownAccount(t *testing.T, factory Factori
 	alice := td.Driver.NewAccountActor(SECP, aliceBal)
 	unknown := td.Driver.State().NewSecp256k1AccountAddress()
 
-	msg, err := td.Producer.Transfer(unknown, alice, 0, transferAmnt)
-	require.NoError(t, err)
+	msg := td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.Error(t, err)
@@ -221,8 +214,7 @@ func AccountValueTransferFromUnknownToUnknownAccount(t *testing.T, factory Facto
 	unknown := td.Driver.State().NewSecp256k1AccountAddress()
 	nobody := td.Driver.State().NewSecp256k1AccountAddress()
 
-	msg, err := td.Producer.Transfer(unknown, nobody, 0, transferAmnt)
-	require.NoError(t, err)
+	msg := td.Producer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.Error(t, err)
