@@ -70,7 +70,7 @@ func NewTestDriver(t testing.TB, factory Factories, singletons map[address.Addre
 		require.NoError(t, err)
 	}
 
-	testMiner := drv.NewAccountActor(big_spec.Zero())
+	testMiner := drv.NewAccountActor(BLS, big_spec.Zero())
 	exeCtx := chain.NewExecutionContext(1, testMiner)
 	producer := chain.NewMessageProducer(gasLimit, gasPrice)
 	validator := chain.NewValidator(factory)

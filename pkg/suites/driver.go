@@ -19,6 +19,11 @@ import (
 	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
+var (
+	SECP = address.SECP256K1
+	BLS  = address.BLS
+)
+
 // Factories wraps up all the implementation-specific integration points.
 type Factories interface {
 	NewState() state.Wrapper
@@ -43,11 +48,18 @@ func (d *StateDriver) State() state.Wrapper {
 }
 
 // NewAccountActor installs a new account actor, returning the address.
-func (d *StateDriver) NewAccountActor(balanceAttoFil abi_spec.TokenAmount) address.Address {
-	addr, err := d.st.NewAccountAddress()
-	require.NoError(d.tb, err)
+func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil abi_spec.TokenAmount) address.Address {
+	var addr address.Address
+	switch addrType {
+	case address.SECP256K1:
+		addr = d.st.NewSecp256k1AccountAddress()
+	case address.BLS:
+		addr = d.st.NewBLSAccountAddress()
+	default:
+		require.FailNowf(d.tb, "unsupported address", "protocol for account actor: %v", addrType)
+	}
 
-	_, _, err = d.st.SetActor(addr, builtin_spec.AccountActorCodeID, balanceAttoFil)
+	_, _, err := d.st.SetActor(addr, builtin_spec.AccountActorCodeID, balanceAttoFil)
 	require.NoError(d.tb, err)
 	return addr
 }
