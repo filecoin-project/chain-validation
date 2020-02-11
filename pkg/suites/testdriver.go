@@ -132,6 +132,7 @@ type TestDriver struct {
 	ExeCtx    *chain.ExecutionContext
 }
 
+// TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
 func (td *TestDriver) ApplyMessageExpectReceipt(msgF func() (*chain.Message, error), receipt chain.MessageReceipt) {
 	msg, err := msgF()
 	require.NoError(td.T, err)
@@ -143,8 +144,6 @@ func (td *TestDriver) ApplyMessageExpectReceipt(msgF func() (*chain.Message, err
 	require.Equal(td.T, receipt.ExitCode, msgReceipt.ExitCode)
 	require.Equal(td.T, receipt.ReturnValue, msgReceipt.ReturnValue)
 }
-
-// TODO all Must* methods need to be adapted to assert gas values correctly.
 
 func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt chain.MessageReceipt) {
 	/* Create the Multisig actor*/
