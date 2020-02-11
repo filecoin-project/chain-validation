@@ -50,38 +50,86 @@ func (m mockStore) Context() context.Context {
 	return m.ctx
 }
 
+type TestDriverBuilder struct {
+	ctx     context.Context
+	factory Factories
+
+	singletons map[address.Address]big_spec.Int
+	actors     map[address.Address]big_spec.Int
+
+	defaultMiner    address.Address
+	defaultGasPrice big_spec.Int
+	defaultGasLimit big_spec.Int
+}
+
+func NewBuilder(ctx context.Context, factory Factories) *TestDriverBuilder {
+	return &TestDriverBuilder{
+		factory: factory,
+		ctx:     ctx,
+	}
+}
+
+func (b *TestDriverBuilder) WithSingletonActors(singletons map[address.Address]big_spec.Int) *TestDriverBuilder {
+	b.singletons = singletons
+	return b
+}
+
+func (b *TestDriverBuilder) WithAccountActors(acts map[address.Address]big_spec.Int) *TestDriverBuilder {
+	b.actors = acts
+	return b
+}
+
+func (b *TestDriverBuilder) WithDefaultMiner(miner address.Address) *TestDriverBuilder {
+	b.defaultMiner = miner
+	return b
+}
+
+func (b *TestDriverBuilder) WithDefaultGasLimit(limit big_spec.Int) *TestDriverBuilder {
+	b.defaultGasLimit = limit
+	return b
+}
+
+func (b *TestDriverBuilder) WithDefaultGasPrice(price big_spec.Int) *TestDriverBuilder {
+	b.defaultGasPrice = price
+	return b
+}
+
+func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
+	sd := NewStateDriver(t, b.factory.NewState())
+	for act, bal := range b.singletons {
+		// TODO should not ignore the return value here as this should return the ID-address of the miner
+		_, _, err := sd.State().SetSingletonActor(act, bal)
+		require.NoError(t, err)
+	}
+
+	for act, bal := range b.actors {
+		// TODO should not ignore the return value here as this should return the ID-address of the miner
+		_, _, err := sd.State().SetActor(act, builtin_spec.AccountActorCodeID, bal)
+		require.NoError(t, err)
+	}
+
+	// TODO should not ignore the return value here as this should return the ID-address of the miner
+	_, _, err := sd.st.SetActor(b.defaultMiner, builtin_spec.AccountActorCodeID, big_spec.Zero())
+	require.NoError(t, err)
+
+	exeCtx := chain.NewExecutionContext(1, b.defaultMiner)
+	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
+	validator := chain.NewValidator(b.factory)
+	return &TestDriver{
+		T:         t,
+		Driver:    sd,
+		Producer:  producer,
+		Validator: validator,
+		ExeCtx:    exeCtx,
+	}
+}
+
 type TestDriver struct {
 	T         testing.TB
 	Driver    *StateDriver
 	Producer  *chain.MessageProducer
 	Validator *chain.Validator
 	ExeCtx    *chain.ExecutionContext
-}
-
-func NewTestDriver(t testing.TB, factory Factories, singletons map[address.Address]big_spec.Int) *TestDriver {
-	drv := NewStateDriver(t, factory.NewState())
-
-	// TODO make these function opts
-	gasPrice := big_spec.NewInt(1)
-	gasLimit := big_spec.NewInt(1000000)
-
-	for sa, balance := range singletons {
-		_, _, err := drv.State().SetSingletonActor(sa, balance)
-		require.NoError(t, err)
-	}
-
-	testMiner := drv.NewAccountActor(BLS, big_spec.Zero())
-	exeCtx := chain.NewExecutionContext(1, testMiner)
-	producer := chain.NewMessageProducer(gasLimit, gasPrice)
-	validator := chain.NewValidator(factory)
-
-	return &TestDriver{
-		T:         t,
-		Driver:    drv,
-		Producer:  producer,
-		Validator: validator,
-		ExeCtx:    exeCtx,
-	}
 }
 
 func (td *TestDriver) ApplyMessageExpectReceipt(msgF func() (*chain.Message, error), receipt chain.MessageReceipt) {
@@ -98,7 +146,7 @@ func (td *TestDriver) ApplyMessageExpectReceipt(msgF func() (*chain.Message, err
 
 // TODO all Must* methods need to be adapted to assert gas values correctly.
 
-func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams) {
+func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt chain.MessageReceipt) {
 	/* Create the Multisig actor*/
 	multiSigConstuctParams, err := state.Serialize(params)
 	require.NoError(td.T, err)
@@ -110,11 +158,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 	require.NoError(td.T, err)
 
 	/* Assert the message was applied successfully  */
-	td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
-		ExitCode:    0,
-		ReturnValue: multisigAddr.Bytes(),
-		GasUsed:     big_spec.Zero(),
-	})
+	td.Driver.AssertReceipt(msgReceipt, receipt)
 
 	/* Assert the actor state was setup as expected */
 	pendingTxMap, err := adt_spec.MakeEmptyMap(newMockStore())
@@ -133,7 +177,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 	td.Driver.AssertBalance(multisigAddr, value)
 }
 
-func (td *TestDriver) MustProposeMultisigTransfer(nonce int64, value abi_spec.TokenAmount, txID multisig_spec.TxnID, multisigAddr, from address.Address, params multisig_spec.ProposeParams) {
+func (td *TestDriver) MustProposeMultisigTransfer(nonce int64, value abi_spec.TokenAmount, txID multisig_spec.TxnID, multisigAddr, from address.Address, params multisig_spec.ProposeParams, receipt chain.MessageReceipt) {
 	/* Propose the transactions */
 	msg, err := td.Producer.MultiSigPropose(multisigAddr, from, params, chain.Value(value), chain.Nonce(nonce))
 	require.NoError(td.T, err)
@@ -141,40 +185,25 @@ func (td *TestDriver) MustProposeMultisigTransfer(nonce int64, value abi_spec.To
 	require.NoError(td.T, err)
 
 	/* Assert it was applied successfully  */
-	btxid, err := state.Serialize(&multisig_spec.TxnIDParams{ID: txID})
-	require.NoError(td.T, err)
-	td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
-		ExitCode: 0,
-		// since the first byte is the cbor type indicator.
-		ReturnValue: btxid[1:],
-		GasUsed:     big_spec.NewInt(0),
-	})
+	td.Driver.AssertReceipt(msgReceipt, receipt)
 }
 
-func (td *TestDriver) MustApproveMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID) {
+func (td *TestDriver) MustApproveMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID, receipt chain.MessageReceipt) {
 	msg, err := td.Producer.MultiSigApprove(ms, from, txID, chain.Value(value), chain.Nonce(nonce))
 	require.NoError(td.T, err)
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.NoError(td.T, err)
 
-	td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
-		ExitCode:    0,
-		ReturnValue: EmptyRetrunValueBytes,
-		GasUsed:     big_spec.NewInt(0),
-	})
+	td.Driver.AssertReceipt(msgReceipt, receipt)
 }
 
-func (td *TestDriver) MustCancelMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID) {
+func (td *TestDriver) MustCancelMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID, receipt chain.MessageReceipt) {
 	msg, err := td.Producer.MultiSigCancel(ms, from, txID, chain.Value(value), chain.Nonce(nonce))
 	require.NoError(td.T, err)
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.NoError(td.T, err)
 
-	td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
-		ExitCode:    0,
-		ReturnValue: EmptyRetrunValueBytes,
-		GasUsed:     big_spec.NewInt(0),
-	})
+	td.Driver.AssertReceipt(msgReceipt, receipt)
 }
