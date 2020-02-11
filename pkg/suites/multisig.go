@@ -260,9 +260,10 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		alice := td.Driver.NewAccountActor(SECP, initialBal) // 101
 		bob := td.Driver.NewAccountActor(SECP, initialBal)   // 102
 		chuck := td.Driver.NewAccountActor(SECP, initialBal) // 103
+		duck := td.Driver.NewAccountActor(SECP, initialBal)  // 104
 		var initialSigners = []address.Address{alice, bob}
 
-		multisigAddr, err := address.NewIDAddress(104) // 104
+		multisigAddr, err := address.NewIDAddress(105) // 105
 		require.NoError(t, err)
 
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -274,7 +275,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			chain.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: multisigAddr.Bytes(),
-				GasUsed:     big_spec.NewInt(1403),
+				GasUsed:     big_spec.NewInt(1508),
 			})
 
 		// alice fails to add a singer since this method can only be called by the multisig actors wallet address
@@ -304,7 +305,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			ReturnValue: EmptyRetrunValueBytes,
 			GasUsed:     big_spec.NewInt(517),
 		})
-
+		// assert that chuck is now a signer
 		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
 			Signers:               append(initialSigners, chuck),
 			NumApprovalsThreshold: initialNumApprovals,
@@ -314,5 +315,120 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			UnlockDuration:        unlockDuration,
 		})
 
+		// add another signer and increase the number of signers required
+		msg, err = td.Producer.MultiSigAddSigner(multisigAddr, multisigAddr, multisig_spec.AddSignerParams{
+			Signer:   duck,
+			Increase: true,
+		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
+
+		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
+		require.NoError(t, err)
+		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+			ExitCode:    exitcode_spec.Ok,
+			ReturnValue: EmptyRetrunValueBytes,
+			GasUsed:     big_spec.NewInt(583),
+		})
+		// assert that duck is noe a signer and the number of approvals required increased
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+			Signers:               append(initialSigners, chuck, duck),
+			NumApprovalsThreshold: initialNumApprovals + 1,
+			NextTxnID:             0,
+			InitialBalance:        valueSend,
+			StartEpoch:            td.ExeCtx.Epoch,
+			UnlockDuration:        unlockDuration,
+		})
+
 	})
+
+	t.Run("construct and remove signer", func(t *testing.T) {
+		const initialNumApprovals = 2
+		const unlockDuration = 10
+		var valueSend = abi_spec.NewTokenAmount(100000000000)
+		var initialBal = abi_spec.NewTokenAmount(200000000000)
+
+		td := builder.Build(t)
+
+		alice := td.Driver.NewAccountActor(SECP, initialBal) // 101
+		bob := td.Driver.NewAccountActor(SECP, initialBal)   // 102
+		chuck := td.Driver.NewAccountActor(SECP, initialBal) // 103
+		duck := td.Driver.NewAccountActor(SECP, initialBal)  // 104
+		var initialSigners = []address.Address{alice, bob, chuck, duck}
+
+		multisigAddr, err := address.NewIDAddress(105) // 105
+		require.NoError(t, err)
+
+		// create a ms actor with 4 signers and 3 approvals required
+		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
+			&multisig_spec.ConstructorParams{
+				Signers:               initialSigners,
+				NumApprovalsThreshold: initialNumApprovals,
+				UnlockDuration:        unlockDuration,
+			},
+			chain.MessageReceipt{
+				ExitCode:    exitcode_spec.Ok,
+				ReturnValue: multisigAddr.Bytes(),
+				GasUsed:     big_spec.NewInt(1684),
+			})
+
+		// alice fails to remove a singer since this method can only be called by the multisig actors wallet address
+		msg, err := td.Producer.MultiSigRemoveSigner(multisigAddr, alice, multisig_spec.RemoveSignerParams{
+			Signer:   chuck,
+			Decrease: false,
+		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
+		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
+		require.NoError(t, err)
+		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+			ExitCode:    exitcode_spec.SysErrActorNotFound, // TODO set the correct error code here, lotus returns 'SysErrActorNotFound`, which is probably wrong.
+			ReturnValue: nil,
+			GasUsed:     big_spec.NewInt(1_000_000),
+		})
+
+		// success when multisig actor calls the remove signer method and removes duck
+		msg, err = td.Producer.MultiSigRemoveSigner(multisigAddr, multisigAddr, multisig_spec.RemoveSignerParams{
+			Signer:   duck,
+			Decrease: false,
+		}, chain.Value(big_spec.Zero()), chain.Nonce(0))
+
+		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
+		require.NoError(t, err)
+		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+			ExitCode:    exitcode_spec.Ok,
+			ReturnValue: EmptyRetrunValueBytes,
+			GasUsed:     big_spec.NewInt(561),
+		})
+		// assert that duck is no longer a signer and that the number of required approvals has remained unchanged.
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+			Signers:               []address.Address{alice, bob, chuck},
+			NumApprovalsThreshold: initialNumApprovals,
+			NextTxnID:             0,
+			InitialBalance:        valueSend,
+			StartEpoch:            td.ExeCtx.Epoch,
+			UnlockDuration:        unlockDuration,
+		})
+
+		// remove chuck and decrease the number of signers required
+		msg, err = td.Producer.MultiSigRemoveSigner(multisigAddr, multisigAddr, multisig_spec.RemoveSignerParams{
+			Signer:   chuck,
+			Decrease: true,
+		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
+
+		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
+		require.NoError(t, err)
+		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+			ExitCode:    exitcode_spec.Ok,
+			ReturnValue: EmptyRetrunValueBytes,
+			GasUsed:     big_spec.NewInt(495),
+		})
+		// assert that duck is no a signer and the number of approvals required decreased.
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+			Signers:               []address.Address{alice, bob},
+			NumApprovalsThreshold: initialNumApprovals - 1,
+			NextTxnID:             0,
+			InitialBalance:        valueSend,
+			StartEpoch:            td.ExeCtx.Epoch,
+			UnlockDuration:        unlockDuration,
+		})
+
+	})
+
 }
