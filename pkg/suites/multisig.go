@@ -87,6 +87,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 				ReturnValue: multisigAddr.Bytes(),
 				GasUsed:     big_spec.NewInt(1387),
 			})
+		td.Driver.AssertBalance(multisigAddr, valueSend)
 
 		// alice proposes that outsider should receive 'valueSend' FIL.
 		txID0 := multisig_spec.TxnID(0)
@@ -141,7 +142,6 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			UnlockDuration:        unlockDuration,
 		})
 		td.Driver.AssertBalance(multisigAddr, valueSend)
-		td.Driver.AssertBalance(outsider, initialBal)
 	})
 
 	t.Run("propose and approve", func(t *testing.T) {
@@ -281,6 +281,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			Signer:   chuck,
 			Increase: false,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
+		require.NoError(t, err)
 
 		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
@@ -295,6 +296,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			Signer:   chuck,
 			Increase: false,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(0))
+		require.NoError(t, err)
 
 		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
@@ -318,6 +320,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			Signer:   duck,
 			Increase: true,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
+		require.NoError(t, err)
 
 		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
@@ -373,6 +376,8 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			Signer:   chuck,
 			Decrease: false,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
+		require.NoError(t, err)
+
 		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
 		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
@@ -386,6 +391,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			Signer:   duck,
 			Decrease: false,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(0))
+		require.NoError(t, err)
 
 		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
@@ -409,6 +415,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			Signer:   chuck,
 			Decrease: true,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
+		require.NoError(t, err)
 
 		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
@@ -467,6 +474,8 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		}
 		// alice fails to since they are not the multisig address.
 		msg, err := td.Producer.MultiSigSwapSigner(multisigAddr, alice, swapParams, chain.Nonce(1), chain.Value(big_spec.Zero()))
+		require.NoError(t, err)
+
 		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
 		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
@@ -477,6 +486,8 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 
 		// swap operation success
 		msg, err = td.Producer.MultiSigSwapSigner(multisigAddr, multisigAddr, swapParams, chain.Nonce(0), chain.Value(big_spec.Zero()))
+		require.NoError(t, err)
+
 		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
 		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
@@ -495,6 +506,8 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 
 		// decrease the threshold and assert state change
 		msg, err = td.Producer.MultiSigChangeApprovalsThreshold(multisigAddr, multisigAddr, initialNumApprovals-1, chain.Nonce(1), chain.Value(big_spec.Zero()))
+		require.NoError(t, err)
+
 		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
 		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
