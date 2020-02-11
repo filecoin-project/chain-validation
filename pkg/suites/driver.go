@@ -98,6 +98,24 @@ func (d *StateDriver) AssertMultisigTransaction(multisigAddr address.Address, tx
 	assert.Equal(d.tb, txn, actualTxn)
 }
 
+func (d *StateDriver) AssertMultisigContainsTransaction(multisigAddr address.Address, txnID multisig_spec.TxnID, contains bool) {
+	multisigActor, err := d.State().Actor(multisigAddr)
+	require.NoError(d.tb, err)
+
+	strg, err := d.State().Storage()
+	require.NoError(d.tb, err)
+
+	var multisig multisig_spec.MultiSigActorState
+	require.NoError(d.tb, strg.Get(context.Background(), multisigActor.Head(), &multisig))
+
+	txnMap := adt_spec.AsMap(strg, multisig.PendingTxns)
+	var actualTxn multisig_spec.MultiSigTransaction
+	found, err := txnMap.Get(txnID, &actualTxn)
+	require.NoError(d.tb, err)
+	assert.Equal(d.tb, contains, found)
+
+}
+
 func (d *StateDriver) AssertMultisigState(multisigAddr address.Address, expected multisig_spec.MultiSigActorState) {
 	multisigActor, err := d.State().Actor(multisigAddr)
 	require.NoError(d.tb, err)
