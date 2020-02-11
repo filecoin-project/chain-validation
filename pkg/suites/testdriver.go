@@ -132,8 +132,7 @@ type TestDriver struct {
 	ExeCtx    *chain.ExecutionContext
 }
 
-// TODO for the failure cases we need to catch the panic here (I think maybe?) else when we write tests that check failure cases
-// we get call stacks in successful test run output which is extremal deceiving
+// TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
 func (td *TestDriver) ApplyMessageExpectReceipt(msgF func() (*chain.Message, error), receipt chain.MessageReceipt) {
 	msg, err := msgF()
 	require.NoError(td.T, err)
