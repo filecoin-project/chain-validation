@@ -245,9 +245,74 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			StartEpoch:            1,
 			UnlockDuration:        unlockDuration,
 		})
-
 		td.Driver.AssertBalance(multisigAddr, valueSend)
 		td.Driver.AssertBalance(outsider, initialBal)
+	})
+
+	t.Run("construct and add signer", func(t *testing.T) {
+		const initialNumApprovals = 2
+		const unlockDuration = 10
+		var valueSend = abi_spec.NewTokenAmount(100000000000)
+		var initialBal = abi_spec.NewTokenAmount(200000000000)
+
+		td := builder.Build(t)
+
+		alice := td.Driver.NewAccountActor(SECP, initialBal) // 101
+		bob := td.Driver.NewAccountActor(SECP, initialBal)   // 102
+		chuck := td.Driver.NewAccountActor(SECP, initialBal) // 103
+		var initialSigners = []address.Address{alice, bob}
+
+		multisigAddr, err := address.NewIDAddress(104) // 104
+		require.NoError(t, err)
+
+		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
+			&multisig_spec.ConstructorParams{
+				Signers:               initialSigners,
+				NumApprovalsThreshold: initialNumApprovals,
+				UnlockDuration:        unlockDuration,
+			},
+			chain.MessageReceipt{
+				ExitCode:    exitcode_spec.Ok,
+				ReturnValue: multisigAddr.Bytes(),
+				GasUsed:     big_spec.NewInt(1403),
+			})
+
+		// alice fails to add a singer since this method can only be called by the multisig actors wallet address
+		msg, err := td.Producer.MultiSigAddSigner(multisigAddr, alice, multisig_spec.AddSignerParams{
+			Signer:   chuck,
+			Increase: false,
+		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
+
+		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
+		require.NoError(t, err)
+		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+			ExitCode:    exitcode_spec.SysErrActorNotFound, // TODO set the correct error code here, lotus returns 'SysErrActorNotFound`, which is probably wrong.
+			ReturnValue: nil,
+			GasUsed:     big_spec.NewInt(1_000_000),
+		})
+
+		// success when multisig actor calls the add signer method
+		msg, err = td.Producer.MultiSigAddSigner(multisigAddr, multisigAddr, multisig_spec.AddSignerParams{
+			Signer:   chuck,
+			Increase: false,
+		}, chain.Value(big_spec.Zero()), chain.Nonce(0))
+
+		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
+		require.NoError(t, err)
+		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+			ExitCode:    exitcode_spec.Ok,
+			ReturnValue: EmptyRetrunValueBytes,
+			GasUsed:     big_spec.NewInt(517),
+		})
+
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+			Signers:               append(initialSigners, chuck),
+			NumApprovalsThreshold: initialNumApprovals,
+			NextTxnID:             0,
+			InitialBalance:        valueSend,
+			StartEpoch:            td.ExeCtx.Epoch,
+			UnlockDuration:        unlockDuration,
+		})
 
 	})
 }

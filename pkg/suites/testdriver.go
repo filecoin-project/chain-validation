@@ -132,6 +132,8 @@ type TestDriver struct {
 	ExeCtx    *chain.ExecutionContext
 }
 
+// TODO for the failure cases we need to catch the panic here (I think maybe?) else when we write tests that check failure cases
+// we get call stacks in successful test run output which is extremal deceiving
 func (td *TestDriver) ApplyMessageExpectReceipt(msgF func() (*chain.Message, error), receipt chain.MessageReceipt) {
 	msg, err := msgF()
 	require.NoError(td.T, err)
@@ -143,8 +145,6 @@ func (td *TestDriver) ApplyMessageExpectReceipt(msgF func() (*chain.Message, err
 	require.Equal(td.T, receipt.ExitCode, msgReceipt.ExitCode)
 	require.Equal(td.T, receipt.ReturnValue, msgReceipt.ReturnValue)
 }
-
-// TODO all Must* methods need to be adapted to assert gas values correctly.
 
 func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt chain.MessageReceipt) {
 	/* Create the Multisig actor*/
