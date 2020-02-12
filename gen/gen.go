@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/dave/jennifer/jen"
-	//account_actor "github.com/filecoin-project/specs-actors/actors/builtin/account"
-	multisig_actor "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
+	actor "github.com/filecoin-project/specs-actors/actors/builtin/market"
+	//multisig_actor "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 )
 
 type Field struct {
@@ -71,7 +71,7 @@ func (mp *MessageProducer) {{.Name}}(to, from address.Address, params {{.Type}},
 `
 
 func main() {
-	exports := multisig_actor.MultiSigActor{}.Exports()
+	exports := actor.Actor{}.Exports()
 
 	for _, m := range exports {
 		if m == nil {
@@ -99,7 +99,7 @@ func main() {
 		importPath = strings.TrimRight(importPath, ".")
 		//fmt.Printf("Import Path: %s\n", importPath)
 
-		GenerateMessageMethods3(pkg, importPath, fmt.Sprintf("%s%s", pkgStructMethod[1], method), t.In(1).String())
+		GenerateMessageMethods(pkg, importPath, fmt.Sprintf("%s%s", pkgStructMethod[1], method), t.In(1).String())
 		//fmt.Printf("Package: %s\nActor: %s\nMethod: %s\n\n", pkg, actorType, method)
 		//fmt.Printf("Actor parameters: %s\n", t.In(1))
 		break
@@ -107,31 +107,6 @@ func main() {
 }
 
 func GenerateMessageMethods(file, importPkg, method, actParam string) {
-	f := jen.NewFile(file)
-	f.Func().Id(method).Params().Block(
-		jen.Qual(importPkg, method).Call(jen.Lit(actParam)),
-	)
-	fmt.Printf("%#v", f)
-}
-
-func GenerateMessageMethods2(file, importPkg, method, actParam string) {
-	f := jen.NewFile(file)
-	f.Func().Params(
-		jen.Id("mp *MessageProducer"),
-	).Id(method).Params(
-		jen.Id("to"),
-		jen.Id("from address.Address"),
-		jen.Id(fmt.Sprintf("params %s", actParam)),
-		jen.Id("opts ...MsgOpt"),
-	).Block(
-		jen.Id("ser").Id("err").Op(":=").Id("state.Serialize").Call(
-			jen.Id("&params"),
-		),
-	)
-	fmt.Printf("%#v", f)
-}
-
-func GenerateMessageMethods3(file, importPkg, method, actParam string) {
 	f := jen.NewFile(file)
 	f.Func().Params(
 		jen.Id("mp").Id("*MessageProducer"),
@@ -144,6 +119,7 @@ func GenerateMessageMethods3(file, importPkg, method, actParam string) {
 		jen.Id("*Message"),
 		jen.Id("error"),
 	).Block(
+		jen.List(jen.Id("ser"), jen.Err()).Op(":=").Id("state.Serialize").Call(jen.Id("&params")),
 		jen.If(jen.Id("err").Op("!=").Id("nil")).Block(
 			jen.Return(jen.Id("nil"), jen.Id("err")),
 		),
