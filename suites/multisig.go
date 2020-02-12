@@ -43,7 +43,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 
 		// creator of the multisig actor
-		alice := td.State.NewAccountActor(drivers.SECP, initialBal)
+		alice := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// expected address of the actor
 		multisigAddr, err := address.NewIDAddress(102)
@@ -70,9 +70,9 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		td := builder.Build(t)
 
-		alice := td.State.NewAccountActor(drivers.SECP, initialBal)
-		bob := td.State.NewAccountActor(drivers.SECP, initialBal)
-		outsider := td.State.NewAccountActor(drivers.SECP, initialBal)
+		alice := td.NewAccountActor(drivers.SECP, initialBal)
+		bob := td.NewAccountActor(drivers.SECP, initialBal)
+		outsider := td.NewAccountActor(drivers.SECP, initialBal)
 
 		multisigAddr, err := address.NewIDAddress(104)
 		require.NoError(t, err)
@@ -152,11 +152,11 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		var valueSend = abi_spec.NewTokenAmount(10)
 
 		// Signers
-		alice := td.State.NewAccountActor(drivers.SECP, initialBal)
-		bob := td.State.NewAccountActor(drivers.SECP, initialBal)
+		alice := td.NewAccountActor(drivers.SECP, initialBal)
+		bob := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// Not Signer
-		outsider := td.State.NewAccountActor(drivers.SECP, initialBal)
+		outsider := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// Multisig actor address
 		multisigAddr, err := address.NewIDAddress(104)
@@ -251,10 +251,10 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		td := builder.Build(t)
 
-		alice := td.State.NewAccountActor(drivers.SECP, initialBal) // 101
-		bob := td.State.NewAccountActor(drivers.SECP, initialBal)   // 102
-		chuck := td.State.NewAccountActor(drivers.SECP, initialBal) // 103
-		duck := td.State.NewAccountActor(drivers.SECP, initialBal)  // 104
+		alice := td.NewAccountActor(drivers.SECP, initialBal) // 101
+		bob := td.NewAccountActor(drivers.SECP, initialBal)   // 102
+		chuck := td.NewAccountActor(drivers.SECP, initialBal) // 103
+		duck := td.NewAccountActor(drivers.SECP, initialBal)  // 104
 		var initialSigners = []address.Address{alice, bob}
 
 		multisigAddr, err := address.NewIDAddress(105) // 105
@@ -336,10 +336,10 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		td := builder.Build(t)
 
-		alice := td.State.NewAccountActor(drivers.SECP, initialBal) // 101
-		bob := td.State.NewAccountActor(drivers.SECP, initialBal)   // 102
-		chuck := td.State.NewAccountActor(drivers.SECP, initialBal) // 103
-		duck := td.State.NewAccountActor(drivers.SECP, initialBal)  // 104
+		alice := td.NewAccountActor(drivers.SECP, initialBal) // 101
+		bob := td.NewAccountActor(drivers.SECP, initialBal)   // 102
+		chuck := td.NewAccountActor(drivers.SECP, initialBal) // 103
+		duck := td.NewAccountActor(drivers.SECP, initialBal)  // 104
 		var initialSigners = []address.Address{alice, bob, chuck, duck}
 
 		multisigAddr, err := address.NewIDAddress(105) // 105
@@ -422,10 +422,10 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		td := builder.Build(t)
 
-		alice := td.State.NewAccountActor(drivers.SECP, initialBal) // 101
-		bob := td.State.NewAccountActor(drivers.SECP, initialBal)   // 102
+		alice := td.NewAccountActor(drivers.SECP, initialBal) // 101
+		bob := td.NewAccountActor(drivers.SECP, initialBal)   // 102
 		// chuck will be swapped in below
-		chuck := td.State.NewAccountActor(drivers.SECP, initialBal) // 103
+		chuck := td.NewAccountActor(drivers.SECP, initialBal) // 103
 
 		var initialSigners = []address.Address{alice, bob}
 

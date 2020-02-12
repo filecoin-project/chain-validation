@@ -128,16 +128,16 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			td := builder.Build(t)
 
 			// Create the to and from actors with balance in the state tree
-			_, _, err = td.State.State().SetActor(tc.sender, builtin_spec.AccountActorCodeID, tc.senderBal)
+			_, _, err = td.State().SetActor(tc.sender, builtin_spec.AccountActorCodeID, tc.senderBal)
 			require.NoError(t, err)
 			if tc.sender.String() != tc.receiver.String() {
-				_, _, err := td.State.State().SetActor(tc.receiver, builtin_spec.AccountActorCodeID, tc.receiverBal)
+				_, _, err := td.State().SetActor(tc.receiver, builtin_spec.AccountActorCodeID, tc.receiverBal)
 				require.NoError(t, err)
 			}
 
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
 			transferMsg := td.Producer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0))
-			transferReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State.State(), transferMsg)
+			transferReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), transferMsg)
 			require.NoError(t, err)
 
 			// assert the transfer message application returned the expected exitcode and gas cast
@@ -176,11 +176,11 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 	t.Run("fail to self transfer", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.State.NewAccountActor(drivers.SECP, aliceBal)
+		alice := td.NewAccountActor(drivers.SECP, aliceBal)
 
 		msg := td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0))
 
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State.State(), msg)
+		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 		require.NoError(t, err)
 		td.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
@@ -193,13 +193,13 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	})
 	t.Run("fail to transfer from known address to unknown account", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.State.NewAccountActor(drivers.SECP, aliceBal)
+		alice := td.NewAccountActor(drivers.SECP, aliceBal)
 
-		unknown := td.State.State().NewSecp256k1AccountAddress()
+		unknown := td.State().NewSecp256k1AccountAddress()
 
 		msg := td.Producer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0))
 
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State.State(), msg)
+		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 		require.NoError(t, err)
 		td.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
@@ -213,12 +213,12 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 	t.Run("fail to transfer from unknown account to known address", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.State.NewAccountActor(drivers.SECP, aliceBal)
-		unknown := td.State.State().NewSecp256k1AccountAddress()
+		alice := td.NewAccountActor(drivers.SECP, aliceBal)
+		unknown := td.State().NewSecp256k1AccountAddress()
 
 		msg := td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0))
 
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State.State(), msg)
+		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 		require.NoError(t, err)
 		td.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
@@ -232,12 +232,12 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 	t.Run("fail to transfer from unknown address to unknown address", func(t *testing.T) {
 		td := builder.Build(t)
-		unknown := td.State.State().NewSecp256k1AccountAddress()
-		nobody := td.State.State().NewSecp256k1AccountAddress()
+		unknown := td.State().NewSecp256k1AccountAddress()
+		nobody := td.State().NewSecp256k1AccountAddress()
 
 		msg := td.Producer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0))
 
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State.State(), msg)
+		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 		require.NoError(t, err)
 		td.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
