@@ -14,13 +14,14 @@ import (
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	chain "github.com/filecoin-project/chain-validation/pkg/chain"
+	"github.com/filecoin-project/chain-validation/pkg/drivers"
 )
 
-func TestMultiSigActor(t *testing.T, factory Factories) {
+func TestMultiSigActor(t *testing.T, factory drivers.Factories) {
 	defaultMiner, err := address.NewSecp256k1Address([]byte{'m', 'i', 'n', 'e', 'r'})
 	require.NoError(t, err)
 
-	builder := NewBuilder(context.Background(), factory).
+	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(big_spec.NewInt(1000000)).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithSingletonActors(map[address.Address]big_spec.Int{
@@ -40,7 +41,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		td := builder.Build(t)
 
 		// creator of the multisig actor
-		alice := td.Driver.NewAccountActor(SECP, initialBal)
+		alice := td.Driver.NewAccountActor(drivers.SECP, initialBal)
 
 		// expected address of the actor
 		multisigAddr, err := address.NewIDAddress(102)
@@ -67,9 +68,9 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 
 		td := builder.Build(t)
 
-		alice := td.Driver.NewAccountActor(SECP, initialBal)
-		bob := td.Driver.NewAccountActor(SECP, initialBal)
-		outsider := td.Driver.NewAccountActor(SECP, initialBal)
+		alice := td.Driver.NewAccountActor(drivers.SECP, initialBal)
+		bob := td.Driver.NewAccountActor(drivers.SECP, initialBal)
+		outsider := td.Driver.NewAccountActor(drivers.SECP, initialBal)
 
 		multisigAddr, err := address.NewIDAddress(104)
 		require.NoError(t, err)
@@ -127,7 +128,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		// transaction is canceled.
 		td.MustCancelMultisigActor(2, big_spec.Zero(), multisigAddr, alice, txID0, chain.MessageReceipt{
 			ExitCode:    exitcode_spec.Ok,
-			ReturnValue: EmptyRetrunValueBytes,
+			ReturnValue: drivers.EmptyRetrunValueBytes,
 			GasUsed:     big_spec.NewInt(639),
 		})
 		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
@@ -149,11 +150,11 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		var valueSend = abi_spec.NewTokenAmount(10)
 
 		// Signers
-		alice := td.Driver.NewAccountActor(SECP, initialBal)
-		bob := td.Driver.NewAccountActor(SECP, initialBal)
+		alice := td.Driver.NewAccountActor(drivers.SECP, initialBal)
+		bob := td.Driver.NewAccountActor(drivers.SECP, initialBal)
 
 		// Not Signer
-		outsider := td.Driver.NewAccountActor(SECP, initialBal)
+		outsider := td.Driver.NewAccountActor(drivers.SECP, initialBal)
 
 		// Multisig actor address
 		multisigAddr, err := address.NewIDAddress(104)
@@ -226,7 +227,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		txID1 := multisig_spec.TxnID(1)
 		td.MustApproveMultisigActor(0, big_spec.Zero(), multisigAddr, bob, txID0, chain.MessageReceipt{
 			ExitCode:    exitcode_spec.Ok,
-			ReturnValue: EmptyRetrunValueBytes,
+			ReturnValue: drivers.EmptyRetrunValueBytes,
 			GasUsed:     big_spec.NewInt(1691),
 		})
 		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
@@ -248,10 +249,10 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 
 		td := builder.Build(t)
 
-		alice := td.Driver.NewAccountActor(SECP, initialBal) // 101
-		bob := td.Driver.NewAccountActor(SECP, initialBal)   // 102
-		chuck := td.Driver.NewAccountActor(SECP, initialBal) // 103
-		duck := td.Driver.NewAccountActor(SECP, initialBal)  // 104
+		alice := td.Driver.NewAccountActor(drivers.SECP, initialBal) // 101
+		bob := td.Driver.NewAccountActor(drivers.SECP, initialBal)   // 102
+		chuck := td.Driver.NewAccountActor(drivers.SECP, initialBal) // 103
+		duck := td.Driver.NewAccountActor(drivers.SECP, initialBal)  // 104
 		var initialSigners = []address.Address{alice, bob}
 
 		multisigAddr, err := address.NewIDAddress(105) // 105
@@ -289,7 +290,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
 			chain.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyRetrunValueBytes,
+				ReturnValue: drivers.EmptyRetrunValueBytes,
 				GasUsed:     big_spec.NewInt(517),
 			})
 		// assert that chuck is now a signer
@@ -310,7 +311,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
 			chain.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyRetrunValueBytes,
+				ReturnValue: drivers.EmptyRetrunValueBytes,
 				GasUsed:     big_spec.NewInt(583),
 			})
 		// assert that duck is noe a signer and the number of approvals required increased
@@ -333,10 +334,10 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 
 		td := builder.Build(t)
 
-		alice := td.Driver.NewAccountActor(SECP, initialBal) // 101
-		bob := td.Driver.NewAccountActor(SECP, initialBal)   // 102
-		chuck := td.Driver.NewAccountActor(SECP, initialBal) // 103
-		duck := td.Driver.NewAccountActor(SECP, initialBal)  // 104
+		alice := td.Driver.NewAccountActor(drivers.SECP, initialBal) // 101
+		bob := td.Driver.NewAccountActor(drivers.SECP, initialBal)   // 102
+		chuck := td.Driver.NewAccountActor(drivers.SECP, initialBal) // 103
+		duck := td.Driver.NewAccountActor(drivers.SECP, initialBal)  // 104
 		var initialSigners = []address.Address{alice, bob, chuck, duck}
 
 		multisigAddr, err := address.NewIDAddress(105) // 105
@@ -375,7 +376,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
 			chain.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyRetrunValueBytes,
+				ReturnValue: drivers.EmptyRetrunValueBytes,
 				GasUsed:     big_spec.NewInt(561),
 			})
 		// assert that duck is no longer a signer and that the number of required approvals has remained unchanged.
@@ -396,7 +397,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
 			chain.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyRetrunValueBytes,
+				ReturnValue: drivers.EmptyRetrunValueBytes,
 				GasUsed:     big_spec.NewInt(495),
 			})
 		// assert that duck is no a signer and the number of approvals required decreased.
@@ -419,10 +420,10 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 
 		td := builder.Build(t)
 
-		alice := td.Driver.NewAccountActor(SECP, initialBal) // 101
-		bob := td.Driver.NewAccountActor(SECP, initialBal)   // 102
+		alice := td.Driver.NewAccountActor(drivers.SECP, initialBal) // 101
+		bob := td.Driver.NewAccountActor(drivers.SECP, initialBal)   // 102
 		// chuck will be swapped in below
-		chuck := td.Driver.NewAccountActor(SECP, initialBal) // 103
+		chuck := td.Driver.NewAccountActor(drivers.SECP, initialBal) // 103
 
 		var initialSigners = []address.Address{alice, bob}
 
@@ -461,7 +462,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			td.Producer.MultisigSwapSigner(multisigAddr, multisigAddr, swapParams, chain.Nonce(0), chain.Value(big_spec.Zero())),
 			chain.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyRetrunValueBytes,
+				ReturnValue: drivers.EmptyRetrunValueBytes,
 				GasUsed:     big_spec.NewInt(515),
 			})
 		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
@@ -478,7 +479,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			td.Producer.MultisigChangeNumApprovalsThreshold(multisigAddr, multisigAddr, multisig_spec.ChangeNumApprovalsThresholdParams{NewThreshold: initialNumApprovals - 1}, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			chain.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyRetrunValueBytes,
+				ReturnValue: drivers.EmptyRetrunValueBytes,
 				GasUsed:     big_spec.NewInt(427),
 			})
 		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{

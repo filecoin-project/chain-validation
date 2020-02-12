@@ -13,6 +13,7 @@ import (
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 
 	chain "github.com/filecoin-project/chain-validation/pkg/chain"
+	"github.com/filecoin-project/chain-validation/pkg/drivers"
 )
 
 type valueTransferTestCases struct {
@@ -29,7 +30,7 @@ type valueTransferTestCases struct {
 	receipt chain.MessageReceipt
 }
 
-func TestValueTransferSimple(t *testing.T, factories Factories) {
+func TestValueTransferSimple(t *testing.T, factories drivers.Factories) {
 	defaultMiner, err := address.NewSecp256k1Address([]byte{'m', 'i', 'n', 'e', 'r'})
 	require.NoError(t, err)
 
@@ -39,7 +40,7 @@ func TestValueTransferSimple(t *testing.T, factories Factories) {
 	bob, err := address.NewSecp256k1Address([]byte{'2'})
 	require.NoError(t, err)
 
-	builder := NewBuilder(context.Background(), factories).
+	builder := drivers.NewBuilder(context.Background(), factories).
 		WithDefaultGasLimit(big_spec.NewInt(1000000)).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithSingletonActors(map[address.Address]big_spec.Int{
@@ -125,10 +126,10 @@ func TestValueTransferSimple(t *testing.T, factories Factories) {
 			td := builder.Build(t)
 
 			// Create the to and from actors with balance in the state tree
-			_, _, err = td.Driver.st.SetActor(tc.sender, builtin_spec.AccountActorCodeID, tc.senderBal)
+			_, _, err = td.Driver.State().SetActor(tc.sender, builtin_spec.AccountActorCodeID, tc.senderBal)
 			require.NoError(t, err)
 			if tc.sender.String() != tc.receiver.String() {
-				_, _, err := td.Driver.st.SetActor(tc.receiver, builtin_spec.AccountActorCodeID, tc.receiverBal)
+				_, _, err := td.Driver.State().SetActor(tc.receiver, builtin_spec.AccountActorCodeID, tc.receiverBal)
 				require.NoError(t, err)
 			}
 
@@ -155,7 +156,7 @@ func TestValueTransferSimple(t *testing.T, factories Factories) {
 
 }
 
-func TestValueTransferAdvance(t *testing.T, factory Factories) {
+func TestValueTransferAdvance(t *testing.T, factory drivers.Factories) {
 	var gasCost = big_spec.Zero()
 	var aliceBal = abi_spec.NewTokenAmount(100)
 	var transferAmnt = abi_spec.NewTokenAmount(10)
@@ -163,7 +164,7 @@ func TestValueTransferAdvance(t *testing.T, factory Factories) {
 	defaultMiner, err := address.NewSecp256k1Address([]byte{'m', 'i', 'n', 'e', 'r'})
 	require.NoError(t, err)
 
-	builder := NewBuilder(context.Background(), factory).
+	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(big_spec.NewInt(1000000)).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithSingletonActors(map[address.Address]big_spec.Int{
@@ -173,7 +174,7 @@ func TestValueTransferAdvance(t *testing.T, factory Factories) {
 
 	t.Run("fail to self transfer", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.Driver.NewAccountActor(SECP, aliceBal)
+		alice := td.Driver.NewAccountActor(drivers.SECP, aliceBal)
 
 		msg := td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0))
 
@@ -190,7 +191,7 @@ func TestValueTransferAdvance(t *testing.T, factory Factories) {
 	})
 	t.Run("fail to transfer from known address to unknown account", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.Driver.NewAccountActor(SECP, aliceBal)
+		alice := td.Driver.NewAccountActor(drivers.SECP, aliceBal)
 
 		unknown := td.Driver.State().NewSecp256k1AccountAddress()
 
@@ -210,7 +211,7 @@ func TestValueTransferAdvance(t *testing.T, factory Factories) {
 
 	t.Run("fail to transfer from unknown account to known address", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.Driver.NewAccountActor(SECP, aliceBal)
+		alice := td.Driver.NewAccountActor(drivers.SECP, aliceBal)
 		unknown := td.Driver.State().NewSecp256k1AccountAddress()
 
 		msg := td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0))

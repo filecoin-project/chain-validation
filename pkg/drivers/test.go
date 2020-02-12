@@ -1,4 +1,4 @@
-package suites
+package drivers
 
 import (
 	"bytes"
