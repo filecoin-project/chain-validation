@@ -15,6 +15,7 @@ import (
 	chain "github.com/filecoin-project/chain-validation/pkg/chain"
 	"github.com/filecoin-project/chain-validation/pkg/chain/types"
 	"github.com/filecoin-project/chain-validation/pkg/drivers"
+	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
 type valueTransferTestCases struct {
@@ -31,7 +32,7 @@ type valueTransferTestCases struct {
 	receipt types.MessageReceipt
 }
 
-func TestValueTransferSimple(t *testing.T, factories drivers.Factories) {
+func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 	defaultMiner, err := address.NewSecp256k1Address([]byte{'m', 'i', 'n', 'e', 'r'})
 	require.NoError(t, err)
 
@@ -127,29 +128,29 @@ func TestValueTransferSimple(t *testing.T, factories drivers.Factories) {
 			td := builder.Build(t)
 
 			// Create the to and from actors with balance in the state tree
-			_, _, err = td.Driver.State().SetActor(tc.sender, builtin_spec.AccountActorCodeID, tc.senderBal)
+			_, _, err = td.State.State().SetActor(tc.sender, builtin_spec.AccountActorCodeID, tc.senderBal)
 			require.NoError(t, err)
 			if tc.sender.String() != tc.receiver.String() {
-				_, _, err := td.Driver.State().SetActor(tc.receiver, builtin_spec.AccountActorCodeID, tc.receiverBal)
+				_, _, err := td.State.State().SetActor(tc.receiver, builtin_spec.AccountActorCodeID, tc.receiverBal)
 				require.NoError(t, err)
 			}
 
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
 			transferMsg := td.Producer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0))
-			transferReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), transferMsg)
+			transferReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State.State(), transferMsg)
 			require.NoError(t, err)
 
 			// assert the transfer message application returned the expected exitcode and gas cast
-			td.Driver.AssertReceipt(transferReceipt, tc.receipt)
+			td.AssertReceipt(transferReceipt, tc.receipt)
 
 			// assert the actor balances changed as expected, the receiver balance should not change if transfer fails
 			if tc.receipt.ExitCode.IsSuccess() {
-				td.Driver.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed))
-				td.Driver.AssertBalance(tc.receiver, tc.transferAmnt)
-				td.Driver.AssertBalance(td.ExeCtx.MinerOwner, tc.receipt.GasUsed)
+				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed))
+				td.AssertBalance(tc.receiver, tc.transferAmnt)
+				td.AssertBalance(td.ExeCtx.MinerOwner, tc.receipt.GasUsed)
 			} else {
-				td.Driver.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed))
-				td.Driver.AssertBalance(td.ExeCtx.MinerOwner, tc.receipt.GasUsed)
+				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed))
+				td.AssertBalance(td.ExeCtx.MinerOwner, tc.receipt.GasUsed)
 			}
 
 		})
@@ -157,7 +158,7 @@ func TestValueTransferSimple(t *testing.T, factories drivers.Factories) {
 
 }
 
-func TestValueTransferAdvance(t *testing.T, factory drivers.Factories) {
+func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	var gasCost = big_spec.Zero()
 	var aliceBal = abi_spec.NewTokenAmount(100)
 	var transferAmnt = abi_spec.NewTokenAmount(10)
@@ -175,75 +176,75 @@ func TestValueTransferAdvance(t *testing.T, factory drivers.Factories) {
 
 	t.Run("fail to self transfer", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.Driver.NewAccountActor(drivers.SECP, aliceBal)
+		alice := td.State.NewAccountActor(drivers.SECP, aliceBal)
 
 		msg := td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0))
 
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
+		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State.State(), msg)
 		require.NoError(t, err)
-		td.Driver.AssertReceipt(msgReceipt, types.MessageReceipt{
+		td.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
 			ReturnValue: nil,
 			GasUsed:     gasCost,
 		})
 
-		td.Driver.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
-		td.Driver.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
+		td.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
+		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
 	})
 	t.Run("fail to transfer from known address to unknown account", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.Driver.NewAccountActor(drivers.SECP, aliceBal)
+		alice := td.State.NewAccountActor(drivers.SECP, aliceBal)
 
-		unknown := td.Driver.State().NewSecp256k1AccountAddress()
+		unknown := td.State.State().NewSecp256k1AccountAddress()
 
 		msg := td.Producer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0))
 
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
+		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State.State(), msg)
 		require.NoError(t, err)
-		td.Driver.AssertReceipt(msgReceipt, types.MessageReceipt{
+		td.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
 			ReturnValue: nil,
 			GasUsed:     gasCost,
 		})
 
-		td.Driver.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
-		td.Driver.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
+		td.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
+		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
 	})
 
 	t.Run("fail to transfer from unknown account to known address", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.Driver.NewAccountActor(drivers.SECP, aliceBal)
-		unknown := td.Driver.State().NewSecp256k1AccountAddress()
+		alice := td.State.NewAccountActor(drivers.SECP, aliceBal)
+		unknown := td.State.State().NewSecp256k1AccountAddress()
 
 		msg := td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0))
 
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
+		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State.State(), msg)
 		require.NoError(t, err)
-		td.Driver.AssertReceipt(msgReceipt, types.MessageReceipt{
+		td.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
 			ReturnValue: nil,
 			GasUsed:     gasCost,
 		})
 
-		td.Driver.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
-		td.Driver.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
+		td.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
+		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
 	})
 
 	t.Run("fail to transfer from unknown address to unknown address", func(t *testing.T) {
 		td := builder.Build(t)
-		unknown := td.Driver.State().NewSecp256k1AccountAddress()
-		nobody := td.Driver.State().NewSecp256k1AccountAddress()
+		unknown := td.State.State().NewSecp256k1AccountAddress()
+		nobody := td.State.State().NewSecp256k1AccountAddress()
 
 		msg := td.Producer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0))
 
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
+		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State.State(), msg)
 		require.NoError(t, err)
-		td.Driver.AssertReceipt(msgReceipt, types.MessageReceipt{
+		td.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
 			ReturnValue: nil,
 			GasUsed:     gasCost,
 		})
 
-		td.Driver.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
+		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
 	})
 }
