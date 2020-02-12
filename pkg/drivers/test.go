@@ -19,6 +19,7 @@ import (
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
+	"github.com/filecoin-project/chain-validation/pkg/chain/types"
 )
 
 var EmptyRetrunValueBytes []byte
@@ -133,7 +134,7 @@ type TestDriver struct {
 }
 
 // TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
-func (td *TestDriver) ApplyMessageExpectReceipt(msg *chain.Message, receipt chain.MessageReceipt) {
+func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, receipt types.MessageReceipt) {
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.st, msg)
 	require.NoError(td.T, err)
 
@@ -142,7 +143,7 @@ func (td *TestDriver) ApplyMessageExpectReceipt(msg *chain.Message, receipt chai
 	require.Equal(td.T, receipt.ReturnValue, msgReceipt.ReturnValue)
 }
 
-func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt chain.MessageReceipt) {
+func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt types.MessageReceipt) {
 	/* Create the Multisig actor*/
 	multiSigConstuctParams, err := chain.Serialize(params)
 	require.NoError(td.T, err)
@@ -175,7 +176,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 	td.Driver.AssertBalance(multisigAddr, value)
 }
 
-func (td *TestDriver) MustProposeMultisigTransfer(nonce int64, value abi_spec.TokenAmount, txID multisig_spec.TxnID, multisigAddr, from address.Address, params multisig_spec.ProposeParams, receipt chain.MessageReceipt) {
+func (td *TestDriver) MustProposeMultisigTransfer(nonce int64, value abi_spec.TokenAmount, txID multisig_spec.TxnID, multisigAddr, from address.Address, params multisig_spec.ProposeParams, receipt types.MessageReceipt) {
 	/* Propose the transactions */
 	msg := td.Producer.MultisigPropose(multisigAddr, from, params, chain.Value(value), chain.Nonce(nonce))
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
@@ -185,7 +186,7 @@ func (td *TestDriver) MustProposeMultisigTransfer(nonce int64, value abi_spec.To
 	td.Driver.AssertReceipt(msgReceipt, receipt)
 }
 
-func (td *TestDriver) MustApproveMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID, receipt chain.MessageReceipt) {
+func (td *TestDriver) MustApproveMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID, receipt types.MessageReceipt) {
 	msg := td.Producer.MultisigApprove(ms, from, multisig_spec.TxnIDParams{ID: txID}, chain.Value(value), chain.Nonce(nonce))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
@@ -194,7 +195,7 @@ func (td *TestDriver) MustApproveMultisigActor(nonce int64, value abi_spec.Token
 	td.Driver.AssertReceipt(msgReceipt, receipt)
 }
 
-func (td *TestDriver) MustCancelMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID, receipt chain.MessageReceipt) {
+func (td *TestDriver) MustCancelMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID, receipt types.MessageReceipt) {
 	msg := td.Producer.MultisigCancel(ms, from, multisig_spec.TxnIDParams{ID: txID}, chain.Value(value), chain.Nonce(nonce))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)

@@ -3,22 +3,14 @@ package chain
 import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/specs-actors/actors/abi"
-	"github.com/filecoin-project/specs-actors/actors/abi/big"
-	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
+	"github.com/filecoin-project/chain-validation/pkg/chain/types"
 	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
 // Applier applies abstract messages to states.
 type Applier interface {
-	ApplyMessage(context *ExecutionContext, state state.Wrapper, msg *Message) (MessageReceipt, error)
-}
-
-// MessageReceipt is the return value of message application.
-type MessageReceipt struct {
-	ExitCode    exitcode.ExitCode
-	ReturnValue []byte
-	GasUsed     big.Int
+	ApplyMessage(context *ExecutionContext, state state.Wrapper, msg *types.Message) (types.MessageReceipt, error)
 }
 
 // ExecutionContext provides the context for execution of a message.
@@ -43,6 +35,6 @@ func NewValidator(executor Applier) *Validator {
 }
 
 // ApplyMessages applies a message to a state
-func (v *Validator) ApplyMessage(context *ExecutionContext, state state.Wrapper, message *Message) (MessageReceipt, error) {
+func (v *Validator) ApplyMessage(context *ExecutionContext, state state.Wrapper, message *types.Message) (types.MessageReceipt, error) {
 	return v.applier.ApplyMessage(context, state, message)
 }

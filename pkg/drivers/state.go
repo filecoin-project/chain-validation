@@ -16,6 +16,7 @@ import (
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
+	"github.com/filecoin-project/chain-validation/pkg/chain/types"
 	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
@@ -72,7 +73,7 @@ func (d *StateDriver) AssertBalance(addr address.Address, expected big_spec.Int)
 }
 
 // AssertReceipt checks that a receipt is not nill and has values equal to `expected`.
-func (d *StateDriver) AssertReceipt(receipt, expected chain.MessageReceipt) {
+func (d *StateDriver) AssertReceipt(receipt, expected types.MessageReceipt) {
 	assert.NotNil(d.tb, receipt)
 	assert.Equal(d.tb, expected.GasUsed, receipt.GasUsed, fmt.Sprintf("expected gas: %v, actual gas: %v", expected.GasUsed, receipt.GasUsed))
 	assert.Equal(d.tb, expected.ReturnValue, receipt.ReturnValue, fmt.Sprintf("expected return value: %v, actual return value: %v", expected.ReturnValue, receipt.ReturnValue))

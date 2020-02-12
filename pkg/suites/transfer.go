@@ -13,6 +13,7 @@ import (
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 
 	chain "github.com/filecoin-project/chain-validation/pkg/chain"
+	"github.com/filecoin-project/chain-validation/pkg/chain/types"
 	"github.com/filecoin-project/chain-validation/pkg/drivers"
 )
 
@@ -27,7 +28,7 @@ type valueTransferTestCases struct {
 	receiver    address.Address
 	receiverBal big_spec.Int
 
-	receipt chain.MessageReceipt
+	receipt types.MessageReceipt
 }
 
 func TestValueTransferSimple(t *testing.T, factories drivers.Factories) {
@@ -60,7 +61,7 @@ func TestValueTransferSimple(t *testing.T, factories drivers.Factories) {
 			receiver:    bob,
 			receiverBal: big_spec.Zero(),
 
-			receipt: chain.MessageReceipt{
+			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.Ok,
 				ReturnValue: nil,
 				GasUsed:     big_spec.NewInt(128),
@@ -77,7 +78,7 @@ func TestValueTransferSimple(t *testing.T, factories drivers.Factories) {
 			receiver:    bob,
 			receiverBal: big_spec.Zero(),
 
-			receipt: chain.MessageReceipt{
+			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.Ok,
 				ReturnValue: nil,
 				GasUsed:     big_spec.NewInt(114),
@@ -95,7 +96,7 @@ func TestValueTransferSimple(t *testing.T, factories drivers.Factories) {
 			receiver:    bob,
 			receiverBal: big_spec.Zero(),
 
-			receipt: chain.MessageReceipt{
+			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.ErrInsufficientFunds,
 				ReturnValue: nil,
 				GasUsed:     big_spec.NewInt(0),
@@ -113,7 +114,7 @@ func TestValueTransferSimple(t *testing.T, factories drivers.Factories) {
 			receiver:    bob,
 			receiverBal: big_spec.Zero(),
 
-			receipt: chain.MessageReceipt{
+			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.ErrInsufficientFunds,
 				ReturnValue: nil,
 				GasUsed:     big_spec.NewInt(0),
@@ -180,7 +181,7 @@ func TestValueTransferAdvance(t *testing.T, factory drivers.Factories) {
 
 		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
-		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		td.Driver.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
 			ReturnValue: nil,
 			GasUsed:     gasCost,
@@ -199,7 +200,7 @@ func TestValueTransferAdvance(t *testing.T, factory drivers.Factories) {
 
 		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
-		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		td.Driver.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
 			ReturnValue: nil,
 			GasUsed:     gasCost,
@@ -218,7 +219,7 @@ func TestValueTransferAdvance(t *testing.T, factory drivers.Factories) {
 
 		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
-		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		td.Driver.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
 			ReturnValue: nil,
 			GasUsed:     gasCost,
@@ -237,7 +238,7 @@ func TestValueTransferAdvance(t *testing.T, factory drivers.Factories) {
 
 		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 		require.NoError(t, err)
-		td.Driver.AssertReceipt(msgReceipt, chain.MessageReceipt{
+		td.Driver.AssertReceipt(msgReceipt, types.MessageReceipt{
 			ExitCode:    0,
 			ReturnValue: nil,
 			GasUsed:     gasCost,
