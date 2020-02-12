@@ -133,13 +133,9 @@ func MakeMethods(jenFile *jen.File, details GenDetails) {
 			jen.Id("opts").Id("...MsgOpt"),
 		).Params(
 			jen.Id("*Message"),
-			jen.Id("error"),
 		).Block(
-			jen.List(jen.Id("ser"), jen.Err()).Op(":=").Id("state.Serialize").Call(jen.Id("&params")),
-			jen.If(jen.Id("err").Op("!=").Id("nil")).Block(
-				jen.Return(jen.Id("nil"), jen.Id("err")),
-			),
-			jen.Return(jen.Id("mp.Build").Params(jen.Id("to"), jen.Id("from"), jen.Id(fmt.Sprintf("builtin_spec.Methods%s", d.methodPrefix)), jen.Id("ser"), jen.Id("opts...")), jen.Nil()),
+			jen.Id("ser").Op(":=").Id("state.MustSerialize").Call(jen.Id("&params")),
+			jen.Return(jen.Id("mp.Build").Params(jen.Id("to"), jen.Id("from"), jen.Id(fmt.Sprintf("builtin_spec.Methods%s", d.methodPrefix)), jen.Id("ser"), jen.Id("opts..."))),
 		)
 	}
 }

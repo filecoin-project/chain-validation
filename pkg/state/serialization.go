@@ -7,6 +7,14 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
+func MustSerialize(i cbg.CBORMarshaler) []byte {
+	out, err := Serialize(i)
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
+
 func Serialize(i cbg.CBORMarshaler) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	if err := i.MarshalCBOR(buf); err != nil {
