@@ -134,10 +134,7 @@ type TestDriver struct {
 }
 
 // TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
-func (td *TestDriver) ApplyMessageExpectReceipt(msgF func() (*chain.Message, error), receipt chain.MessageReceipt) {
-	msg, err := msgF()
-	require.NoError(td.T, err)
-
+func (td *TestDriver) ApplyMessageExpectReceipt(msg *chain.Message, receipt chain.MessageReceipt) {
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.st, msg)
 	require.NoError(td.T, err)
 
@@ -151,11 +148,10 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 	multiSigConstuctParams, err := state.Serialize(params)
 	require.NoError(td.T, err)
 
-	msg, err := td.Producer.InitExec(builtin_spec.InitActorAddr, from, init_spec.ExecParams{
+	msg := td.Producer.InitExec(builtin_spec.InitActorAddr, from, init_spec.ExecParams{
 		CodeCID:           builtin_spec.MultisigActorCodeID,
 		ConstructorParams: multiSigConstuctParams,
 	}, chain.Value(value), chain.Nonce(nonce))
-	require.NoError(td.T, err)
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.NoError(td.T, err)
@@ -182,8 +178,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 
 func (td *TestDriver) MustProposeMultisigTransfer(nonce int64, value abi_spec.TokenAmount, txID multisig_spec.TxnID, multisigAddr, from address.Address, params multisig_spec.ProposeParams, receipt chain.MessageReceipt) {
 	/* Propose the transactions */
-	msg, err := td.Producer.MultisigPropose(multisigAddr, from, params, chain.Value(value), chain.Nonce(nonce))
-	require.NoError(td.T, err)
+	msg := td.Producer.MultisigPropose(multisigAddr, from, params, chain.Value(value), chain.Nonce(nonce))
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.NoError(td.T, err)
 
@@ -192,8 +187,7 @@ func (td *TestDriver) MustProposeMultisigTransfer(nonce int64, value abi_spec.To
 }
 
 func (td *TestDriver) MustApproveMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID, receipt chain.MessageReceipt) {
-	msg, err := td.Producer.MultisigApprove(ms, from, multisig_spec.TxnIDParams{ID: txID}, chain.Value(value), chain.Nonce(nonce))
-	require.NoError(td.T, err)
+	msg := td.Producer.MultisigApprove(ms, from, multisig_spec.TxnIDParams{ID: txID}, chain.Value(value), chain.Nonce(nonce))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.NoError(td.T, err)
@@ -202,8 +196,7 @@ func (td *TestDriver) MustApproveMultisigActor(nonce int64, value abi_spec.Token
 }
 
 func (td *TestDriver) MustCancelMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID, receipt chain.MessageReceipt) {
-	msg, err := td.Producer.MultisigCancel(ms, from, multisig_spec.TxnIDParams{ID: txID}, chain.Value(value), chain.Nonce(nonce))
-	require.NoError(td.T, err)
+	msg := td.Producer.MultisigCancel(ms, from, multisig_spec.TxnIDParams{ID: txID}, chain.Value(value), chain.Nonce(nonce))
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.NoError(td.T, err)
