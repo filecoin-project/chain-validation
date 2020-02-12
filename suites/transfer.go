@@ -135,14 +135,11 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 				require.NoError(t, err)
 			}
 
+			td.ApplyMessageExpectReceipt(
+				td.Producer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0)),
+				tc.receipt,
+			)
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
-			transferMsg := td.Producer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0))
-			transferReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), transferMsg)
-			require.NoError(t, err)
-
-			// assert the transfer message application returned the expected exitcode and gas cast
-			td.AssertReceipt(transferReceipt, tc.receipt)
-
 			// assert the actor balances changed as expected, the receiver balance should not change if transfer fails
 			if tc.receipt.ExitCode.IsSuccess() {
 				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed))
@@ -178,35 +175,23 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		alice := td.NewAccountActor(drivers.SECP, aliceBal)
 
-		msg := td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0))
-
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
-		require.NoError(t, err)
-		td.AssertReceipt(msgReceipt, types.MessageReceipt{
-			ExitCode:    0,
-			ReturnValue: nil,
-			GasUsed:     gasCost,
-		})
-
+		td.ApplyMessageExpectReceipt(
+			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)),
+			types.MessageReceipt{ExitCode: exitcode.ErrIllegalArgument, ReturnValue: nil, GasUsed: gasCost},
+		)
 		td.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
 		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
 	})
 	t.Run("fail to transfer from known address to unknown account", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.NewAccountActor(drivers.SECP, aliceBal)
 
+		alice := td.NewAccountActor(drivers.SECP, aliceBal)
 		unknown := td.State().NewSecp256k1AccountAddress()
 
-		msg := td.Producer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0))
-
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
-		require.NoError(t, err)
-		td.AssertReceipt(msgReceipt, types.MessageReceipt{
-			ExitCode:    0,
-			ReturnValue: nil,
-			GasUsed:     gasCost,
-		})
-
+		td.ApplyMessageExpectReceipt(
+			td.Producer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0)),
+			types.MessageReceipt{ExitCode: 0, ReturnValue: nil, GasUsed: gasCost},
+		)
 		td.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
 		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
 	})
@@ -216,16 +201,10 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		alice := td.NewAccountActor(drivers.SECP, aliceBal)
 		unknown := td.State().NewSecp256k1AccountAddress()
 
-		msg := td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0))
-
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
-		require.NoError(t, err)
-		td.AssertReceipt(msgReceipt, types.MessageReceipt{
-			ExitCode:    0,
-			ReturnValue: nil,
-			GasUsed:     gasCost,
-		})
-
+		td.ApplyMessageExpectReceipt(
+			td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
+			types.MessageReceipt{ExitCode: 0, ReturnValue: nil, GasUsed: gasCost},
+		)
 		td.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
 		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
 	})
@@ -235,15 +214,10 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		unknown := td.State().NewSecp256k1AccountAddress()
 		nobody := td.State().NewSecp256k1AccountAddress()
 
-		msg := td.Producer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0))
-
-		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
-		require.NoError(t, err)
-		td.AssertReceipt(msgReceipt, types.MessageReceipt{
-			ExitCode:    0,
-			ReturnValue: nil,
-			GasUsed:     gasCost,
-		})
+		td.ApplyMessageExpectReceipt(
+			td.Producer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
+			types.MessageReceipt{ExitCode: 0, ReturnValue: nil, GasUsed: gasCost},
+		)
 
 		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
 	})
