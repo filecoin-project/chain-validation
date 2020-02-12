@@ -19,7 +19,6 @@ import (
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/chain-validation/pkg/chain"
-	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
 var EmptyRetrunValueBytes []byte
@@ -145,7 +144,7 @@ func (td *TestDriver) ApplyMessageExpectReceipt(msg *chain.Message, receipt chai
 
 func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt chain.MessageReceipt) {
 	/* Create the Multisig actor*/
-	multiSigConstuctParams, err := state.Serialize(params)
+	multiSigConstuctParams, err := chain.Serialize(params)
 	require.NoError(td.T, err)
 
 	msg := td.Producer.InitExec(builtin_spec.InitActorAddr, from, init_spec.ExecParams{

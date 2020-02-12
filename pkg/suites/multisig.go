@@ -14,7 +14,6 @@ import (
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	chain "github.com/filecoin-project/chain-validation/pkg/chain"
-	"github.com/filecoin-project/chain-validation/pkg/state"
 )
 
 func TestMultiSigActor(t *testing.T, factory Factories) {
@@ -99,7 +98,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		}
 
 		// propose the transaction and assert it exists in the actor state
-		btxid, err := state.Serialize(&multisig_spec.TxnIDParams{ID: txID0})
+		btxid, err := chain.Serialize(&multisig_spec.TxnIDParams{ID: txID0})
 		require.NoError(t, err)
 		td.MustProposeMultisigTransfer(1, big_spec.Zero(), txID0, multisigAddr, alice, pparams, chain.MessageReceipt{
 			ExitCode:    exitcode_spec.Ok,
@@ -183,7 +182,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		}
 
 		// propose the transaction and assert it exists in the actor state
-		btxid, err := state.Serialize(&multisig_spec.TxnIDParams{ID: txID0})
+		btxid, err := chain.Serialize(&multisig_spec.TxnIDParams{ID: txID0})
 		require.NoError(t, err)
 		td.MustProposeMultisigTransfer(1, big_spec.Zero(), txID0, multisigAddr, alice, pparams, chain.MessageReceipt{
 			ExitCode:    exitcode_spec.Ok,
