@@ -117,7 +117,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		// bob cancels alice's transaction. This fails as bob did not create alice's transaction.
 		td.ApplyMessageExpectReceipt(
 			func() (*chain.Message, error) {
-				return td.Producer.MultiSigCancel(multisigAddr, bob, txID0, chain.Value(big_spec.Zero()), chain.Nonce(0))
+				return td.Producer.MultisigCancel(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(0))
 			},
 			chain.MessageReceipt{
 				ExitCode:    exitcode_spec.ErrForbidden,
@@ -203,7 +203,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		// outsider proposes themselves to receive 'valueSend' FIL. This fails as they are not a signer.
 		td.ApplyMessageExpectReceipt(
 			func() (*chain.Message, error) {
-				return td.Producer.MultiSigPropose(multisigAddr, outsider, multisig_spec.ProposeParams{
+				return td.Producer.MultisigPropose(multisigAddr, outsider, multisig_spec.ProposeParams{
 					To:     outsider,
 					Value:  valueSend,
 					Method: builtin_spec.MethodSend,
@@ -220,7 +220,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		// outsider approves the value transfer alice sent. This fails as they are not a signer.
 		td.ApplyMessageExpectReceipt(
 			func() (*chain.Message, error) {
-				return td.Producer.MultiSigApprove(multisigAddr, outsider, txID0, chain.Value(big_spec.Zero()), chain.Nonce(1))
+				return td.Producer.MultisigApprove(multisigAddr, outsider, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(1))
 			},
 			chain.MessageReceipt{
 				ExitCode:    exitcode_spec.ErrForbidden,
@@ -277,7 +277,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			})
 
 		// alice fails to add a singer since this method can only be called by the multisig actors wallet address
-		msg, err := td.Producer.MultiSigAddSigner(multisigAddr, alice, multisig_spec.AddSignerParams{
+		msg, err := td.Producer.MultisigAddSigner(multisigAddr, alice, multisig_spec.AddSignerParams{
 			Signer:   chuck,
 			Increase: false,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
@@ -292,7 +292,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		})
 
 		// success when multisig actor calls the add signer method
-		msg, err = td.Producer.MultiSigAddSigner(multisigAddr, multisigAddr, multisig_spec.AddSignerParams{
+		msg, err = td.Producer.MultisigAddSigner(multisigAddr, multisigAddr, multisig_spec.AddSignerParams{
 			Signer:   chuck,
 			Increase: false,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(0))
@@ -316,7 +316,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		})
 
 		// add another signer and increase the number of signers required
-		msg, err = td.Producer.MultiSigAddSigner(multisigAddr, multisigAddr, multisig_spec.AddSignerParams{
+		msg, err = td.Producer.MultisigAddSigner(multisigAddr, multisigAddr, multisig_spec.AddSignerParams{
 			Signer:   duck,
 			Increase: true,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
@@ -372,7 +372,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			})
 
 		// alice fails to remove a singer since this method can only be called by the multisig actors wallet address
-		msg, err := td.Producer.MultiSigRemoveSigner(multisigAddr, alice, multisig_spec.RemoveSignerParams{
+		msg, err := td.Producer.MultisigRemoveSigner(multisigAddr, alice, multisig_spec.RemoveSignerParams{
 			Signer:   chuck,
 			Decrease: false,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
@@ -387,7 +387,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		})
 
 		// success when multisig actor calls the remove signer method and removes duck
-		msg, err = td.Producer.MultiSigRemoveSigner(multisigAddr, multisigAddr, multisig_spec.RemoveSignerParams{
+		msg, err = td.Producer.MultisigRemoveSigner(multisigAddr, multisigAddr, multisig_spec.RemoveSignerParams{
 			Signer:   duck,
 			Decrease: false,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(0))
@@ -411,7 +411,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		})
 
 		// remove chuck and decrease the number of signers required
-		msg, err = td.Producer.MultiSigRemoveSigner(multisigAddr, multisigAddr, multisig_spec.RemoveSignerParams{
+		msg, err = td.Producer.MultisigRemoveSigner(multisigAddr, multisigAddr, multisig_spec.RemoveSignerParams{
 			Signer:   chuck,
 			Decrease: true,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(1))
@@ -473,7 +473,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			To:   chuck,
 		}
 		// alice fails to since they are not the multisig address.
-		msg, err := td.Producer.MultiSigSwapSigner(multisigAddr, alice, swapParams, chain.Nonce(1), chain.Value(big_spec.Zero()))
+		msg, err := td.Producer.MultisigSwapSigner(multisigAddr, alice, swapParams, chain.Nonce(1), chain.Value(big_spec.Zero()))
 		require.NoError(t, err)
 
 		msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
@@ -485,7 +485,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		})
 
 		// swap operation success
-		msg, err = td.Producer.MultiSigSwapSigner(multisigAddr, multisigAddr, swapParams, chain.Nonce(0), chain.Value(big_spec.Zero()))
+		msg, err = td.Producer.MultisigSwapSigner(multisigAddr, multisigAddr, swapParams, chain.Nonce(0), chain.Value(big_spec.Zero()))
 		require.NoError(t, err)
 
 		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
@@ -505,7 +505,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 		})
 
 		// decrease the threshold and assert state change
-		msg, err = td.Producer.MultiSigChangeApprovalsThreshold(multisigAddr, multisigAddr, initialNumApprovals-1, chain.Nonce(1), chain.Value(big_spec.Zero()))
+		msg, err = td.Producer.MultisigChangeNumApprovalsThreshold(multisigAddr, multisigAddr, multisig_spec.ChangeNumApprovalsThresholdParams{NewThreshold: initialNumApprovals - 1}, chain.Nonce(1), chain.Value(big_spec.Zero()))
 		require.NoError(t, err)
 
 		msgReceipt, err = td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)

@@ -14,6 +14,7 @@ import (
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 
@@ -150,7 +151,10 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 	multiSigConstuctParams, err := state.Serialize(params)
 	require.NoError(td.T, err)
 
-	msg, err := td.Producer.InitExec(from, builtin_spec.MultisigActorCodeID, multiSigConstuctParams, chain.Value(value), chain.Nonce(nonce))
+	msg, err := td.Producer.InitExec(builtin_spec.InitActorAddr, from, init_spec.ExecParams{
+		CodeCID:           builtin_spec.MultisigActorCodeID,
+		ConstructorParams: multiSigConstuctParams,
+	}, chain.Value(value), chain.Nonce(nonce))
 	require.NoError(td.T, err)
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
@@ -178,7 +182,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 
 func (td *TestDriver) MustProposeMultisigTransfer(nonce int64, value abi_spec.TokenAmount, txID multisig_spec.TxnID, multisigAddr, from address.Address, params multisig_spec.ProposeParams, receipt chain.MessageReceipt) {
 	/* Propose the transactions */
-	msg, err := td.Producer.MultiSigPropose(multisigAddr, from, params, chain.Value(value), chain.Nonce(nonce))
+	msg, err := td.Producer.MultisigPropose(multisigAddr, from, params, chain.Value(value), chain.Nonce(nonce))
 	require.NoError(td.T, err)
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
 	require.NoError(td.T, err)
@@ -188,7 +192,7 @@ func (td *TestDriver) MustProposeMultisigTransfer(nonce int64, value abi_spec.To
 }
 
 func (td *TestDriver) MustApproveMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID, receipt chain.MessageReceipt) {
-	msg, err := td.Producer.MultiSigApprove(ms, from, txID, chain.Value(value), chain.Nonce(nonce))
+	msg, err := td.Producer.MultisigApprove(ms, from, multisig_spec.TxnIDParams{ID: txID}, chain.Value(value), chain.Nonce(nonce))
 	require.NoError(td.T, err)
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
@@ -198,7 +202,7 @@ func (td *TestDriver) MustApproveMultisigActor(nonce int64, value abi_spec.Token
 }
 
 func (td *TestDriver) MustCancelMultisigActor(nonce int64, value abi_spec.TokenAmount, ms, from address.Address, txID multisig_spec.TxnID, receipt chain.MessageReceipt) {
-	msg, err := td.Producer.MultiSigCancel(ms, from, txID, chain.Value(value), chain.Nonce(nonce))
+	msg, err := td.Producer.MultisigCancel(ms, from, multisig_spec.TxnIDParams{ID: txID}, chain.Value(value), chain.Nonce(nonce))
 	require.NoError(td.T, err)
 
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.Driver.State(), msg)
