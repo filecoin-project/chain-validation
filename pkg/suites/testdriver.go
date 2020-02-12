@@ -162,7 +162,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 	/* Assert the actor state was setup as expected */
 	pendingTxMap, err := adt_spec.MakeEmptyMap(newMockStore())
 	require.NoError(td.T, err)
-	td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+	td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
 		NextTxnID:      0,
 		InitialBalance: value,
 		StartEpoch:     td.ExeCtx.Epoch,

@@ -144,7 +144,7 @@ func (mp *MessageProducer) Transfer(to, from address.Address, opts ...MsgOpt) *M
 
 // InitExec builds a message invoking InitActor.Exec and returns it.
 func (mp *MessageProducer) InitExec(from address.Address, code cid.Cid, params []byte, opts ...MsgOpt) (*Message, error) {
-	initParams, err := state.Serialize(&init_spec.ExecParams{CodeID: code, ConstructorParams: params})
+	initParams, err := state.Serialize(&init_spec.ExecParams{CodeCID: code, ConstructorParams: params})
 	if err != nil {
 		return nil, err
 	}
