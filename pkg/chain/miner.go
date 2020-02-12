@@ -17,6 +17,7 @@ func (mp *MessageProducer) MinerConstructor(to, from address.Address, params pow
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.Constructor, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerControlAddresses(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -24,6 +25,7 @@ func (mp *MessageProducer) MinerControlAddresses(to, from address.Address, param
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.ControlAddresses, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerChangeWorkerAddress(to, from address.Address, params miner.ChangeWorkerAddressParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -31,6 +33,7 @@ func (mp *MessageProducer) MinerChangeWorkerAddress(to, from address.Address, pa
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.ChangeWorkerAddress, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerOnSurprisePoStChallenge(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -38,6 +41,7 @@ func (mp *MessageProducer) MinerOnSurprisePoStChallenge(to, from address.Address
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.OnSurprisePoStChallenge, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerSubmitSurprisePoStResponse(to, from address.Address, params miner.SubmitSurprisePoStResponseParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -45,6 +49,7 @@ func (mp *MessageProducer) MinerSubmitSurprisePoStResponse(to, from address.Addr
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.SubmitSurprisePoStResponse, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerOnDeleteMiner(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -52,6 +57,7 @@ func (mp *MessageProducer) MinerOnDeleteMiner(to, from address.Address, params a
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.OnDeleteMiner, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerOnVerifiedElectionPoSt(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -59,6 +65,7 @@ func (mp *MessageProducer) MinerOnVerifiedElectionPoSt(to, from address.Address,
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.OnVerifiedElectionPoSt, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerPreCommitSector(to, from address.Address, params miner.PreCommitSectorParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -66,6 +73,7 @@ func (mp *MessageProducer) MinerPreCommitSector(to, from address.Address, params
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.PreCommitSector, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerProveCommitSector(to, from address.Address, params miner.ProveCommitSectorParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -73,6 +81,7 @@ func (mp *MessageProducer) MinerProveCommitSector(to, from address.Address, para
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.ProveCommitSector, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerExtendSectorExpiration(to, from address.Address, params miner.ExtendSectorExpirationParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -80,6 +89,7 @@ func (mp *MessageProducer) MinerExtendSectorExpiration(to, from address.Address,
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.ExtendSectorExpiration, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerTerminateSectors(to, from address.Address, params miner.TerminateSectorsParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -87,6 +97,7 @@ func (mp *MessageProducer) MinerTerminateSectors(to, from address.Address, param
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.TerminateSectors, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerDeclareTemporaryFaults(to, from address.Address, params miner.DeclareTemporaryFaultsParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -94,6 +105,7 @@ func (mp *MessageProducer) MinerDeclareTemporaryFaults(to, from address.Address,
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMiner.DeclareTemporaryFaults, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MinerOnDeferredCronEvent(to, from address.Address, params miner.OnDeferredCronEventParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {

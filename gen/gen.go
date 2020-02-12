@@ -18,7 +18,8 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
 )
 
-// for now this will print the generated code to the console, later it can be modified to create files for each.
+// This is a tool used to save some time writing all the message builder methods for actors.
+// It produces code that does NOT compile but saves a lot of typing.
 func main() {
 
 	accountExports := account.Actor{}.Exports()
@@ -110,10 +111,6 @@ func ParseGenerationFields(file string, methodPrefix string, exports []interface
 
 		method := strings.TrimRight(pkgStructMethod[2], "-fm")
 
-		importPath := strings.TrimRight(methodPkgPath, pkgStructMethod[2]+".")
-		importPath = strings.TrimRight(importPath, pkgStructMethod[1])
-		importPath = strings.TrimRight(importPath, ".")
-
 		methodParam := strings.TrimLeft(t.In(1).String(), "*")
 
 		details.pairs = append(details.pairs, MethodParam{
@@ -125,17 +122,6 @@ func ParseGenerationFields(file string, methodPrefix string, exports []interface
 	return details
 }
 
-// Produces a go Method of the following format
-/*
-
-func (mp *MessageProducer) {{.MethodPrefix}}{{.Method}}(to, from address.Address, params {{.Params}}, opts ...MsgOpt) (*Message, error) {
-        ser, err := state.Serialize(&params)
-        if err != nil {
-                return nil, err
-        }
-        return mp.Build(to, from, builtin_spec.Methods{{.MethodPrefix}}, ser, opts...), nil
-}
-*/
 func MakeMethods(jenFile *jen.File, details GenDetails) {
 	for _, d := range details.pairs {
 		jenFile.Func().Params(

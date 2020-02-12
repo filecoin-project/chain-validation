@@ -16,6 +16,7 @@ func (mp *MessageProducer) MarketConstructor(to, from address.Address, params ad
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMarket.Constructor, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MarketAddBalance(to, from address.Address, params address.Address, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -23,6 +24,7 @@ func (mp *MessageProducer) MarketAddBalance(to, from address.Address, params add
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMarket.AddBalance, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MarketWithdrawBalance(to, from address.Address, params market.WithdrawBalanceParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -30,6 +32,7 @@ func (mp *MessageProducer) MarketWithdrawBalance(to, from address.Address, param
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMarket.WithdrawBalance, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MarketHandleExpiredDeals(to, from address.Address, params market.HandleExpiredDealsParams, opts ...MsgOpt) (*Message, error) {
 	// FIXME params does not fulfill cbor marshal interface
 	panic("TODO HandleExpiredDealsParams does not implement a CBOR marshaller")
@@ -41,6 +44,7 @@ func (mp *MessageProducer) MarketHandleExpiredDeals(to, from address.Address, pa
 		return mp.Build(to, from, builtin_spec.MethodsMarket.HandleExpiredDeals, ser, opts...), nil
 	*/
 }
+
 func (mp *MessageProducer) MarketPublishStorageDeals(to, from address.Address, params market.PublishStorageDealsParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -48,6 +52,7 @@ func (mp *MessageProducer) MarketPublishStorageDeals(to, from address.Address, p
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMarket.PublishStorageDeals, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MarketVerifyDealsOnSectorProveCommit(to, from address.Address, params market.VerifyDealsOnSectorProveCommitParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -55,6 +60,7 @@ func (mp *MessageProducer) MarketVerifyDealsOnSectorProveCommit(to, from address
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMarket.VerifyDealsOnSectorProveCommit, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MarketOnMinerSectorsTerminate(to, from address.Address, params market.OnMinerSectorsTerminateParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
@@ -62,6 +68,7 @@ func (mp *MessageProducer) MarketOnMinerSectorsTerminate(to, from address.Addres
 	}
 	return mp.Build(to, from, builtin_spec.MethodsMarket.OnMinerSectorsTerminate, ser, opts...), nil
 }
+
 func (mp *MessageProducer) MarketComputeDataCommitment(to, from address.Address, params market.ComputeDataCommitmentParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {

@@ -16,6 +16,7 @@ func (mp *MessageProducer) CronConstructor(to, from address.Address, params cron
 	}
 	return mp.Build(to, from, builtin_spec.MethodsCron.Constructor, ser, opts...), nil
 }
+
 func (mp *MessageProducer) CronEpochTick(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {

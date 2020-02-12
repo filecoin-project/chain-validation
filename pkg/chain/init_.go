@@ -16,6 +16,7 @@ func (mp *MessageProducer) InitConstructor(to, from address.Address, params adt.
 	}
 	return mp.Build(to, from, builtin_spec.MethodsInit.Constructor, ser, opts...), nil
 }
+
 func (mp *MessageProducer) InitExec(to, from address.Address, params init_.ExecParams, opts ...MsgOpt) (*Message, error) {
 	ser, err := state.Serialize(&params)
 	if err != nil {
