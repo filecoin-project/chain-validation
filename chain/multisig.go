@@ -5,7 +5,7 @@ import (
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 	multisig "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 
-	"github.com/filecoin-project/chain-validation/pkg/chain/types"
+	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
 func (mp *MessageProducer) MultisigConstructor(to, from address.Address, params multisig.ConstructorParams, opts ...MsgOpt) *types.Message {

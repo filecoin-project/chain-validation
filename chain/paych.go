@@ -6,7 +6,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
-	"github.com/filecoin-project/chain-validation/pkg/chain/types"
+	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
 func (mp *MessageProducer) PaychConstructor(to, from address.Address, params paych.ConstructorParams, opts ...MsgOpt) *types.Message {

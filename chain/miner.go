@@ -7,7 +7,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
-	"github.com/filecoin-project/chain-validation/pkg/chain/types"
+	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
 func (mp *MessageProducer) MinerConstructor(to, from address.Address, params power.MinerConstructorParams, opts ...MsgOpt) *types.Message {

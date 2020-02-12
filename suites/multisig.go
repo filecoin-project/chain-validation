@@ -13,10 +13,10 @@ import (
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
-	chain "github.com/filecoin-project/chain-validation/pkg/chain"
-	"github.com/filecoin-project/chain-validation/pkg/chain/types"
-	"github.com/filecoin-project/chain-validation/pkg/drivers"
-	"github.com/filecoin-project/chain-validation/pkg/state"
+	chain "github.com/filecoin-project/chain-validation/chain"
+	"github.com/filecoin-project/chain-validation/chain/types"
+	"github.com/filecoin-project/chain-validation/drivers"
+	"github.com/filecoin-project/chain-validation/state"
 )
 
 func TestMultiSigActor(t *testing.T, factory state.Factories) {

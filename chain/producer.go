@@ -5,7 +5,7 @@ import (
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 
-	"github.com/filecoin-project/chain-validation/pkg/chain/types"
+	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
 // The created messages are retained for subsequent export or evaluation in a VM.

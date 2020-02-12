@@ -20,9 +20,9 @@ import (
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 
-	"github.com/filecoin-project/chain-validation/pkg/chain"
-	"github.com/filecoin-project/chain-validation/pkg/chain/types"
-	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/chain"
+	"github.com/filecoin-project/chain-validation/chain/types"
+	"github.com/filecoin-project/chain-validation/state"
 )
 
 var EmptyRetrunValueBytes []byte

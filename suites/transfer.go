@@ -12,10 +12,10 @@ import (
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 
-	chain "github.com/filecoin-project/chain-validation/pkg/chain"
-	"github.com/filecoin-project/chain-validation/pkg/chain/types"
-	"github.com/filecoin-project/chain-validation/pkg/drivers"
-	"github.com/filecoin-project/chain-validation/pkg/state"
+	chain "github.com/filecoin-project/chain-validation/chain"
+	"github.com/filecoin-project/chain-validation/chain/types"
+	"github.com/filecoin-project/chain-validation/drivers"
+	"github.com/filecoin-project/chain-validation/state"
 )
 
 type valueTransferTestCases struct {

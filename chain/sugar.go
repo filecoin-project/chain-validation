@@ -4,7 +4,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 
-	"github.com/filecoin-project/chain-validation/pkg/chain/types"
+	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
 var noParams []byte

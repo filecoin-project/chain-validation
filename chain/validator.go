@@ -1,8 +1,8 @@
 package chain
 
 import (
-	"github.com/filecoin-project/chain-validation/pkg/chain/types"
-	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/chain/types"
+	"github.com/filecoin-project/chain-validation/state"
 )
 
 // Validator arranges the execution of a sequence of messages, returning the resulting receipts and state.

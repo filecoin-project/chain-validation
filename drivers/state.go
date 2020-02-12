@@ -9,7 +9,7 @@ import (
 
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 
-	"github.com/filecoin-project/chain-validation/pkg/state"
+	"github.com/filecoin-project/chain-validation/state"
 )
 
 var (

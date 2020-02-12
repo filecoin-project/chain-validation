@@ -6,7 +6,7 @@ import (
 	init_ "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
-	"github.com/filecoin-project/chain-validation/pkg/chain/types"
+	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
 func (mp *MessageProducer) InitConstructor(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
