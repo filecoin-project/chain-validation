@@ -132,9 +132,9 @@ func MakeMethods(jenFile *jen.File, details GenDetails) {
 			jen.Id("params").Id(d.params),
 			jen.Id("opts").Id("...MsgOpt"),
 		).Params(
-			jen.Id("*Message"),
+			jen.Id("*types.Message"),
 		).Block(
-			jen.Id("ser").Op(":=").Id("state.MustSerialize").Call(jen.Id("&params")),
+			jen.Id("ser").Op(":=").Id("MustSerialize").Call(jen.Id("&params")),
 			jen.Return(jen.Id("mp.Build").Params(jen.Id("to"), jen.Id("from"), jen.Id(fmt.Sprintf("builtin_spec.Methods%s", d.methodPrefix)), jen.Id("ser"), jen.Id("opts..."))),
 		)
 	}
