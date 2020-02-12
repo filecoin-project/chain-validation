@@ -79,18 +79,18 @@ func (d *StateDriver) AssertReceipt(receipt, expected chain.MessageReceipt) {
 	assert.Equal(d.tb, expected.ExitCode, receipt.ExitCode, fmt.Sprintf("expected exit code: %v, actual exit code: %v", expected.ExitCode, receipt.ExitCode))
 }
 
-func (d *StateDriver) AssertMultisigTransaction(multisigAddr address.Address, txnID multisig_spec.TxnID, txn multisig_spec.MultiSigTransaction) {
+func (d *StateDriver) AssertMultisigTransaction(multisigAddr address.Address, txnID multisig_spec.TxnID, txn multisig_spec.Transaction) {
 	multisigActor, err := d.State().Actor(multisigAddr)
 	require.NoError(d.tb, err)
 
 	strg, err := d.State().Storage()
 	require.NoError(d.tb, err)
 
-	var multisig multisig_spec.MultiSigActorState
+	var multisig multisig_spec.State
 	require.NoError(d.tb, strg.Get(context.Background(), multisigActor.Head(), &multisig))
 
 	txnMap := adt_spec.AsMap(strg, multisig.PendingTxns)
-	var actualTxn multisig_spec.MultiSigTransaction
+	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
 	assert.NoError(d.tb, err)
 	assert.True(d.tb, found)
@@ -105,25 +105,25 @@ func (d *StateDriver) AssertMultisigContainsTransaction(multisigAddr address.Add
 	strg, err := d.State().Storage()
 	require.NoError(d.tb, err)
 
-	var multisig multisig_spec.MultiSigActorState
+	var multisig multisig_spec.State
 	require.NoError(d.tb, strg.Get(context.Background(), multisigActor.Head(), &multisig))
 
 	txnMap := adt_spec.AsMap(strg, multisig.PendingTxns)
-	var actualTxn multisig_spec.MultiSigTransaction
+	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
 	require.NoError(d.tb, err)
 	assert.Equal(d.tb, contains, found)
 
 }
 
-func (d *StateDriver) AssertMultisigState(multisigAddr address.Address, expected multisig_spec.MultiSigActorState) {
+func (d *StateDriver) AssertMultisigState(multisigAddr address.Address, expected multisig_spec.State) {
 	multisigActor, err := d.State().Actor(multisigAddr)
 	require.NoError(d.tb, err)
 
 	strg, err := d.State().Storage()
 	require.NoError(d.tb, err)
 
-	var multisig multisig_spec.MultiSigActorState
+	var multisig multisig_spec.State
 	require.NoError(d.tb, strg.Get(context.Background(), multisigActor.Head(), &multisig))
 
 	assert.NotNil(d.tb, multisig)

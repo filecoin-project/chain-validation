@@ -106,7 +106,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			ReturnValue: btxid[1:],
 			GasUsed:     big_spec.NewInt(1280),
 		})
-		td.Driver.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.MultiSigTransaction{
+		td.Driver.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.Transaction{
 			To:       pparams.To,
 			Value:    pparams.Value,
 			Method:   pparams.Method,
@@ -133,7 +133,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			ReturnValue: EmptyRetrunValueBytes,
 			GasUsed:     big_spec.NewInt(639),
 		})
-		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{alice, bob},
 			NumApprovalsThreshold: numApprovals,
 			NextTxnID:             1,
@@ -192,7 +192,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			ReturnValue: btxid[1:],
 			GasUsed:     big_spec.NewInt(1280),
 		})
-		td.Driver.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.MultiSigTransaction{
+		td.Driver.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.Transaction{
 			To:       pparams.To,
 			Value:    pparams.Value,
 			Method:   pparams.Method,
@@ -236,7 +236,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			ReturnValue: EmptyRetrunValueBytes,
 			GasUsed:     big_spec.NewInt(1691),
 		})
-		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{alice, bob},
 			NumApprovalsThreshold: numApprovals,
 			NextTxnID:             txID1,
@@ -306,7 +306,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			GasUsed:     big_spec.NewInt(517),
 		})
 		// assert that chuck is now a signer
-		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               append(initialSigners, chuck),
 			NumApprovalsThreshold: initialNumApprovals,
 			NextTxnID:             0,
@@ -330,7 +330,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			GasUsed:     big_spec.NewInt(583),
 		})
 		// assert that duck is noe a signer and the number of approvals required increased
-		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               append(initialSigners, chuck, duck),
 			NumApprovalsThreshold: initialNumApprovals + 1,
 			NextTxnID:             0,
@@ -401,7 +401,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			GasUsed:     big_spec.NewInt(561),
 		})
 		// assert that duck is no longer a signer and that the number of required approvals has remained unchanged.
-		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{alice, bob, chuck},
 			NumApprovalsThreshold: initialNumApprovals,
 			NextTxnID:             0,
@@ -425,7 +425,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			GasUsed:     big_spec.NewInt(495),
 		})
 		// assert that duck is no a signer and the number of approvals required decreased.
-		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{alice, bob},
 			NumApprovalsThreshold: initialNumApprovals - 1,
 			NextTxnID:             0,
@@ -495,7 +495,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			ReturnValue: EmptyRetrunValueBytes,
 			GasUsed:     big_spec.NewInt(515),
 		})
-		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{alice, chuck},
 			NumApprovalsThreshold: initialNumApprovals,
 			NextTxnID:             0,
@@ -515,7 +515,7 @@ func TestMultiSigActor(t *testing.T, factory Factories) {
 			ReturnValue: EmptyRetrunValueBytes,
 			GasUsed:     big_spec.NewInt(427),
 		})
-		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.MultiSigActorState{
+		td.Driver.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{alice, chuck},
 			NumApprovalsThreshold: initialNumApprovals - 1,
 			NextTxnID:             0,
