@@ -7,80 +7,99 @@ import (
 	"strings"
 
 	"github.com/dave/jennifer/jen"
-	actor "github.com/filecoin-project/specs-actors/actors/builtin/market"
-	//multisig_actor "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
+	"github.com/filecoin-project/specs-actors/actors/builtin/account"
+	"github.com/filecoin-project/specs-actors/actors/builtin/cron"
+	init_ "github.com/filecoin-project/specs-actors/actors/builtin/init"
+	"github.com/filecoin-project/specs-actors/actors/builtin/market"
+	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
+	"github.com/filecoin-project/specs-actors/actors/builtin/multisig"
+	"github.com/filecoin-project/specs-actors/actors/builtin/paych"
+	"github.com/filecoin-project/specs-actors/actors/builtin/power"
+	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
 )
 
-type Field struct {
-	Name    string
-	Pointer bool
-	Type    reflect.Type
-	Pkg     string
-
-	IterLabel string
-}
-
-type GenTypeInfo struct {
-	Name   string
-	Fields []Field
-}
-
-func nameIsExported(name string) bool {
-	return strings.ToUpper(name[0:1]) == name[0:1]
-}
-
-func ParseTypeInfo(pkg string, i interface{}) (*GenTypeInfo, error) {
-	t := reflect.TypeOf(i)
-
-	out := GenTypeInfo{
-		Name: t.Name(),
-	}
-
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
-		if !nameIsExported(f.Name) {
-			continue
-		}
-
-		ft := f.Type
-		var pointer bool
-		if ft.Kind() == reflect.Ptr {
-			ft = ft.Elem()
-			pointer = true
-		}
-
-		out.Fields = append(out.Fields, Field{
-			Name:    f.Name,
-			Pointer: pointer,
-			Type:    ft,
-			Pkg:     pkg,
-		})
-	}
-
-	return &out, nil
-}
-
-var messageProducerTemplate = `
-func (mp *MessageProducer) {{.Name}}(to, from address.Address, params {{.Type}}, opts ...MsgOpt) (*Message, error) {
-	ser, err := state.Serialize(&params)
-	if err != nil {
-		return nil, err
-	}
-	//return mp.Build(to, from, , ser, opts...), nil
-}
-`
-
+// for now this will print the generated code to the console, later it can be modified to create files for each.
 func main() {
-	exports := actor.Actor{}.Exports()
 
+	accountExports := account.Actor{}.Exports()
+	accountDetails := ParseGenerationFields("account_messages", "Account", accountExports)
+	f := jen.NewFile(accountDetails.file)
+	MakeMethods(f, accountDetails)
+	fmt.Printf("%#v", f)
+
+	cronExports := cron.Actor{}.Exports()
+	details := ParseGenerationFields("cron_messages", "Cron", cronExports)
+	f = jen.NewFile(details.file)
+	MakeMethods(f, details)
+	fmt.Printf("%#v", f)
+
+	initExports := init_.Actor{}.Exports()
+	details = ParseGenerationFields("init_messages", "Init", initExports)
+	f = jen.NewFile(details.file)
+	MakeMethods(f, details)
+	fmt.Printf("%#v", f)
+
+	marketExports := market.Actor{}.Exports()
+	details = ParseGenerationFields("market_messages", "Market", marketExports)
+	f = jen.NewFile(details.file)
+	MakeMethods(f, details)
+	fmt.Printf("%#v", f)
+
+	minerExports := miner.Actor{}.Exports()
+	details = ParseGenerationFields("miner_messages", "Miner", minerExports)
+	f = jen.NewFile(details.file)
+	MakeMethods(f, details)
+	fmt.Printf("%#v", f)
+
+	multisigExports := multisig.Actor{}.Exports()
+	details = ParseGenerationFields("multisig_messages", "Multisig", multisigExports)
+	f = jen.NewFile(details.file)
+	MakeMethods(f, details)
+	fmt.Printf("%#v", f)
+
+	paychExports := paych.Actor{}.Exports()
+	details = ParseGenerationFields("paych_messages", "Paych", paychExports)
+	f = jen.NewFile(details.file)
+	MakeMethods(f, details)
+	fmt.Printf("%#v", f)
+
+	powerExports := power.Actor{}.Exports()
+	details = ParseGenerationFields("power_messages", "Power", powerExports)
+	f = jen.NewFile(details.file)
+	MakeMethods(f, details)
+	fmt.Printf("%#v", f)
+
+	rewardExports := reward.Actor{}.Exports()
+	details = ParseGenerationFields("reward_messages", "Reward", rewardExports)
+	f = jen.NewFile(details.file)
+	MakeMethods(f, details)
+	fmt.Printf("%#v", f)
+}
+
+type GenDetails struct {
+	file  string
+	pairs []MethodParam
+}
+
+type MethodParam struct {
+	method       string
+	methodPrefix string
+	params       string
+}
+
+func ParseGenerationFields(file string, methodPrefix string, exports []interface{}) GenDetails {
+	details := GenDetails{
+		file: file,
+	}
 	for _, m := range exports {
 		if m == nil {
 			continue
 		}
+
+		// ignore things that are not functions
 		meth := reflect.ValueOf(m)
 		t := meth.Type()
 		if t.Kind() != reflect.Func {
-			fmt.Printf("this isn't a function!\n")
 			continue
 		}
 
@@ -88,41 +107,53 @@ func main() {
 		tokens := strings.Split(methodPkgPath, "/")
 
 		pkgStructMethod := strings.Split(tokens[len(tokens)-1], ".")
-		//fmt.Printf("Package path: %s\n", pkgStructMethod)
 
-		pkg := pkgStructMethod[0]
-		//actorType := pkgStructMethod[1]
 		method := strings.TrimRight(pkgStructMethod[2], "-fm")
 
 		importPath := strings.TrimRight(methodPkgPath, pkgStructMethod[2]+".")
 		importPath = strings.TrimRight(importPath, pkgStructMethod[1])
 		importPath = strings.TrimRight(importPath, ".")
-		//fmt.Printf("Import Path: %s\n", importPath)
 
-		GenerateMessageMethods(pkg, importPath, fmt.Sprintf("%s%s", pkgStructMethod[1], method), t.In(1).String())
-		//fmt.Printf("Package: %s\nActor: %s\nMethod: %s\n\n", pkg, actorType, method)
-		//fmt.Printf("Actor parameters: %s\n", t.In(1))
-		break
+		methodParam := strings.TrimLeft(t.In(1).String(), "*")
+
+		details.pairs = append(details.pairs, MethodParam{
+			method:       method,
+			methodPrefix: methodPrefix,
+			params:       methodParam,
+		})
 	}
+	return details
 }
 
-func GenerateMessageMethods(file, importPkg, method, actParam string) {
-	f := jen.NewFile(file)
-	f.Func().Params(
-		jen.Id("mp").Id("*MessageProducer"),
-	).Id(method).Params(
-		jen.Id("to"),
-		jen.Id("from").Id("address.Address"),
-		jen.Id("params").Id(actParam),
-		jen.Id("opts").Id("...MsgOpt"),
-	).Params(
-		jen.Id("*Message"),
-		jen.Id("error"),
-	).Block(
-		jen.List(jen.Id("ser"), jen.Err()).Op(":=").Id("state.Serialize").Call(jen.Id("&params")),
-		jen.If(jen.Id("err").Op("!=").Id("nil")).Block(
-			jen.Return(jen.Id("nil"), jen.Id("err")),
-		),
-	)
-	fmt.Printf("%#v", f)
+// Produces a go Method of the following format
+/*
+
+func (mp *MessageProducer) {{.MethodPrefix}}{{.Method}}(to, from address.Address, params {{.Params}}, opts ...MsgOpt) (*Message, error) {
+        ser, err := state.Serialize(&params)
+        if err != nil {
+                return nil, err
+        }
+        return mp.Build(to, from, builtin_spec.Methods{{.MethodPrefix}}, ser, opts...), nil
+}
+*/
+func MakeMethods(jenFile *jen.File, details GenDetails) {
+	for _, d := range details.pairs {
+		jenFile.Func().Params(
+			jen.Id("mp").Id("*MessageProducer"),
+		).Id(fmt.Sprintf("%s%s", d.methodPrefix, d.method)).Params(
+			jen.Id("to"),
+			jen.Id("from").Id("address.Address"),
+			jen.Id("params").Id(d.params),
+			jen.Id("opts").Id("...MsgOpt"),
+		).Params(
+			jen.Id("*Message"),
+			jen.Id("error"),
+		).Block(
+			jen.List(jen.Id("ser"), jen.Err()).Op(":=").Id("state.Serialize").Call(jen.Id("&params")),
+			jen.If(jen.Id("err").Op("!=").Id("nil")).Block(
+				jen.Return(jen.Id("nil"), jen.Id("err")),
+			),
+			jen.Return(jen.Id("mp.Build").Params(jen.Id("to"), jen.Id("from"), jen.Id(fmt.Sprintf("builtin_spec.Methods%s", d.methodPrefix)), jen.Id("ser"), jen.Id("opts...")), jen.Nil()),
+		)
+	}
 }
