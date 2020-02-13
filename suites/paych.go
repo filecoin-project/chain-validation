@@ -49,7 +49,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 
 		// init actor creates the payment channel
 		td.ApplyMessageExpectReceipt(
-			td.Producer.CreatePaymentChannel(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
+			td.Producer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: 0, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},
 		)
 
@@ -77,7 +77,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 102
 		paychAddr := utils.NewIDAddr(t, 103)                     // 103
 		td.ApplyMessageExpectReceipt(
-			td.Producer.CreatePaymentChannel(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
+			td.Producer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},
 		)
 
@@ -110,7 +110,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 102
 		paychAddr := utils.NewIDAddr(t, 103)                     // 103
 		td.ApplyMessageExpectReceipt(
-			td.Producer.CreatePaymentChannel(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
+			td.Producer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},
 		)
 		td.AssertBalance(paychAddr, toSend)

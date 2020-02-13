@@ -101,13 +101,11 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		}
 
 		// propose the transaction and assert it exists in the actor state
-		btxid, err := chain.Serialize(&multisig_spec.TxnIDParams{ID: txID0})
-		require.NoError(t, err)
-		td.MustProposeMultisigTransfer(1, big_spec.Zero(), txID0, multisigAddr, alice, pparams, types.MessageReceipt{
-			ExitCode:    exitcode_spec.Ok,
-			ReturnValue: btxid[1:],
-			GasUsed:     big_spec.NewInt(1280),
-		})
+		btxid := chain.MustSerialize(&multisig_spec.TxnIDParams{ID: txID0})
+		td.ApplyMessageExpectReceipt(
+			td.Producer.MultisigPropose(multisigAddr, alice, pparams, chain.Value(big_spec.Zero()), chain.Nonce(1)),
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: btxid[1:], GasUsed: big_spec.NewInt(1280)},
+		)
 		td.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.Transaction{
 			To:       pparams.To,
 			Value:    pparams.Value,
@@ -119,20 +117,15 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		// bob cancels alice's transaction. This fails as bob did not create alice's transaction.
 		td.ApplyMessageExpectReceipt(
 			td.Producer.MultisigCancel(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{
-				ExitCode:    exitcode_spec.ErrForbidden,
-				ReturnValue: nil,
-				GasUsed:     big_spec.NewInt(1000000),
-			},
+			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: nil, GasUsed: big_spec.NewInt(1000000)},
 		)
 
 		// alice cancels their transaction. The outsider doesn't receive any FIL, the multisig actor's balance is empty, and the
 		// transaction is canceled.
-		td.MustCancelMultisigActor(2, big_spec.Zero(), multisigAddr, alice, txID0, types.MessageReceipt{
-			ExitCode:    exitcode_spec.Ok,
-			ReturnValue: drivers.EmptyRetrunValueBytes,
-			GasUsed:     big_spec.NewInt(639),
-		})
+		td.ApplyMessageExpectReceipt(
+			td.Producer.MultisigCancel(multisigAddr, alice, multisig_spec.TxnIDParams{ID: txID0}, chain.Nonce(1), chain.Value(big_spec.Zero())),
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyRetrunValueBytes, GasUsed: big_spec.NewInt(639)},
+		)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{alice, bob},
 			NumApprovalsThreshold: numApprovals,
@@ -185,13 +178,11 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		}
 
 		// propose the transaction and assert it exists in the actor state
-		btxid, err := chain.Serialize(&multisig_spec.TxnIDParams{ID: txID0})
-		require.NoError(t, err)
-		td.MustProposeMultisigTransfer(1, big_spec.Zero(), txID0, multisigAddr, alice, pparams, types.MessageReceipt{
-			ExitCode:    exitcode_spec.Ok,
-			ReturnValue: btxid[1:],
-			GasUsed:     big_spec.NewInt(1280),
-		})
+		btxid := chain.MustSerialize(&multisig_spec.TxnIDParams{ID: txID0})
+		td.ApplyMessageExpectReceipt(
+			td.Producer.MultisigPropose(multisigAddr, alice, pparams, chain.Value(big_spec.Zero()), chain.Nonce(1)),
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: btxid[1:], GasUsed: big_spec.NewInt(1280)},
+		)
 		td.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.Transaction{
 			To:       pparams.To,
 			Value:    pparams.Value,
@@ -208,30 +199,21 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 				Method: builtin_spec.MethodSend,
 				Params: []byte{},
 			}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{
-				ExitCode:    exitcode_spec.ErrForbidden,
-				ReturnValue: nil,
-				GasUsed:     big_spec.NewInt(1000000),
-			},
+			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: nil, GasUsed: big_spec.NewInt(1000000)},
 		)
 
 		// outsider approves the value transfer alice sent. This fails as they are not a signer.
 		td.ApplyMessageExpectReceipt(
 			td.Producer.MultisigApprove(multisigAddr, outsider, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
-			types.MessageReceipt{
-				ExitCode:    exitcode_spec.ErrForbidden,
-				ReturnValue: nil,
-				GasUsed:     big_spec.NewInt(1000000),
-			},
+			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: nil, GasUsed: big_spec.NewInt(1000000)},
 		)
 
 		// bob approves transfer of 'valueSend' FIL to outsider.
 		txID1 := multisig_spec.TxnID(1)
-		td.MustApproveMultisigActor(0, big_spec.Zero(), multisigAddr, bob, txID0, types.MessageReceipt{
-			ExitCode:    exitcode_spec.Ok,
-			ReturnValue: drivers.EmptyRetrunValueBytes,
-			GasUsed:     big_spec.NewInt(1691),
-		})
+		td.ApplyMessageExpectReceipt(
+			td.Producer.MultisigApprove(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID1}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyRetrunValueBytes, GasUsed: big_spec.NewInt(1691)},
+		)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{alice, bob},
 			NumApprovalsThreshold: numApprovals,
