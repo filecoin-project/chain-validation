@@ -1,11 +1,14 @@
 package drivers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
+	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
+	cbg "github.com/whyrusleeping/cbor-gen"
 
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 
@@ -31,6 +34,22 @@ func NewStateDriver(tb testing.TB, w state.Wrapper) *StateDriver {
 // State returns the state.
 func (d *StateDriver) State() state.Wrapper {
 	return d.st
+}
+
+func (d *StateDriver) GetState(c cid.Cid, out cbg.CBORUnmarshaler) {
+	strg, err := d.st.Storage()
+	require.NoError(d.tb, err)
+
+	err = strg.Get(context.Background(), c, out)
+	require.NoError(d.tb, err)
+}
+
+func (d *StateDriver) GetActorState(actorAddr address.Address, out cbg.CBORUnmarshaler) {
+	actor, err := d.State().Actor(actorAddr)
+	require.NoError(d.tb, err)
+	require.NotNil(d.tb, actor)
+
+	d.GetState(actor.Head(), out)
 }
 
 // NewAccountActor installs a new account actor, returning the address.
