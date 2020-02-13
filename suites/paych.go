@@ -11,6 +11,7 @@ import (
 	paych_spec "github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
+	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/filecoin-project/chain-validation/chain"
@@ -35,7 +36,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		WithDefaultMiner(defaultMiner)
 
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
-	toSend := abi_spec.NewTokenAmount(10_000)
+	var toSend = abi_spec.NewTokenAmount(10_000)
 	t.Run("happy path constructor", func(t *testing.T) {
 		td := builder.Build(t)
 
@@ -68,7 +69,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		var pcAmount = big_spec.NewInt(10)
 		var pcSig = &crypto_spec.Signature{
 			Type: crypto_spec.SigTypeBLS,
-			Data: []byte("does this matter??!!"),
+			Data: []byte("signature goes here"), // TODO may need to generate an actual signature
 		}
 
 		// create the payment channel
@@ -77,7 +78,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		paychAddr := utils.NewIDAddr(t, 103)                     // 103
 		td.ApplyMessageExpectReceipt(
 			td.Producer.CreatePaymentChannel(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: 0, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},
 		)
 
 		td.ApplyMessageExpectReceipt(
@@ -99,5 +100,30 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		assert.Equal(t, pcAmount, ls.Redeemed)
 		assert.Equal(t, pcNonce, ls.Nonce)
 		assert.Equal(t, pcLane, ls.ID)
+	})
+
+	t.Run("happy path collect", func(t *testing.T) {
+		td := builder.Build(t)
+
+		// create the payment channel
+		sender := td.NewAccountActor(drivers.SECP, initialBal)   // 101
+		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 102
+		paychAddr := utils.NewIDAddr(t, 103)                     // 103
+		td.ApplyMessageExpectReceipt(
+			td.Producer.CreatePaymentChannel(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},
+		)
+		td.AssertBalance(paychAddr, toSend)
+
+		td.ApplyMessageExpectReceipt(
+			td.Producer.PaychCollect(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Nonce(1)),
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
+		)
+
+		td.AssertBalance(receiver, toSend)
+		td.AssertBalance(paychAddr, big_spec.Zero())
+		var pcState paych_spec.State
+		td.GetActorState(paychAddr, &pcState)
+		assert.Equal(t, big_spec.Zero(), pcState.ToSend)
 	})
 }
