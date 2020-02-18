@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	address "github.com/filecoin-project/go-address"
-	require "github.com/stretchr/testify/require"
-
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
@@ -17,11 +15,11 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
+	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 func TestMultiSigActor(t *testing.T, factory state.Factories) {
-	defaultMiner, err := address.NewSecp256k1Address([]byte{'m', 'i', 'n', 'e', 'r'})
-	require.NoError(t, err)
+	defaultMiner := utils.NewBLSAddr(t, 123)
 
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(big_spec.NewInt(1000000)).
@@ -46,8 +44,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		alice := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// expected address of the actor
-		multisigAddr, err := address.NewIDAddress(102)
-		require.NoError(t, err)
+		multisigAddr := utils.NewIDAddr(t, 102)
 
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
@@ -74,8 +71,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		bob := td.NewAccountActor(drivers.SECP, initialBal)
 		outsider := td.NewAccountActor(drivers.SECP, initialBal)
 
-		multisigAddr, err := address.NewIDAddress(104)
-		require.NoError(t, err)
+		multisigAddr := utils.NewIDAddr(t, 104)
 
 		// create the multisig actor
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -152,8 +148,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		outsider := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// Multisig actor address
-		multisigAddr, err := address.NewIDAddress(104)
-		require.NoError(t, err)
+		multisigAddr := utils.NewIDAddr(t, 104)
 
 		// create the multisig actor
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -239,8 +234,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		duck := td.NewAccountActor(drivers.SECP, initialBal)  // 104
 		var initialSigners = []address.Address{alice, bob}
 
-		multisigAddr, err := address.NewIDAddress(105) // 105
-		require.NoError(t, err)
+		multisigAddr := utils.NewIDAddr(t, 105)
 
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
@@ -324,8 +318,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		duck := td.NewAccountActor(drivers.SECP, initialBal)  // 104
 		var initialSigners = []address.Address{alice, bob, chuck, duck}
 
-		multisigAddr, err := address.NewIDAddress(105) // 105
-		require.NoError(t, err)
+		multisigAddr := utils.NewIDAddr(t, 105)
 
 		// create a ms actor with 4 signers and 3 approvals required
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -411,8 +404,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		var initialSigners = []address.Address{alice, bob}
 
-		multisigAddr, err := address.NewIDAddress(104) // 104
-		require.NoError(t, err)
+		multisigAddr := utils.NewIDAddr(t, 104)
 
 		// create a ms actor with 4 signers and 3 approvals required
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,

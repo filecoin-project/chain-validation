@@ -57,8 +57,8 @@ type TestDriverBuilder struct {
 	ctx     context.Context
 	factory state.Factories
 
-	singletons map[address.Address]big_spec.Int
-	actors     map[address.Address]big_spec.Int
+	singletons    map[address.Address]big_spec.Int
+	accountActors map[address.Address]big_spec.Int
 
 	defaultMiner    address.Address
 	defaultGasPrice big_spec.Int
@@ -78,7 +78,7 @@ func (b *TestDriverBuilder) WithSingletonActors(singletons map[address.Address]b
 }
 
 func (b *TestDriverBuilder) WithAccountActors(acts map[address.Address]big_spec.Int) *TestDriverBuilder {
-	b.actors = acts
+	b.accountActors = acts
 	return b
 }
 
@@ -105,7 +105,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		require.NoError(t, err)
 	}
 
-	for act, bal := range b.actors {
+	for act, bal := range b.accountActors {
 		// TODO should not ignore the return value here as this should return the ID-address of the miner
 		_, _, err := sd.State().SetActor(act, builtin_spec.AccountActorCodeID, bal)
 		require.NoError(t, err)
