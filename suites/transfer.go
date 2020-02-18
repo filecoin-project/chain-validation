@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
+	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 type valueTransferTestCases struct {
@@ -33,14 +34,9 @@ type valueTransferTestCases struct {
 }
 
 func TestValueTransferSimple(t *testing.T, factories state.Factories) {
-	defaultMiner, err := address.NewSecp256k1Address([]byte{'m', 'i', 'n', 'e', 'r'})
-	require.NoError(t, err)
-
-	alice, err := address.NewSecp256k1Address([]byte{'1'})
-	require.NoError(t, err)
-
-	bob, err := address.NewSecp256k1Address([]byte{'2'})
-	require.NoError(t, err)
+	defaultMiner := utils.NewBLSAddr(t, 123)
+	alice := utils.NewSECP256K1Addr(t, "1")
+	bob := utils.NewSECP256K1Addr(t, "1")
 
 	builder := drivers.NewBuilder(context.Background(), factories).
 		WithDefaultGasLimit(big_spec.NewInt(1000000)).
@@ -128,7 +124,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			td := builder.Build(t)
 
 			// Create the to and from actors with balance in the state tree
-			_, _, err = td.State().SetActor(tc.sender, builtin_spec.AccountActorCodeID, tc.senderBal)
+			_, _, err := td.State().SetActor(tc.sender, builtin_spec.AccountActorCodeID, tc.senderBal)
 			require.NoError(t, err)
 			if tc.sender.String() != tc.receiver.String() {
 				_, _, err := td.State().SetActor(tc.receiver, builtin_spec.AccountActorCodeID, tc.receiverBal)
@@ -160,8 +156,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	var aliceBal = abi_spec.NewTokenAmount(100)
 	var transferAmnt = abi_spec.NewTokenAmount(10)
 
-	defaultMiner, err := address.NewSecp256k1Address([]byte{'m', 'i', 'n', 'e', 'r'})
-	require.NoError(t, err)
+	defaultMiner := utils.NewBLSAddr(t, 123)
 
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(big_spec.NewInt(1000000)).
