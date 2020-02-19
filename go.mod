@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/dave/jennifer v1.4.0
 	github.com/filecoin-project/go-address v0.0.0-20200107215422-da8eea2842b5
-	github.com/filecoin-project/specs-actors v0.0.0-20200211222055-25f94443b88c
+	github.com/filecoin-project/specs-actors v0.0.0-20200219172616-4e3531c60b3d
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect
 	github.com/ipfs/go-cid v0.0.4
 	github.com/ipfs/go-datastore v0.3.1

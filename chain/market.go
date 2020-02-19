@@ -22,11 +22,8 @@ func (mp *MessageProducer) MarketWithdrawBalance(to, from address.Address, param
 	return mp.Build(to, from, builtin_spec.MethodsMarket.WithdrawBalance, ser, opts...)
 }
 func (mp *MessageProducer) MarketHandleExpiredDeals(to, from address.Address, params market.HandleExpiredDealsParams, opts ...MsgOpt) *types.Message {
-	panic("TODO HandleExpiredDealsParams does not implement a CBOR marshaller")
-	/*
-		ser := state.MustSerialize(&params)
-		return mp.Build(to, from, builtin_spec.MethodsMarket.HandleExpiredDeals, ser, opts...)
-	*/
+	ser := MustSerialize(&params)
+	return mp.Build(to, from, builtin_spec.MethodsMarket.HandleExpiredDeals, ser, opts...)
 }
 func (mp *MessageProducer) MarketPublishStorageDeals(to, from address.Address, params market.PublishStorageDealsParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(&params)
