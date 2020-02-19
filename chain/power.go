@@ -49,13 +49,13 @@ func (mp *MessageProducer) PowerOnSectorModifyWeightDesc(to, from address.Addres
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsPower.OnSectorModifyWeightDesc, ser, opts...)
 }
-func (mp *MessageProducer) PowerOnMinerSurprisePoStSuccess(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) PowerOnMinerWindowedPoStSuccess(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(&params)
-	return mp.Build(to, from, builtin_spec.MethodsPower.OnMinerSurprisePoStSuccess, ser, opts...)
+	return mp.Build(to, from, builtin_spec.MethodsPower.OnMinerWindowedPoStSuccess, ser, opts...)
 }
-func (mp *MessageProducer) PowerOnMinerSurprisePoStFailure(to, from address.Address, params power.OnMinerSurprisePoStFailureParams, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) PowerOnMinerWindowedPoStFailure(to, from address.Address, params power.OnMinerWindowedPoStFailureParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(&params)
-	return mp.Build(to, from, builtin_spec.MethodsPower.OnMinerSurprisePoStFailure, ser, opts...)
+	return mp.Build(to, from, builtin_spec.MethodsPower.OnMinerWindowedPoStFailure, ser, opts...)
 }
 func (mp *MessageProducer) PowerEnrollCronEvent(to, from address.Address, params power.EnrollCronEventParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(&params)

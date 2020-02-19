@@ -64,8 +64,8 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 
 		const pcTimeLock = abi_spec.ChainEpoch(10)
-		const pcLane = int64(123)
-		const pcNonce = int64(1)
+		const pcLane = uint64(123)
+		const pcNonce = uint64(1)
 		var pcAmount = big_spec.NewInt(10)
 		var pcSig = &crypto_spec.Signature{
 			Type: crypto_spec.SigTypeBLS,
