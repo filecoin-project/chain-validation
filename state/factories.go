@@ -4,5 +4,7 @@ package state
 type Factories interface {
 	NewState() Wrapper
 
+	NewWallet() Wallet
+
 	Applier
 }

@@ -43,6 +43,7 @@ func init() {
 	}
 	EmptyRetrunValueBytes = buf.Bytes()
 }
+
 func initializeStoreWithACTRoots(t testing.TB, store adt_spec.Store) {
 	emptyArray, err := adt_spec.MakeEmptyArray(store)
 	require.NoError(t, err)
@@ -125,19 +126,20 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price big_spec.Int) *TestDriverB
 }
 
 func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
-	sd := NewStateDriver(t, b.factory.NewState())
+	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewWallet())
+
+	driverStore, err := sd.st.Store()
+	require.NoError(t, err)
+	initializeStoreWithACTRoots(t, driverStore)
+
 	for _, acts := range b.actorStates {
-		_, err := sd.State().SetActorState(acts.Addr, acts.Balance, acts.Code, acts.State)
+		_, err := sd.State().CreateActor(acts.Code, acts.Addr, acts.Balance, acts.State)
 		require.NoError(t, err)
 	}
 
 	exeCtx := types.NewExecutionContext(1, b.defaultMiner)
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
 	validator := chain.NewValidator(b.factory)
-
-	driverStore, err := sd.st.Store()
-	require.NoError(t, err)
-	initializeStoreWithACTRoots(t, driverStore)
 
 	return &TestDriver{
 		T:           t,

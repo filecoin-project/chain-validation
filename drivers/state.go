@@ -25,16 +25,21 @@ var (
 type StateDriver struct {
 	tb testing.TB
 	st state.Wrapper
+	w  state.Wallet
 }
 
 // NewStateDriver creates a new state driver for a state.
-func NewStateDriver(tb testing.TB, w state.Wrapper) *StateDriver {
-	return &StateDriver{tb, w}
+func NewStateDriver(tb testing.TB, st state.Wrapper, w state.Wallet) *StateDriver {
+	return &StateDriver{tb, st, w}
 }
 
 // State returns the state.
 func (d *StateDriver) State() state.Wrapper {
 	return d.st
+}
+
+func (d *StateDriver) Wallet() state.Wallet {
+	return d.w
 }
 
 func (d *StateDriver) GetState(c cid.Cid, out cbg.CBORUnmarshaler) {
@@ -58,14 +63,14 @@ func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil 
 	var addr address.Address
 	switch addrType {
 	case address.SECP256K1:
-		addr = d.st.NewSecp256k1AccountAddress()
+		addr = d.w.NewSecp256k1AccountAddress()
 	case address.BLS:
-		addr = d.st.NewBLSAccountAddress()
+		addr = d.w.NewBLSAccountAddress()
 	default:
 		require.FailNowf(d.tb, "unsupported address", "protocol for account actor: %v", addrType)
 	}
 
-	_, err := d.st.SetActorState(addr, balanceAttoFil, builtin_spec.AccountActorCodeID, &account_spec.State{Address: addr})
+	_, err := d.st.CreateActor(builtin_spec.AccountActorCodeID, addr, balanceAttoFil, &account_spec.State{Address: addr})
 	require.NoError(d.tb, err)
 	return addr
 }
