@@ -11,6 +11,7 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
 
 	"github.com/filecoin-project/chain-validation/state"
 )
@@ -37,7 +38,7 @@ func (d *StateDriver) State() state.Wrapper {
 }
 
 func (d *StateDriver) GetState(c cid.Cid, out cbg.CBORUnmarshaler) {
-	strg, err := d.st.Storage()
+	strg, err := d.st.Store()
 	require.NoError(d.tb, err)
 
 	err = strg.Get(context.Background(), c, out)
@@ -64,7 +65,7 @@ func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil 
 		require.FailNowf(d.tb, "unsupported address", "protocol for account actor: %v", addrType)
 	}
 
-	_, _, err := d.st.SetActor(addr, builtin_spec.AccountActorCodeID, balanceAttoFil)
+	_, err := d.st.SetActorState(addr, balanceAttoFil, builtin_spec.AccountActorCodeID, &account_spec.State{Address: addr})
 	require.NoError(d.tb, err)
 	return addr
 }

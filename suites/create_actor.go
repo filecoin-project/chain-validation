@@ -9,6 +9,9 @@ import (
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
+	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
+	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"
@@ -24,13 +27,27 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(big_spec.NewInt(1_000_000)).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithSingletonActors(map[address.Address]big_spec.Int{
-			builtin_spec.InitActorAddr:         big_spec.NewInt(0),
-			builtin_spec.BurntFundsActorAddr:   big_spec.NewInt(0),
-			builtin_spec.StoragePowerActorAddr: big_spec.NewInt(0),
-			builtin_spec.RewardActorAddr:       TotalNetworkBalance,
-		}).
-		WithDefaultMiner(defaultMiner)
+		WithDefaultMiner(defaultMiner).
+		WithActorState([]drivers.ActorState{
+			{
+				Addr:    builtin_spec.InitActorAddr,
+				Balance: big_spec.Zero(),
+				Code:    builtin_spec.InitActorCodeID,
+				State:   init_spec.ConstructState(drivers.EmptyMapCid, "chain-validation"),
+			},
+			{
+				Addr:    builtin_spec.RewardActorAddr,
+				Balance: TotalNetworkBalance,
+				Code:    builtin_spec.RewardActorCodeID,
+				State:   reward_spec.ConstructState(drivers.EmptyMultiMapCid),
+			},
+			{
+				Addr:    builtin_spec.BurntFundsActorAddr,
+				Balance: big_spec.Zero(),
+				Code:    builtin_spec.AccountActorCodeID,
+				State:   &account_spec.State{Address: builtin_spec.BurntFundsActorAddr},
+			},
+		})
 
 	testCases := []struct {
 		desc string
@@ -112,14 +129,27 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 	td := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(big_spec.NewInt(1_000_000)).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithSingletonActors(map[address.Address]big_spec.Int{
-			builtin_spec.InitActorAddr:         big_spec.NewInt(0),
-			builtin_spec.BurntFundsActorAddr:   big_spec.NewInt(0),
-			builtin_spec.StoragePowerActorAddr: big_spec.NewInt(0),
-			builtin_spec.RewardActorAddr:       TotalNetworkBalance,
-		}).
 		WithDefaultMiner(defaultMiner).
-		Build(t)
+		WithActorState([]drivers.ActorState{
+			{
+				Addr:    builtin_spec.InitActorAddr,
+				Balance: big_spec.Zero(),
+				Code:    builtin_spec.InitActorCodeID,
+				State:   init_spec.ConstructState(drivers.EmptyMapCid, "chain-validation"),
+			},
+			{
+				Addr:    builtin_spec.RewardActorAddr,
+				Balance: TotalNetworkBalance,
+				Code:    builtin_spec.RewardActorCodeID,
+				State:   reward_spec.ConstructState(drivers.EmptyMultiMapCid),
+			},
+			{
+				Addr:    builtin_spec.BurntFundsActorAddr,
+				Balance: big_spec.Zero(),
+				Code:    builtin_spec.AccountActorCodeID,
+				State:   &account_spec.State{Address: builtin_spec.BurntFundsActorAddr},
+			},
+		}).Build(t)
 
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
 	var toSend = abi_spec.NewTokenAmount(10_000)
