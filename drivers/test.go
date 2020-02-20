@@ -42,24 +42,38 @@ func init() {
 		panic(err)
 	}
 	EmptyRetrunValueBytes = buf.Bytes()
+
+	ms := newMockStore()
+	if err := initializeStoreWithACTRoots(ms); err != nil {
+		panic(err)
+	}
 }
 
-func initializeStoreWithACTRoots(t testing.TB, store adt_spec.Store) {
+func initializeStoreWithACTRoots(store adt_spec.Store) error {
 	emptyArray, err := adt_spec.MakeEmptyArray(store)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	EmptyArrayCid = emptyArray.Root()
 
 	emptyMap, err := adt_spec.MakeEmptyMap(store)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	EmptyMapCid = emptyMap.Root()
 
 	emptyMultiMap, err := adt_spec.MakeEmptyMultiap(store)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	EmptyMultiMapCid = emptyMultiMap.Root()
 
 	emptySet, err := adt_spec.MakeEmptySet(store)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	EmptySetCid = emptySet.Root()
+	return nil
 }
 
 type mockStore struct {
@@ -130,7 +144,8 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 
 	driverStore, err := sd.st.Store()
 	require.NoError(t, err)
-	initializeStoreWithACTRoots(t, driverStore)
+	err = initializeStoreWithACTRoots(driverStore)
+	require.NoError(t, err)
 
 	for _, acts := range b.actorStates {
 		_, err := sd.State().CreateActor(acts.Code, acts.Addr, acts.Balance, acts.State)
@@ -151,7 +166,6 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 }
 
 type TestDriver struct {
-	// TODO you will need to init this with the empty array/map/multimap cids before any tests run
 	*StateDriver
 
 	T         testing.TB

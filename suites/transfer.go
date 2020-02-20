@@ -39,7 +39,7 @@ type valueTransferTestCases struct {
 func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 	defaultMiner := utils.NewBLSAddr(t, 123)
 	alice := utils.NewSECP256K1Addr(t, "1")
-	bob := utils.NewSECP256K1Addr(t, "1")
+	bob := utils.NewSECP256K1Addr(t, "2")
 
 	builder := drivers.NewBuilder(context.Background(), factories).
 		WithDefaultGasLimit(big_spec.NewInt(1000000)).
