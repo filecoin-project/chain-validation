@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	cbor "github.com/ipfs/go-ipld-cbor"
@@ -15,8 +16,8 @@ import (
 
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
-	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
+	runtime_spec "github.com/filecoin-project/specs-actors/actors/runtime"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/chain-validation/chain"
@@ -59,6 +60,7 @@ type TestDriverBuilder struct {
 
 	singletons    map[address.Address]big_spec.Int
 	accountActors map[address.Address]big_spec.Int
+	actorStates   []ActorState
 
 	defaultMiner    address.Address
 	defaultGasPrice big_spec.Int
@@ -70,6 +72,18 @@ func NewBuilder(ctx context.Context, factory state.Factories) *TestDriverBuilder
 		factory: factory,
 		ctx:     ctx,
 	}
+}
+
+type ActorState struct {
+	addr    address.Address
+	balance big_spec.Int
+	code    cid.Cid
+	state   runtime_spec.CBORMarshaler
+}
+
+func (b *TestDriverBuilder) WithActorState(acts []ActorState) *TestDriverBuilder {
+	b.actorStates = acts
+	return b
 }
 
 func (b *TestDriverBuilder) WithSingletonActors(singletons map[address.Address]big_spec.Int) *TestDriverBuilder {
@@ -99,21 +113,10 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price big_spec.Int) *TestDriverB
 
 func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	sd := NewStateDriver(t, b.factory.NewState())
-	for act, bal := range b.singletons {
-		// TODO should not ignore the return value here as this should return the ID-address of the miner
-		_, _, err := sd.State().SetSingletonActor(act, bal)
+	for _, acts := range b.actorStates {
+		_, err := sd.State().SetActorState(acts.addr, acts.balance, acts.code, acts.state)
 		require.NoError(t, err)
 	}
-
-	for act, bal := range b.accountActors {
-		// TODO should not ignore the return value here as this should return the ID-address of the miner
-		_, _, err := sd.State().SetActor(act, builtin_spec.AccountActorCodeID, bal)
-		require.NoError(t, err)
-	}
-
-	// TODO should not ignore the return value here as this should return the ID-address of the miner
-	_, _, err := sd.st.SetActor(b.defaultMiner, builtin_spec.AccountActorCodeID, big_spec.Zero())
-	require.NoError(t, err)
 
 	exeCtx := types.NewExecutionContext(1, b.defaultMiner)
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
@@ -157,7 +160,7 @@ func (td *TestDriver) AssertMultisigTransaction(multisigAddr address.Address, tx
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	strg, err := td.State().Storage()
+	strg, err := td.State().Store()
 	require.NoError(td.T, err)
 
 	txnMap := adt_spec.AsMap(strg, msState.PendingTxns)
@@ -173,7 +176,7 @@ func (td *TestDriver) AssertMultisigContainsTransaction(multisigAddr address.Add
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	strg, err := td.State().Storage()
+	strg, err := td.State().Store()
 	require.NoError(td.T, err)
 
 	txnMap := adt_spec.AsMap(strg, msState.PendingTxns)

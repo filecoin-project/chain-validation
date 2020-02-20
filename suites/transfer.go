@@ -11,6 +11,7 @@ import (
 
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
 
 	chain "github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -124,10 +125,10 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			td := builder.Build(t)
 
 			// Create the to and from actors with balance in the state tree
-			_, _, err := td.State().SetActor(tc.sender, builtin_spec.AccountActorCodeID, tc.senderBal)
+			_, err := td.State().SetActorState(tc.sender, tc.senderBal, builtin_spec.AccountActorCodeID, &account_spec.State{Address: tc.sender})
 			require.NoError(t, err)
 			if tc.sender.String() != tc.receiver.String() {
-				_, _, err := td.State().SetActor(tc.receiver, builtin_spec.AccountActorCodeID, tc.receiverBal)
+				_, err := td.State().SetActorState(tc.receiver, tc.receiverBal, builtin_spec.AccountActorCodeID, &account_spec.State{Address: tc.receiver})
 				require.NoError(t, err)
 			}
 
