@@ -6,6 +6,8 @@ import (
 
 	address "github.com/filecoin-project/go-address"
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
+	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
+	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	require "github.com/stretchr/testify/require"
 
@@ -42,10 +44,27 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factories).
 		WithDefaultGasLimit(big_spec.NewInt(1000000)).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithSingletonActors(map[address.Address]big_spec.Int{
-			builtin_spec.InitActorAddr: big_spec.Zero(),
-		}).
-		WithDefaultMiner(defaultMiner)
+		WithDefaultMiner(defaultMiner).
+		WithActorState([]drivers.ActorState{
+			{
+				Addr:    builtin_spec.InitActorAddr,
+				Balance: big_spec.Zero(),
+				Code:    builtin_spec.InitActorCodeID,
+				State:   init_spec.ConstructState(drivers.EmptyMapCid, "chain-validation"),
+			},
+			{
+				Addr:    builtin_spec.RewardActorAddr,
+				Balance: TotalNetworkBalance,
+				Code:    builtin_spec.RewardActorCodeID,
+				State:   reward_spec.ConstructState(drivers.EmptyMultiMapCid),
+			},
+			{
+				Addr:    builtin_spec.BurntFundsActorAddr,
+				Balance: big_spec.Zero(),
+				Code:    builtin_spec.AccountActorCodeID,
+				State:   &account_spec.State{Address: builtin_spec.BurntFundsActorAddr},
+			},
+		})
 
 	testCases := []valueTransferTestCases{
 		{
@@ -162,10 +181,27 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(big_spec.NewInt(1000000)).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithSingletonActors(map[address.Address]big_spec.Int{
-			builtin_spec.InitActorAddr: big_spec.Zero(),
-		}).
-		WithDefaultMiner(defaultMiner)
+		WithDefaultMiner(defaultMiner).
+		WithActorState([]drivers.ActorState{
+			{
+				Addr:    builtin_spec.InitActorAddr,
+				Balance: big_spec.Zero(),
+				Code:    builtin_spec.InitActorCodeID,
+				State:   init_spec.ConstructState(drivers.EmptyMapCid, "chain-validation"),
+			},
+			{
+				Addr:    builtin_spec.RewardActorAddr,
+				Balance: TotalNetworkBalance,
+				Code:    builtin_spec.RewardActorCodeID,
+				State:   reward_spec.ConstructState(drivers.EmptyMultiMapCid),
+			},
+			{
+				Addr:    builtin_spec.BurntFundsActorAddr,
+				Balance: big_spec.Zero(),
+				Code:    builtin_spec.AccountActorCodeID,
+				State:   &account_spec.State{Address: builtin_spec.BurntFundsActorAddr},
+			},
+		})
 
 	t.Run("fail to self transfer", func(t *testing.T) {
 		td := builder.Build(t)

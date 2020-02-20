@@ -1,6 +1,8 @@
 package suites
 
-import big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+import (
+	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+)
 
 const (
 	totalFilecoin     = 2_000_000_000
