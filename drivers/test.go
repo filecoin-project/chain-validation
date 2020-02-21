@@ -1,7 +1,6 @@
 package drivers
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -26,7 +25,6 @@ import (
 )
 
 var (
-	EmptyRetrunValueBytes []byte
 
 	// initialized by calling initializeStoreWithAdtRoots
 	EmptyArrayCid    cid.Cid
@@ -36,13 +34,6 @@ var (
 )
 
 func init() {
-	buf := new(bytes.Buffer)
-	ev := adt_spec.EmptyValue{}
-	if err := ev.MarshalCBOR(buf); err != nil {
-		panic(err)
-	}
-	EmptyRetrunValueBytes = buf.Bytes()
-
 	ms := newMockStore()
 	if err := initializeStoreWithAdtRoots(ms); err != nil {
 		panic(err)
