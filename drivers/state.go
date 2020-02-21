@@ -43,10 +43,7 @@ func (d *StateDriver) Wallet() state.Wallet {
 }
 
 func (d *StateDriver) GetState(c cid.Cid, out cbg.CBORUnmarshaler) {
-	strg, err := d.st.Store()
-	require.NoError(d.tb, err)
-
-	err = strg.Get(context.Background(), c, out)
+	err := d.st.Store().Get(context.Background(), c, out)
 	require.NoError(d.tb, err)
 }
 
@@ -63,7 +60,7 @@ func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil 
 	var addr address.Address
 	switch addrType {
 	case address.SECP256K1:
-		addr = d.w.NewSecp256k1AccountAddress()
+		addr = d.w.NewSECP256k1AccountAddress()
 	case address.BLS:
 		addr = d.w.NewBLSAccountAddress()
 	default:

@@ -218,7 +218,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 
 		alice := td.NewAccountActor(drivers.SECP, aliceBal)
-		unknown := td.Wallet().NewSecp256k1AccountAddress()
+		unknown := td.Wallet().NewSECP256k1AccountAddress()
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0)),
@@ -231,7 +231,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	t.Run("fail to transfer from unknown account to known address", func(t *testing.T) {
 		td := builder.Build(t)
 		alice := td.NewAccountActor(drivers.SECP, aliceBal)
-		unknown := td.Wallet().NewSecp256k1AccountAddress()
+		unknown := td.Wallet().NewSECP256k1AccountAddress()
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
@@ -243,8 +243,8 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 	t.Run("fail to transfer from unknown address to unknown address", func(t *testing.T) {
 		td := builder.Build(t)
-		unknown := td.Wallet().NewSecp256k1AccountAddress()
-		nobody := td.Wallet().NewSecp256k1AccountAddress()
+		unknown := td.Wallet().NewSECP256k1AccountAddress()
+		nobody := td.Wallet().NewSECP256k1AccountAddress()
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0)),

@@ -142,9 +142,7 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price big_spec.Int) *TestDriverB
 func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewWallet())
 
-	driverStore, err := sd.st.Store()
-	require.NoError(t, err)
-	err = initializeStoreWithACTRoots(driverStore)
+	err := initializeStoreWithACTRoots(sd.st.Store())
 	require.NoError(t, err)
 
 	for _, acts := range b.actorStates {
@@ -195,10 +193,7 @@ func (td *TestDriver) AssertMultisigTransaction(multisigAddr address.Address, tx
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	strg, err := td.State().Store()
-	require.NoError(td.T, err)
-
-	txnMap := adt_spec.AsMap(strg, msState.PendingTxns)
+	txnMap := adt_spec.AsMap(td.State().Store(), msState.PendingTxns)
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
 	assert.NoError(td.T, err)
@@ -211,10 +206,7 @@ func (td *TestDriver) AssertMultisigContainsTransaction(multisigAddr address.Add
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	strg, err := td.State().Store()
-	require.NoError(td.T, err)
-
-	txnMap := adt_spec.AsMap(strg, msState.PendingTxns)
+	txnMap := adt_spec.AsMap(td.State().Store(), msState.PendingTxns)
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
 	require.NoError(td.T, err)

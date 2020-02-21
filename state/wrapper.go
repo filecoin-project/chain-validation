@@ -8,6 +8,7 @@ import (
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 	cid "github.com/ipfs/go-cid"
 
+	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	runtime_spec "github.com/filecoin-project/specs-actors/actors/runtime"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
@@ -20,13 +21,13 @@ type Wrapper interface {
 	Root() cid.Cid
 
 	// Returns the current VM storage
-	Store() (adt_spec.Store, error)
+	Store() adt_spec.Store
 
 	// Returns the actor state at `address` (or an error if there is none).
 	Actor(address address.Address) (Actor, error)
 
 	// Set state on an actor in the state tree. The actors head is the cid of `state`.
-	SetActorState(addr address.Address, balance big_spec.Int, state runtime_spec.CBORMarshaler) (Actor, error)
+	SetActorState(addr address.Address, balance abi_spec.TokenAmount, state runtime_spec.CBORMarshaler) (Actor, error)
 
 	// Installs a new actor in the state tree, going through the init actor when appropriate.
 	CreateActor(code cid.Cid, addr address.Address, balance abi.TokenAmount, state runtime_spec.CBORMarshaler) (Actor, error)
@@ -34,7 +35,7 @@ type Wrapper interface {
 
 type Wallet interface {
 	// Creates a new secp private key and returns the associated address.
-	NewSecp256k1AccountAddress() address.Address
+	NewSECP256k1AccountAddress() address.Address
 
 	// Creates a new BLS private key and returns the associated address.
 	NewBLSAccountAddress() address.Address
