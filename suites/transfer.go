@@ -80,7 +80,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 
 			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.Ok,
-				ReturnValue: nil,
+				ReturnValue: EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(128),
 			},
 		},
@@ -97,7 +97,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 
 			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.Ok,
-				ReturnValue: nil,
+				ReturnValue: EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(114),
 			},
 		},
@@ -114,8 +114,8 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			receiverBal: big_spec.Zero(),
 
 			receipt: types.MessageReceipt{
-				ExitCode:    exitcode.ErrInsufficientFunds,
-				ReturnValue: nil,
+				ExitCode:    exitcode.SysErrInsufficientFunds,
+				ReturnValue: EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(0),
 			},
 		},
@@ -132,8 +132,8 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			receiverBal: big_spec.Zero(),
 
 			receipt: types.MessageReceipt{
-				ExitCode:    exitcode.ErrInsufficientFunds,
-				ReturnValue: nil,
+				ExitCode:    exitcode.SysErrInsufficientFunds,
+				ReturnValue: EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(0),
 			},
 		},
@@ -151,6 +151,10 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 				require.NoError(t, err)
 			}
 
+			sendAct, err := td.State().Actor(tc.sender)
+			require.NoError(t, err)
+			require.Equal(t, tc.senderBal.String(), sendAct.Balance().String())
+
 			td.ApplyMessageExpectReceipt(
 				td.Producer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0)),
 				tc.receipt,
@@ -158,12 +162,10 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
 			// assert the actor balances changed as expected, the receiver balance should not change if transfer fails
 			if tc.receipt.ExitCode.IsSuccess() {
-				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed))
+				td.AssertBalanceWithGas(tc.sender, big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed)
 				td.AssertBalance(tc.receiver, tc.transferAmnt)
-				td.AssertBalance(td.ExeCtx.MinerOwner, tc.receipt.GasUsed)
 			} else {
-				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed))
-				td.AssertBalance(td.ExeCtx.MinerOwner, tc.receipt.GasUsed)
+				td.AssertBalanceWithGas(tc.sender, big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed)
 			}
 
 		})
@@ -173,7 +175,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 
 func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	var gasCost = big_spec.Zero()
-	var aliceBal = abi_spec.NewTokenAmount(100)
+	var aliceBal = abi_spec.NewTokenAmount(1_000_000_000)
 	var transferAmnt = abi_spec.NewTokenAmount(10)
 
 	defaultMiner := utils.NewBLSAddr(t, 123)
@@ -203,18 +205,17 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 			},
 		})
 
-	t.Run("fail to self transfer", func(t *testing.T) {
+	t.Run("self transfer", func(t *testing.T) {
 		td := builder.Build(t)
 		alice := td.NewAccountActor(drivers.SECP, aliceBal)
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.ErrIllegalArgument, ReturnValue: nil, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
 		)
-		td.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
-		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
+		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
 	})
-	t.Run("fail to transfer from known address to unknown account", func(t *testing.T) {
+	t.Run("transfer from known address to unknown account", func(t *testing.T) {
 		td := builder.Build(t)
 
 		alice := td.NewAccountActor(drivers.SECP, aliceBal)
@@ -222,10 +223,9 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: 0, ReturnValue: nil, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
 		)
-		td.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
-		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
+		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
 	})
 
 	t.Run("fail to transfer from unknown account to known address", func(t *testing.T) {
@@ -235,10 +235,9 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: 0, ReturnValue: nil, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
 		)
-		td.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
-		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
+		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
 	})
 
 	t.Run("fail to transfer from unknown address to unknown address", func(t *testing.T) {
@@ -248,9 +247,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: 0, ReturnValue: nil, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
 		)
-
-		td.AssertBalance(td.ExeCtx.MinerOwner, gasCost)
 	})
 }

@@ -49,3 +49,9 @@ type Actor interface {
 	CallSeqNum() int64
 	Balance() big.Int
 }
+
+type ValidationConfig interface {
+	ValidateGas() bool
+	ValidateExitCode() bool
+	ValidateReturnValue() bool
+}
