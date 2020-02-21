@@ -24,24 +24,26 @@ var (
 // StateDriver mutates and inspects a state.
 type StateDriver struct {
 	tb testing.TB
-	st state.Wrapper
+	st state.VMWrapper
+	w  state.KeyManager
 }
 
 // NewStateDriver creates a new state driver for a state.
-func NewStateDriver(tb testing.TB, w state.Wrapper) *StateDriver {
-	return &StateDriver{tb, w}
+func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager) *StateDriver {
+	return &StateDriver{tb, st, w}
 }
 
 // State returns the state.
-func (d *StateDriver) State() state.Wrapper {
+func (d *StateDriver) State() state.VMWrapper {
 	return d.st
 }
 
-func (d *StateDriver) GetState(c cid.Cid, out cbg.CBORUnmarshaler) {
-	strg, err := d.st.Store()
-	require.NoError(d.tb, err)
+func (d *StateDriver) Wallet() state.KeyManager {
+	return d.w
+}
 
-	err = strg.Get(context.Background(), c, out)
+func (d *StateDriver) GetState(c cid.Cid, out cbg.CBORUnmarshaler) {
+	err := d.st.Store().Get(context.Background(), c, out)
 	require.NoError(d.tb, err)
 }
 
@@ -58,14 +60,14 @@ func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil 
 	var addr address.Address
 	switch addrType {
 	case address.SECP256K1:
-		addr = d.st.NewSecp256k1AccountAddress()
+		addr = d.w.NewSECP256k1AccountAddress()
 	case address.BLS:
-		addr = d.st.NewBLSAccountAddress()
+		addr = d.w.NewBLSAccountAddress()
 	default:
 		require.FailNowf(d.tb, "unsupported address", "protocol for account actor: %v", addrType)
 	}
 
-	_, err := d.st.SetActorState(addr, balanceAttoFil, builtin_spec.AccountActorCodeID, &account_spec.State{Address: addr})
+	_, err := d.st.CreateActor(builtin_spec.AccountActorCodeID, addr, balanceAttoFil, &account_spec.State{Address: addr})
 	require.NoError(d.tb, err)
 	return addr
 }

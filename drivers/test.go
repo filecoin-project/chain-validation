@@ -28,7 +28,7 @@ import (
 var (
 	EmptyRetrunValueBytes []byte
 
-	// initialized by calling initializeStoreWithADTRoots
+	// initialized by calling initializeStoreWithAdtRoots
 	EmptyArrayCid    cid.Cid
 	EmptyMapCid      cid.Cid
 	EmptyMultiMapCid cid.Cid
@@ -42,23 +42,38 @@ func init() {
 		panic(err)
 	}
 	EmptyRetrunValueBytes = buf.Bytes()
+
+	ms := newMockStore()
+	if err := initializeStoreWithAdtRoots(ms); err != nil {
+		panic(err)
+	}
 }
-func initializeStoreWithACTRoots(t testing.TB, store adt_spec.Store) {
+
+func initializeStoreWithAdtRoots(store adt_spec.Store) error {
 	emptyArray, err := adt_spec.MakeEmptyArray(store)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	EmptyArrayCid = emptyArray.Root()
 
 	emptyMap, err := adt_spec.MakeEmptyMap(store)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	EmptyMapCid = emptyMap.Root()
 
 	emptyMultiMap, err := adt_spec.MakeEmptyMultiap(store)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	EmptyMultiMapCid = emptyMultiMap.Root()
 
 	emptySet, err := adt_spec.MakeEmptySet(store)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	EmptySetCid = emptySet.Root()
+	return nil
 }
 
 type mockStore struct {
@@ -125,19 +140,19 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price big_spec.Int) *TestDriverB
 }
 
 func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
-	sd := NewStateDriver(t, b.factory.NewState())
+	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewKeyManager())
+
+	err := initializeStoreWithAdtRoots(sd.st.Store())
+	require.NoError(t, err)
+
 	for _, acts := range b.actorStates {
-		_, err := sd.State().SetActorState(acts.Addr, acts.Balance, acts.Code, acts.State)
+		_, err := sd.State().CreateActor(acts.Code, acts.Addr, acts.Balance, acts.State)
 		require.NoError(t, err)
 	}
 
 	exeCtx := types.NewExecutionContext(1, b.defaultMiner)
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
 	validator := chain.NewValidator(b.factory)
-
-	driverStore, err := sd.st.Store()
-	require.NoError(t, err)
-	initializeStoreWithACTRoots(t, driverStore)
 
 	return &TestDriver{
 		T:           t,
@@ -149,7 +164,6 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 }
 
 type TestDriver struct {
-	// TODO you will need to init this with the empty array/map/multimap cids before any tests run
 	*StateDriver
 
 	T         testing.TB
@@ -179,10 +193,7 @@ func (td *TestDriver) AssertMultisigTransaction(multisigAddr address.Address, tx
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	strg, err := td.State().Store()
-	require.NoError(td.T, err)
-
-	txnMap := adt_spec.AsMap(strg, msState.PendingTxns)
+	txnMap := adt_spec.AsMap(td.State().Store(), msState.PendingTxns)
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
 	assert.NoError(td.T, err)
@@ -195,10 +206,7 @@ func (td *TestDriver) AssertMultisigContainsTransaction(multisigAddr address.Add
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	strg, err := td.State().Store()
-	require.NoError(td.T, err)
-
-	txnMap := adt_spec.AsMap(strg, msState.PendingTxns)
+	txnMap := adt_spec.AsMap(td.State().Store(), msState.PendingTxns)
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
 	require.NoError(td.T, err)
