@@ -24,21 +24,21 @@ var (
 // StateDriver mutates and inspects a state.
 type StateDriver struct {
 	tb testing.TB
-	st state.Wrapper
-	w  state.Wallet
+	st state.VMWrapper
+	w  state.KeyManager
 }
 
 // NewStateDriver creates a new state driver for a state.
-func NewStateDriver(tb testing.TB, st state.Wrapper, w state.Wallet) *StateDriver {
+func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager) *StateDriver {
 	return &StateDriver{tb, st, w}
 }
 
 // State returns the state.
-func (d *StateDriver) State() state.Wrapper {
+func (d *StateDriver) State() state.VMWrapper {
 	return d.st
 }
 
-func (d *StateDriver) Wallet() state.Wallet {
+func (d *StateDriver) Wallet() state.KeyManager {
 	return d.w
 }
 

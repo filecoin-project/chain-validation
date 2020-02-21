@@ -6,5 +6,5 @@ import (
 
 // Applier applies abstract messages to states.
 type Applier interface {
-	ApplyMessage(context *types.ExecutionContext, state Wrapper, msg *types.Message) (types.MessageReceipt, error)
+	ApplyMessage(context *types.ExecutionContext, state VMWrapper, msg *types.Message) (types.MessageReceipt, error)
 }

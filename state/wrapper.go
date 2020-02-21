@@ -1,39 +1,37 @@
 package state
 
 import (
-	"context"
-
-	address "github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/specs-actors/actors/abi"
-	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 	cid "github.com/ipfs/go-cid"
 
-	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
-	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
-	runtime_spec "github.com/filecoin-project/specs-actors/actors/runtime"
-	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
+	address "github.com/filecoin-project/go-address"
+
+	abi "github.com/filecoin-project/specs-actors/actors/abi"
+	big "github.com/filecoin-project/specs-actors/actors/abi/big"
+	crypto "github.com/filecoin-project/specs-actors/actors/crypto"
+	runtime "github.com/filecoin-project/specs-actors/actors/runtime"
+	adt "github.com/filecoin-project/specs-actors/actors/util/adt"
 )
 
-// Wrapper abstracts the inspection and mutation of an implementation-specific state tree and storage.
+// VMWrapper abstracts the inspection and mutation of an implementation-specific state tree and storage.
 // The interface wraps a single, mutable state.
-type Wrapper interface {
+type VMWrapper interface {
 	// Returns the CID of the root node of the state tree.
 	Root() cid.Cid
 
 	// Returns the current VM storage
-	Store() adt_spec.Store
+	Store() adt.Store
 
 	// Returns the actor state at `address` (or an error if there is none).
 	Actor(address address.Address) (Actor, error)
 
 	// Set state on an actor in the state tree. The actors head is the cid of `state`.
-	SetActorState(addr address.Address, balance abi_spec.TokenAmount, state runtime_spec.CBORMarshaler) (Actor, error)
+	SetActorState(addr address.Address, balance abi.TokenAmount, state runtime.CBORMarshaler) (Actor, error)
 
 	// Installs a new actor in the state tree, going through the init actor when appropriate.
-	CreateActor(code cid.Cid, addr address.Address, balance abi.TokenAmount, state runtime_spec.CBORMarshaler) (Actor, error)
+	CreateActor(code cid.Cid, addr address.Address, balance abi.TokenAmount, state runtime.CBORMarshaler) (Actor, error)
 }
 
-type Wallet interface {
+type KeyManager interface {
 	// Creates a new secp private key and returns the associated address.
 	NewSECP256k1AccountAddress() address.Address
 
@@ -41,7 +39,7 @@ type Wallet interface {
 	NewBLSAccountAddress() address.Address
 
 	// Sign data with addr's key.
-	Sign(ctx context.Context, addr address.Address, data []byte) (*crypto_spec.Signature, error)
+	Sign(addr address.Address, data []byte) (crypto.Signature, error)
 }
 
 // Actor is an abstraction over the actor states stored in the root of the state tree.
@@ -49,5 +47,5 @@ type Actor interface {
 	Code() cid.Cid
 	Head() cid.Cid
 	CallSeqNum() int64
-	Balance() big_spec.Int
+	Balance() big.Int
 }

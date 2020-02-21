@@ -28,7 +28,7 @@ import (
 var (
 	EmptyRetrunValueBytes []byte
 
-	// initialized by calling initializeStoreWithADTRoots
+	// initialized by calling initializeStoreWithAdtRoots
 	EmptyArrayCid    cid.Cid
 	EmptyMapCid      cid.Cid
 	EmptyMultiMapCid cid.Cid
@@ -44,12 +44,12 @@ func init() {
 	EmptyRetrunValueBytes = buf.Bytes()
 
 	ms := newMockStore()
-	if err := initializeStoreWithACTRoots(ms); err != nil {
+	if err := initializeStoreWithAdtRoots(ms); err != nil {
 		panic(err)
 	}
 }
 
-func initializeStoreWithACTRoots(store adt_spec.Store) error {
+func initializeStoreWithAdtRoots(store adt_spec.Store) error {
 	emptyArray, err := adt_spec.MakeEmptyArray(store)
 	if err != nil {
 		return err
@@ -140,9 +140,9 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price big_spec.Int) *TestDriverB
 }
 
 func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
-	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewWallet())
+	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewKeyManager())
 
-	err := initializeStoreWithACTRoots(sd.st.Store())
+	err := initializeStoreWithAdtRoots(sd.st.Store())
 	require.NoError(t, err)
 
 	for _, acts := range b.actorStates {
