@@ -92,7 +92,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			abi_spec.NewTokenAmount(10_000),
 
 			abi_spec.NewTokenAmount(0),
-			exitcode_spec.Ok,
+			exitcode_spec.SysErrInsufficientFunds,
 		},
 		{
 			"fail create BLS account actor insufficient balance",
@@ -103,7 +103,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			abi_spec.NewTokenAmount(10_000),
 
 			abi_spec.NewTokenAmount(0),
-			exitcode_spec.Ok,
+			exitcode_spec.SysErrInsufficientFunds,
 		},
 		// TODO add edge case tests that have insufficient balance after gas fees
 	}
@@ -114,11 +114,14 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			existingAccountAddr := td.NewAccountActor(tc.existingActorType, tc.existingActorBal)
 			td.ApplyMessageExpectReceipt(
 				td.Producer.Transfer(tc.newActorAddr, existingAccountAddr, chain.Value(tc.newActorInitBal), chain.Nonce(0)),
-				types.MessageReceipt{ExitCode: tc.expExitCode, ReturnValue: drivers.EmptyRetrunValueBytes, GasUsed: tc.expGasCost},
+				types.MessageReceipt{ExitCode: tc.expExitCode, ReturnValue: EmptyReturnValue, GasUsed: tc.expGasCost},
 			)
 
-			td.AssertBalance(tc.newActorAddr, tc.newActorInitBal)
-			td.AssertBalance(existingAccountAddr, big_spec.Sub(tc.existingActorBal, tc.expGasCost))
+			// new actor balance will only exist if message was applied successfully.
+			if tc.expExitCode.IsSuccess() {
+				td.AssertBalance(tc.newActorAddr, tc.newActorInitBal)
+				td.AssertBalanceWithGas(existingAccountAddr, tc.existingActorBal, tc.expGasCost)
+			}
 		})
 	}
 }

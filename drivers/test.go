@@ -160,6 +160,8 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		Producer:    producer,
 		Validator:   validator,
 		ExeCtx:      exeCtx,
+
+		Config: b.factory.NewValidationConfig(),
 	}
 }
 
@@ -170,6 +172,8 @@ type TestDriver struct {
 	Producer  *chain.MessageProducer
 	Validator *chain.Validator
 	ExeCtx    *types.ExecutionContext
+
+	Config state.ValidationConfig
 }
 
 // TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
@@ -177,9 +181,15 @@ func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, receipt type
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 	require.NoError(td.T, err)
 
-	require.Equal(td.T, receipt.GasUsed, msgReceipt.GasUsed)
-	require.Equal(td.T, receipt.ExitCode, msgReceipt.ExitCode)
-	require.Equal(td.T, receipt.ReturnValue, msgReceipt.ReturnValue)
+	if td.Config.ValidateGas() {
+		require.Equal(td.T, receipt.GasUsed, msgReceipt.GasUsed)
+	}
+	if td.Config.ValidateExitCode() {
+		require.Equal(td.T, receipt.ExitCode, msgReceipt.ExitCode)
+	}
+	if td.Config.ValidateReturnValue() {
+		require.Equal(td.T, receipt.ReturnValue, msgReceipt.ReturnValue)
+	}
 }
 
 // AssertBalance checks an actor has an expected balance.
@@ -187,6 +197,14 @@ func (td *TestDriver) AssertBalance(addr address.Address, expected big_spec.Int)
 	actr, err := td.State().Actor(addr)
 	require.NoError(td.T, err)
 	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
+}
+
+func (td *TestDriver) AssertBalanceWithGas(addr address.Address, expected, gasUsed big_spec.Int) {
+	if td.Config.ValidateGas() {
+		actr, err := td.State().Actor(addr)
+		require.NoError(td.T, err)
+		assert.Equal(td.T, expected, big_spec.Sub(actr.Balance(), gasUsed), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
+	}
 }
 
 func (td *TestDriver) AssertMultisigTransaction(multisigAddr address.Address, txnID multisig_spec.TxnID, txn multisig_spec.Transaction) {

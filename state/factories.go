@@ -6,5 +6,7 @@ type Factories interface {
 
 	NewKeyManager() KeyManager
 
+	NewValidationConfig() ValidationConfig
+
 	Applier
 }
