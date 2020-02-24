@@ -1,11 +1,14 @@
 package drivers
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
+	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
@@ -235,6 +238,24 @@ func (td *TestDriver) AssertMultisigState(multisigAddr address.Address, expected
 
 	for _, e := range expected.Signers {
 		assert.Contains(td.T, msState.Signers, e, fmt.Sprintf("expected Signer: %v, actual Signer: %v", e, msState.Signers))
+	}
+}
+
+func (td *TestDriver) ComputeInitActorExecReturn(from address.Address, callSeq uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
+	buf := new(bytes.Buffer)
+
+	n, err := buf.Write(from.Bytes())
+	require.NoError(td.T, err)
+	require.Equal(td.T, n, len(from.Bytes()))
+
+	require.NoError(td.T, binary.Write(buf, binary.BigEndian, callSeq))
+
+	out, err := address.NewActorAddress(buf.Bytes())
+	require.NoError(td.T, err)
+
+	return init_spec.ExecReturn{
+		IDAddress:     expectedNewAddr,
+		RobustAddress: out,
 	}
 }
 

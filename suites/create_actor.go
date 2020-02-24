@@ -157,18 +157,25 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
 	var toSend = abi_spec.NewTokenAmount(10_000)
 
-	sender := td.NewAccountActor(drivers.SECP, initialBal)   // 101
-	receiver := td.NewAccountActor(drivers.SECP, initialBal) // 102
-	firstPaychAddr := utils.NewIDAddr(t, 103)                // 103
-	secondPaychAddr := utils.NewIDAddr(t, 104)               // 104
+	sender := td.NewAccountActor(drivers.SECP, initialBal)
+	senderID := utils.NewIDAddr(t, 100)
+
+	receiver := td.NewAccountActor(drivers.SECP, initialBal)
+
+	firstPaychAddr := utils.NewIDAddr(t, 102)
+	secondPaychAddr := utils.NewIDAddr(t, 103)
+
+	firstInitRet := td.ComputeInitActorExecReturn(senderID, 0, firstPaychAddr)
+	secondInitRet := td.ComputeInitActorExecReturn(senderID, 1, secondPaychAddr)
 
 	td.ApplyMessageExpectReceipt(
-		td.Producer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
-		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: firstPaychAddr.Bytes(), GasUsed: big_spec.Zero()},
+		td.Producer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&firstInitRet), GasUsed: big_spec.Zero()},
 	)
 
 	td.ApplyMessageExpectReceipt(
-		td.Producer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(1)),
-		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: secondPaychAddr.Bytes(), GasUsed: big_spec.Zero()},
+		td.Producer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(1)),
+		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&secondInitRet), GasUsed: big_spec.Zero()},
 	)
+
 }

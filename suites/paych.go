@@ -57,23 +57,28 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 
 		// will create and send on payment channel
-		sender := td.NewAccountActor(drivers.SECP, initialBal) // 101
+		sender := td.NewAccountActor(drivers.SECP, initialBal) // 100
+		senderID := utils.NewIDAddr(t, 100)
+
 		// will be receiver on paych
-		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 102
+		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 101
+		receiverID := utils.NewIDAddr(t, 101)
+
 		// the _expected_ address of the payment channel
-		paychAddr := utils.NewIDAddr(t, 103) // 103
+		paychAddr := utils.NewIDAddr(t, 102) // 102
+		createRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
 
 		// init actor creates the payment channel
 		td.ApplyMessageExpectReceipt(
-			td.Producer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: 0, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},
+			td.Producer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: big_spec.Zero()},
 		)
 
 		var pcState paych_spec.State
 		td.GetActorState(paychAddr, &pcState)
-		assert.Equal(t, sender, pcState.To)
-		assert.Equal(t, receiver, pcState.From)
-		assert.Equal(t, toSend, pcState.ToSend)
+		assert.Equal(t, senderID, pcState.From)
+		assert.Equal(t, receiverID, pcState.To)
+		td.AssertBalance(paychAddr, toSend)
 	})
 
 	t.Run("happy path update", func(t *testing.T) {
@@ -88,13 +93,20 @@ func TestPaych(t *testing.T, factory state.Factories) {
 			Data: []byte("signature goes here"), // TODO may need to generate an actual signature
 		}
 
-		// create the payment channel
-		sender := td.NewAccountActor(drivers.SECP, initialBal)   // 101
-		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 102
-		paychAddr := utils.NewIDAddr(t, 103)                     // 103
+		// will create and send on payment channel
+		sender := td.NewAccountActor(drivers.SECP, initialBal) // 100
+		senderID := utils.NewIDAddr(t, 100)
+
+		// will be receiver on paych
+		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 101
+		//receiverID := utils.NewIDAddr(t, 101)
+
+		// the _expected_ address of the payment channel
+		paychAddr := utils.NewIDAddr(t, 102) // 102
+		createRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
 		td.ApplyMessageExpectReceipt(
-			td.Producer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},
+			td.Producer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: big_spec.Zero()},
 		)
 
 		td.ApplyMessageExpectReceipt(
@@ -107,7 +119,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 					Signature: pcSig,
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: EmptyReturnValue, GasUsed: big_spec.Zero()},
 		)
 		var pcState paych_spec.State
 		td.GetActorState(paychAddr, &pcState)
@@ -133,7 +145,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.PaychCollect(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: EmptyReturnValue, GasUsed: big_spec.Zero()},
 		)
 
 		td.AssertBalance(receiver, toSend)
@@ -142,4 +154,5 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		td.GetActorState(paychAddr, &pcState)
 		assert.Equal(t, big_spec.Zero(), pcState.ToSend)
 	})
+
 }
