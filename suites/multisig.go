@@ -14,7 +14,7 @@ import (
 	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
-	chain "github.com/filecoin-project/chain-validation/chain"
+	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
@@ -59,10 +59,12 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		// creator of the multisig actor
 		alice := td.NewAccountActor(drivers.SECP, initialBal)
+		aliceId := utils.NewIDAddr(t, 100)
 
 		// expected address of the actor
-		multisigAddr := utils.NewIDAddr(t, 102)
+		multisigAddr := utils.NewIDAddr(t, 101)
 
+		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
 				Signers:               []address.Address{alice},
@@ -71,7 +73,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			},
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: multisigAddr.Bytes(),
+				ReturnValue: chain.MustSerialize(&createRet),
 				GasUsed:     big_spec.NewInt(1125),
 			})
 	})
@@ -85,11 +87,14 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 
 		alice := td.NewAccountActor(drivers.SECP, initialBal)
+		aliceId := utils.NewIDAddr(t, 100)
+
 		bob := td.NewAccountActor(drivers.SECP, initialBal)
 		outsider := td.NewAccountActor(drivers.SECP, initialBal)
 
-		multisigAddr := utils.NewIDAddr(t, 104)
+		multisigAddr := utils.NewIDAddr(t, 103)
 
+		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
 		// create the multisig actor
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
@@ -99,7 +104,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			},
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: multisigAddr.Bytes(),
+				ReturnValue: chain.MustSerialize(&createRet),
 				GasUsed:     big_spec.NewInt(1387),
 			})
 		td.AssertBalance(multisigAddr, valueSend)
@@ -484,5 +489,4 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			UnlockDuration:        unlockDuration,
 		})
 	})
-
 }
