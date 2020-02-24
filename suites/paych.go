@@ -24,12 +24,9 @@ import (
 )
 
 func TestPaych(t *testing.T, factory state.Factories) {
-	defaultMiner := utils.NewSECP256K1Addr(t, "miner")
-
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithDefaultMiner(defaultMiner).
 		WithActorState([]drivers.ActorState{
 			{
 				Addr:    builtin_spec.InitActorAddr,

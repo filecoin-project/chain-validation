@@ -118,11 +118,6 @@ func (b *TestDriverBuilder) WithActorState(acts []ActorState) *TestDriverBuilder
 	return b
 }
 
-func (b *TestDriverBuilder) WithDefaultMiner(miner address.Address) *TestDriverBuilder {
-	b.defaultMiner = miner
-	return b
-}
-
 func (b *TestDriverBuilder) WithDefaultGasLimit(limit int64) *TestDriverBuilder {
 	b.defaultGasLimit = limit
 	return b
