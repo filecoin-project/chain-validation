@@ -42,7 +42,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 	bob := utils.NewSECP256K1Addr(t, "2")
 
 	builder := drivers.NewBuilder(context.Background(), factories).
-		WithDefaultGasLimit(big_spec.NewInt(1000000)).
+		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithDefaultMiner(defaultMiner).
 		WithActorState([]drivers.ActorState{
@@ -181,7 +181,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	defaultMiner := utils.NewBLSAddr(t, 123)
 
 	builder := drivers.NewBuilder(context.Background(), factory).
-		WithDefaultGasLimit(big_spec.NewInt(1000000)).
+		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithDefaultMiner(defaultMiner).
 		WithActorState([]drivers.ActorState{

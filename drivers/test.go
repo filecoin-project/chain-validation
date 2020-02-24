@@ -96,7 +96,7 @@ type TestDriverBuilder struct {
 
 	defaultMiner    address.Address
 	defaultGasPrice big_spec.Int
-	defaultGasLimit big_spec.Int
+	defaultGasLimit int64
 }
 
 func NewBuilder(ctx context.Context, factory state.Factories) *TestDriverBuilder {
@@ -123,7 +123,7 @@ func (b *TestDriverBuilder) WithDefaultMiner(miner address.Address) *TestDriverB
 	return b
 }
 
-func (b *TestDriverBuilder) WithDefaultGasLimit(limit big_spec.Int) *TestDriverBuilder {
+func (b *TestDriverBuilder) WithDefaultGasLimit(limit int64) *TestDriverBuilder {
 	b.defaultGasLimit = limit
 	return b
 }

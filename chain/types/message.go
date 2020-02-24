@@ -23,5 +23,5 @@ type Message struct {
 	Params []byte
 
 	GasPrice big.Int
-	GasLimit big.Int
+	GasLimit int64
 }

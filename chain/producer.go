@@ -16,7 +16,7 @@ type MessageProducer struct {
 }
 
 // NewMessageProducer creates a new message producer, delegating message creation to `factory`.
-func NewMessageProducer(defaultGasLimit, defaultGasPrice big_spec.Int) *MessageProducer {
+func NewMessageProducer(defaultGasLimit int64, defaultGasPrice big_spec.Int) *MessageProducer {
 	return &MessageProducer{
 		defaults: msgOpts{
 			gasLimit: defaultGasLimit,
@@ -31,7 +31,7 @@ func (mp *MessageProducer) Messages() []*types.Message {
 }
 
 // BuildFull creates and returns a single message.
-func (mp *MessageProducer) BuildFull(to, from address.Address, method abi_spec.MethodNum, callSeq int64, value, gasLimit, gasPrice big_spec.Int, params []byte) *types.Message {
+func (mp *MessageProducer) BuildFull(to, from address.Address, method abi_spec.MethodNum, callSeq int64, value, gasPrice big_spec.Int, gasLimit int64, params []byte) *types.Message {
 	fm := &types.Message{
 		To:         to,
 		From:       from,
@@ -53,7 +53,7 @@ func (mp *MessageProducer) Build(to, from address.Address, method abi_spec.Metho
 		opt(&values)
 	}
 
-	return mp.BuildFull(to, from, method, values.nonce, values.value, values.gasLimit, values.gasPrice, params)
+	return mp.BuildFull(to, from, method, values.nonce, values.value, values.gasPrice, values.gasLimit, params)
 }
 
 // msgOpts specifies value and gas parameters for a message, supporting a functional options pattern
@@ -61,8 +61,8 @@ func (mp *MessageProducer) Build(to, from address.Address, method abi_spec.Metho
 type msgOpts struct {
 	nonce    int64
 	value    big_spec.Int
-	gasLimit big_spec.Int
 	gasPrice big_spec.Int
+	gasLimit int64
 }
 
 // MsgOpt is an option configuring message value or gas parameters.
@@ -82,7 +82,7 @@ func Nonce(n int64) MsgOpt {
 
 func GasLimit(limit int64) MsgOpt {
 	return func(opts *msgOpts) {
-		opts.gasLimit = big_spec.NewInt(limit)
+		opts.gasLimit = limit
 	}
 }
 
