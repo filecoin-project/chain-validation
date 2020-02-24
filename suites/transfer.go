@@ -37,14 +37,12 @@ type valueTransferTestCases struct {
 }
 
 func TestValueTransferSimple(t *testing.T, factories state.Factories) {
-	defaultMiner := utils.NewBLSAddr(t, 123)
 	alice := utils.NewSECP256K1Addr(t, "1")
 	bob := utils.NewSECP256K1Addr(t, "2")
 
 	builder := drivers.NewBuilder(context.Background(), factories).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithDefaultMiner(defaultMiner).
 		WithActorState([]drivers.ActorState{
 			{
 				Addr:    builtin_spec.InitActorAddr,
@@ -178,12 +176,9 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	var aliceBal = abi_spec.NewTokenAmount(1_000_000_000)
 	var transferAmnt = abi_spec.NewTokenAmount(10)
 
-	defaultMiner := utils.NewBLSAddr(t, 123)
-
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithDefaultMiner(defaultMiner).
 		WithActorState([]drivers.ActorState{
 			{
 				Addr:    builtin_spec.InitActorAddr,
