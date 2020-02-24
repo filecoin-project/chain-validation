@@ -25,7 +25,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 	defaultMiner := utils.NewBLSAddr(t, 123)
 
 	builder := drivers.NewBuilder(context.Background(), factory).
-		WithDefaultGasLimit(big_spec.NewInt(1_000_000)).
+		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithDefaultMiner(defaultMiner).
 		WithActorState([]drivers.ActorState{
@@ -130,7 +130,7 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 	defaultMiner := utils.NewBLSAddr(t, 123)
 
 	td := drivers.NewBuilder(context.Background(), factory).
-		WithDefaultGasLimit(big_spec.NewInt(1_000_000)).
+		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithDefaultMiner(defaultMiner).
 		WithActorState([]drivers.ActorState{
