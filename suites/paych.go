@@ -6,11 +6,7 @@ import (
 
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
-	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
-	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
-	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	paych_spec "github.com/filecoin-project/specs-actors/actors/builtin/paych"
-	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
@@ -28,24 +24,9 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState([]drivers.ActorState{
-			{
-				Addr:    builtin_spec.InitActorAddr,
-				Balance: big_spec.Zero(),
-				Code:    builtin_spec.InitActorCodeID,
-				State:   init_spec.ConstructState(drivers.EmptyMapCid, "chain-validation"),
-			},
-			{
-				Addr:    builtin_spec.RewardActorAddr,
-				Balance: TotalNetworkBalance,
-				Code:    builtin_spec.RewardActorCodeID,
-				State:   reward_spec.ConstructState(drivers.EmptyMultiMapCid),
-			},
-			{
-				Addr:    builtin_spec.BurntFundsActorAddr,
-				Balance: big_spec.Zero(),
-				Code:    builtin_spec.AccountActorCodeID,
-				State:   &account_spec.State{Address: builtin_spec.BurntFundsActorAddr},
-			},
+			drivers.DefaultInitActorState,
+			drivers.DefaultRewardActorState,
+			drivers.DefaultBurntFundsActorState,
 		})
 
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
@@ -112,7 +93,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 					Signature: pcSig,
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: EmptyReturnValue, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
 		)
 		var pcState paych_spec.State
 		td.GetActorState(paychAddr, &pcState)
@@ -138,7 +119,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.PaychCollect(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: EmptyReturnValue, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
 		)
 
 		td.AssertBalance(receiver, toSend)

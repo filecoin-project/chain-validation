@@ -6,8 +6,6 @@ import (
 
 	address "github.com/filecoin-project/go-address"
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
-	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
-	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	require "github.com/stretchr/testify/require"
 
@@ -44,24 +42,9 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState([]drivers.ActorState{
-			{
-				Addr:    builtin_spec.InitActorAddr,
-				Balance: big_spec.Zero(),
-				Code:    builtin_spec.InitActorCodeID,
-				State:   init_spec.ConstructState(drivers.EmptyMapCid, "chain-validation"),
-			},
-			{
-				Addr:    builtin_spec.RewardActorAddr,
-				Balance: TotalNetworkBalance,
-				Code:    builtin_spec.RewardActorCodeID,
-				State:   reward_spec.ConstructState(drivers.EmptyMultiMapCid),
-			},
-			{
-				Addr:    builtin_spec.BurntFundsActorAddr,
-				Balance: big_spec.Zero(),
-				Code:    builtin_spec.AccountActorCodeID,
-				State:   &account_spec.State{Address: builtin_spec.BurntFundsActorAddr},
-			},
+			drivers.DefaultInitActorState,
+			drivers.DefaultRewardActorState,
+			drivers.DefaultBurntFundsActorState,
 		})
 
 	testCases := []valueTransferTestCases{
@@ -78,7 +61,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 
 			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.Ok,
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(128),
 			},
 		},
@@ -95,7 +78,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 
 			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.Ok,
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(114),
 			},
 		},
@@ -113,7 +96,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 
 			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.SysErrInsufficientFunds,
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(0),
 			},
 		},
@@ -131,7 +114,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 
 			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.SysErrInsufficientFunds,
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(0),
 			},
 		},
@@ -168,7 +151,6 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 
 		})
 	}
-
 }
 
 func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
@@ -180,24 +162,9 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState([]drivers.ActorState{
-			{
-				Addr:    builtin_spec.InitActorAddr,
-				Balance: big_spec.Zero(),
-				Code:    builtin_spec.InitActorCodeID,
-				State:   init_spec.ConstructState(drivers.EmptyMapCid, "chain-validation"),
-			},
-			{
-				Addr:    builtin_spec.RewardActorAddr,
-				Balance: TotalNetworkBalance,
-				Code:    builtin_spec.RewardActorCodeID,
-				State:   reward_spec.ConstructState(drivers.EmptyMultiMapCid),
-			},
-			{
-				Addr:    builtin_spec.BurntFundsActorAddr,
-				Balance: big_spec.Zero(),
-				Code:    builtin_spec.AccountActorCodeID,
-				State:   &account_spec.State{Address: builtin_spec.BurntFundsActorAddr},
-			},
+			drivers.DefaultInitActorState,
+			drivers.DefaultRewardActorState,
+			drivers.DefaultBurntFundsActorState,
 		})
 
 	t.Run("self transfer", func(t *testing.T) {
@@ -206,10 +173,11 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
 	})
+
 	t.Run("transfer from known address to unknown account", func(t *testing.T) {
 		td := builder.Build(t)
 
@@ -218,7 +186,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
 	})
@@ -230,7 +198,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
 	})
@@ -242,7 +210,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 	})
 }

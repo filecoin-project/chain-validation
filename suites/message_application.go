@@ -6,14 +6,9 @@ import (
 
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
-	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
-	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
-	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	paych_spec "github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 
-	//paych_spec "github.com/filecoin-project/specs-actors/actors/builtin/paych"
-	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	//crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
@@ -29,83 +24,59 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState([]drivers.ActorState{
-			{
-				Addr:    builtin_spec.InitActorAddr,
-				Balance: big_spec.Zero(),
-				Code:    builtin_spec.InitActorCodeID,
-				State:   init_spec.ConstructState(drivers.EmptyMapCid, "chain-validation"),
-			},
-			{
-				Addr:    builtin_spec.RewardActorAddr,
-				Balance: TotalNetworkBalance,
-				Code:    builtin_spec.RewardActorCodeID,
-				State:   reward_spec.ConstructState(drivers.EmptyMultiMapCid),
-			},
-			{
-				Addr:    builtin_spec.BurntFundsActorAddr,
-				Balance: big_spec.Zero(),
-				Code:    builtin_spec.AccountActorCodeID,
-				State:   &account_spec.State{Address: builtin_spec.BurntFundsActorAddr},
-			},
+			drivers.DefaultInitActorState,
+			drivers.DefaultRewardActorState,
+			drivers.DefaultBurntFundsActorState,
 		})
+
+	var aliceBal = abi_spec.NewTokenAmount(1_000_000_000)
+	var transferAmnt = abi_spec.NewTokenAmount(10)
+	var gasCost = big_spec.Zero()
+
 	t.Run("fail to cover gas cost for message receipt on chain", func(t *testing.T) {
 		td := builder.Build(t)
 
-		var aliceBal = abi_spec.NewTokenAmount(1_000_000_000)
-		var transferAmnt = abi_spec.NewTokenAmount(10)
-		var gasCost = big_spec.Zero()
-
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
-
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(1), chain.GasLimit(8)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 	})
+
 	t.Run("not enough gas to pay message on-chain-size cost", func(t *testing.T) {
 		td := builder.Build(t)
 
-		var aliceBal = abi_spec.NewTokenAmount(1_000_000_000)
-		var transferAmnt = abi_spec.NewTokenAmount(10)
-		var gasCost = big_spec.Zero()
-
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
-
 		// Expect Message application to fail due to lack of gas
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 
 		// Expect Message application to fail due to lack of gas when sender address is unknown
 		unknown := utils.NewIDAddr(t, 10000000)
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
-
 	})
 
 	t.Run("invalid actor CallSeqNum", func(t *testing.T) {
 		td := builder.Build(t)
-
-		var aliceBal = abi_spec.NewTokenAmount(1_000_000_000)
-		var transferAmnt = abi_spec.NewTokenAmount(10)
-		var gasCost = big_spec.Zero()
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 
 		// Expect Message application to fail due to callseqnum being invalid: 1 instead of 0
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrInvalidCallSeqNum, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.SysErrInvalidCallSeqNum, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 
 		// Expect message application to fail due to unknow actor when call seq num is also incorrect
 		unknown := utils.NewIDAddr(t, 10000000)
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: EmptyReturnValue, GasUsed: gasCost},
+			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 	})
 
@@ -125,10 +96,8 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 
 		// will create and send on payment channel
 		sender, senderID := td.NewAccountActor(drivers.SECP, initialBal) // 100
-
 		// will be receiver on paych
 		receiver, _ := td.NewAccountActor(drivers.SECP, initialBal) // 101
-		//receiverID := utils.NewIDAddr(t, 101)
 
 		// the _expected_ address of the payment channel
 		paychAddr := utils.NewIDAddr(t, 102) // 103
@@ -149,7 +118,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 					Signature: pcSig, // construct with invalid signature
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode.ErrIllegalArgument, ReturnValue: EmptyReturnValue, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.ErrIllegalArgument, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
 		)
 	})
 }

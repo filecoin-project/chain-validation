@@ -8,10 +8,7 @@ import (
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
-	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
-	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
-	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"
@@ -26,24 +23,9 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState([]drivers.ActorState{
-			{
-				Addr:    builtin_spec.InitActorAddr,
-				Balance: big_spec.Zero(),
-				Code:    builtin_spec.InitActorCodeID,
-				State:   init_spec.ConstructState(drivers.EmptyMapCid, "chain-validation"),
-			},
-			{
-				Addr:    builtin_spec.RewardActorAddr,
-				Balance: TotalNetworkBalance,
-				Code:    builtin_spec.RewardActorCodeID,
-				State:   reward_spec.ConstructState(drivers.EmptyMultiMapCid),
-			},
-			{
-				Addr:    builtin_spec.BurntFundsActorAddr,
-				Balance: big_spec.Zero(),
-				Code:    builtin_spec.AccountActorCodeID,
-				State:   &account_spec.State{Address: builtin_spec.BurntFundsActorAddr},
-			},
+			drivers.DefaultInitActorState,
+			drivers.DefaultRewardActorState,
+			drivers.DefaultBurntFundsActorState,
 		})
 
 	t.Run("constructor test", func(t *testing.T) {
@@ -130,14 +112,14 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		// bob cancels alice's transaction. This fails as bob did not create alice's transaction.
 		td.ApplyMessageExpectReceipt(
 			td.Producer.MultisigCancel(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: EmptyReturnValue, GasUsed: big_spec.NewInt(1000000)},
+			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(1000000)},
 		)
 
 		// alice cancels their transaction. The outsider doesn't receive any FIL, the multisig actor's balance is empty, and the
 		// transaction is canceled.
 		td.ApplyMessageExpectReceipt(
 			td.Producer.MultisigCancel(multisigAddr, alice, multisig_spec.TxnIDParams{ID: txID0}, chain.Nonce(1), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: EmptyReturnValue, GasUsed: big_spec.NewInt(639)},
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(639)},
 		)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{alice, bob},
@@ -211,20 +193,20 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 				Method: builtin_spec.MethodSend,
 				Params: []byte{},
 			}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: EmptyReturnValue, GasUsed: big_spec.NewInt(1000000)},
+			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(1000000)},
 		)
 
 		// outsider approves the value transfer alice sent. This fails as they are not a signer.
 		td.ApplyMessageExpectReceipt(
 			td.Producer.MultisigApprove(multisigAddr, outsider, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: EmptyReturnValue, GasUsed: big_spec.NewInt(1000000)},
+			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(1000000)},
 		)
 
 		// bob approves transfer of 'valueSend' FIL to outsider.
 		txID1 := multisig_spec.TxnID(1)
 		td.ApplyMessageExpectReceipt(
 			td.Producer.MultisigApprove(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID1}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: EmptyReturnValue, GasUsed: big_spec.NewInt(1691)},
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(1691)},
 		)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{alice, bob},
@@ -273,7 +255,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.SysErrActorNotFound, // TODO set the correct error code here, lotus returns 'SysErrActorNotFound`, which is probably wrong.
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(1_000_000),
 			})
 
@@ -285,7 +267,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(517),
 			})
 		// assert that chuck is now a signer
@@ -306,7 +288,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(583),
 			})
 		// assert that duck is noe a signer and the number of approvals required increased
@@ -358,7 +340,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.SysErrActorNotFound, // TODO set the correct error code here, lotus returns 'SysErrActorNotFound`, which is probably wrong.
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(1_000_000),
 			})
 
@@ -370,7 +352,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(561),
 			})
 		// assert that duck is no longer a signer and that the number of required approvals has remained unchanged.
@@ -391,7 +373,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(495),
 			})
 		// assert that duck is no a signer and the number of approvals required decreased.
@@ -446,7 +428,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			td.Producer.MultisigSwapSigner(multisigAddr, alice, swapParams, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.SysErrActorNotFound, // TODO set the correct error code here, lotus returns 'SysErrActorNotFound`, which is probably wrong.
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(1_000_000),
 			})
 
@@ -455,7 +437,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			td.Producer.MultisigSwapSigner(multisigAddr, multisigAddr, swapParams, chain.Nonce(0), chain.Value(big_spec.Zero())),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(515),
 			})
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
@@ -472,7 +454,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			td.Producer.MultisigChangeNumApprovalsThreshold(multisigAddr, multisigAddr, multisig_spec.ChangeNumApprovalsThresholdParams{NewThreshold: initialNumApprovals - 1}, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: EmptyReturnValue,
+				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(427),
 			})
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{

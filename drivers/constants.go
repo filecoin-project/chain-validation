@@ -1,4 +1,4 @@
-package suites
+package drivers
 
 import (
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
