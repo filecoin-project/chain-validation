@@ -56,7 +56,7 @@ func (d *StateDriver) GetActorState(actorAddr address.Address, out cbg.CBORUnmar
 }
 
 // NewAccountActor installs a new account actor, returning the address.
-func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil abi_spec.TokenAmount) address.Address {
+func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil abi_spec.TokenAmount) (pubkey address.Address, id address.Address) {
 	var addr address.Address
 	switch addrType {
 	case address.SECP256K1:
@@ -67,7 +67,7 @@ func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil 
 		require.FailNowf(d.tb, "unsupported address", "protocol for account actor: %v", addrType)
 	}
 
-	_, err := d.st.CreateActor(builtin_spec.AccountActorCodeID, addr, balanceAttoFil, &account_spec.State{Address: addr})
+	_, idAddr, err := d.st.CreateActor(builtin_spec.AccountActorCodeID, addr, balanceAttoFil, &account_spec.State{Address: addr})
 	require.NoError(d.tb, err)
-	return addr
+	return addr, idAddr
 }

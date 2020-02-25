@@ -55,7 +55,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		var transferAmnt = abi_spec.NewTokenAmount(10)
 		var gasCost = big_spec.Zero()
 
-		alice := td.NewAccountActor(drivers.SECP, aliceBal)
+		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(1), chain.GasLimit(8)),
@@ -69,7 +69,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		var transferAmnt = abi_spec.NewTokenAmount(10)
 		var gasCost = big_spec.Zero()
 
-		alice := td.NewAccountActor(drivers.SECP, aliceBal)
+		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 
 		// Expect Message application to fail due to lack of gas
 		td.ApplyMessageExpectReceipt(
@@ -93,7 +93,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		var transferAmnt = abi_spec.NewTokenAmount(10)
 		var gasCost = big_spec.Zero()
 
-		alice := td.NewAccountActor(drivers.SECP, aliceBal)
+		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 
 		// Expect Message application to fail due to callseqnum being invalid: 1 instead of 0
 		td.ApplyMessageExpectReceipt(
@@ -124,11 +124,10 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		}
 
 		// will create and send on payment channel
-		sender := td.NewAccountActor(drivers.SECP, initialBal) // 100
-		senderID := utils.NewIDAddr(t, 100)
+		sender, senderID := td.NewAccountActor(drivers.SECP, initialBal) // 100
 
 		// will be receiver on paych
-		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 101
+		receiver, _ := td.NewAccountActor(drivers.SECP, initialBal) // 101
 		//receiverID := utils.NewIDAddr(t, 101)
 
 		// the _expected_ address of the payment channel

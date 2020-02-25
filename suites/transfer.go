@@ -142,10 +142,10 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			td := builder.Build(t)
 
 			// Create the to and from actors with balance in the state tree
-			_, err := td.State().CreateActor(builtin_spec.AccountActorCodeID, tc.sender, tc.senderBal, &account_spec.State{Address: tc.sender})
+			_, _, err := td.State().CreateActor(builtin_spec.AccountActorCodeID, tc.sender, tc.senderBal, &account_spec.State{Address: tc.sender})
 			require.NoError(t, err)
 			if tc.sender.String() != tc.receiver.String() {
-				_, err := td.State().CreateActor(builtin_spec.AccountActorCodeID, tc.receiver, tc.receiverBal, &account_spec.State{Address: tc.receiver})
+				_, _, err := td.State().CreateActor(builtin_spec.AccountActorCodeID, tc.receiver, tc.receiverBal, &account_spec.State{Address: tc.receiver})
 				require.NoError(t, err)
 			}
 
@@ -202,7 +202,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 	t.Run("self transfer", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.NewAccountActor(drivers.SECP, aliceBal)
+		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 
 		td.ApplyMessageExpectReceipt(
 			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)),
@@ -213,7 +213,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	t.Run("transfer from known address to unknown account", func(t *testing.T) {
 		td := builder.Build(t)
 
-		alice := td.NewAccountActor(drivers.SECP, aliceBal)
+		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		unknown := td.Wallet().NewSECP256k1AccountAddress()
 
 		td.ApplyMessageExpectReceipt(
@@ -225,7 +225,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 	t.Run("fail to transfer from unknown account to known address", func(t *testing.T) {
 		td := builder.Build(t)
-		alice := td.NewAccountActor(drivers.SECP, aliceBal)
+		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		unknown := td.Wallet().NewSECP256k1AccountAddress()
 
 		td.ApplyMessageExpectReceipt(

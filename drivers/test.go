@@ -135,7 +135,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	require.NoError(t, err)
 
 	for _, acts := range b.actorStates {
-		_, err := sd.State().CreateActor(acts.Code, acts.Addr, acts.Balance, acts.State)
+		_, _, err := sd.State().CreateActor(acts.Code, acts.Addr, acts.Balance, acts.State)
 		require.NoError(t, err)
 	}
 

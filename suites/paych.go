@@ -54,12 +54,10 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 
 		// will create and send on payment channel
-		sender := td.NewAccountActor(drivers.SECP, initialBal) // 100
-		senderID := utils.NewIDAddr(t, 100)
+		sender, senderID := td.NewAccountActor(drivers.SECP, initialBal) // 100
 
 		// will be receiver on paych
-		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 101
-		receiverID := utils.NewIDAddr(t, 101)
+		receiver, receiverID := td.NewAccountActor(drivers.SECP, initialBal) // 101
 
 		// the _expected_ address of the payment channel
 		paychAddr := utils.NewIDAddr(t, 102) // 102
@@ -91,12 +89,10 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		}
 
 		// will create and send on payment channel
-		sender := td.NewAccountActor(drivers.SECP, initialBal) // 100
-		senderID := utils.NewIDAddr(t, 100)
+		sender, senderID := td.NewAccountActor(drivers.SECP, initialBal) // 100
 
 		// will be receiver on paych
-		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 101
-		//receiverID := utils.NewIDAddr(t, 101)
+		receiver, _ := td.NewAccountActor(drivers.SECP, initialBal) // 101
 
 		// the _expected_ address of the payment channel
 		paychAddr := utils.NewIDAddr(t, 102) // 102
@@ -131,9 +127,9 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 
 		// create the payment channel
-		sender := td.NewAccountActor(drivers.SECP, initialBal)   // 101
-		receiver := td.NewAccountActor(drivers.SECP, initialBal) // 102
-		paychAddr := utils.NewIDAddr(t, 103)                     // 103
+		sender, _ := td.NewAccountActor(drivers.SECP, initialBal)   // 101
+		receiver, _ := td.NewAccountActor(drivers.SECP, initialBal) // 102
+		paychAddr := utils.NewIDAddr(t, 103)                        // 103
 		td.ApplyMessageExpectReceipt(
 			td.Producer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},

@@ -108,7 +108,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 		t.Run(tc.desc, func(t *testing.T) {
 			td := builder.Build(t)
 
-			existingAccountAddr := td.NewAccountActor(tc.existingActorType, tc.existingActorBal)
+			existingAccountAddr, _ := td.NewAccountActor(tc.existingActorType, tc.existingActorBal)
 			td.ApplyMessageExpectReceipt(
 				td.Producer.Transfer(tc.newActorAddr, existingAccountAddr, chain.Value(tc.newActorInitBal), chain.Nonce(0)),
 				types.MessageReceipt{ExitCode: tc.expExitCode, ReturnValue: EmptyReturnValue, GasUsed: tc.expGasCost},
@@ -151,10 +151,9 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
 	var toSend = abi_spec.NewTokenAmount(10_000)
 
-	sender := td.NewAccountActor(drivers.SECP, initialBal)
-	senderID := utils.NewIDAddr(t, 100)
+	sender, senderID := td.NewAccountActor(drivers.SECP, initialBal)
 
-	receiver := td.NewAccountActor(drivers.SECP, initialBal)
+	receiver, _ := td.NewAccountActor(drivers.SECP, initialBal)
 
 	firstPaychAddr := utils.NewIDAddr(t, 102)
 	secondPaychAddr := utils.NewIDAddr(t, 103)
