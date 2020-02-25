@@ -137,7 +137,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			require.Equal(t, tc.senderBal.String(), sendAct.Balance().String())
 
 			td.ApplyMessageExpectReceipt(
-				td.Producer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0)),
+				td.MessageProducer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0)),
 				tc.receipt,
 			)
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
@@ -172,7 +172,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 
 		td.ApplyMessageExpectReceipt(
-			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)),
+			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
@@ -185,7 +185,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		unknown := td.Wallet().NewSECP256k1AccountAddress()
 
 		td.ApplyMessageExpectReceipt(
-			td.Producer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0)),
+			td.MessageProducer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
@@ -197,7 +197,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		unknown := td.Wallet().NewSECP256k1AccountAddress()
 
 		td.ApplyMessageExpectReceipt(
-			td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
+			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
@@ -209,7 +209,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		nobody := td.Wallet().NewSECP256k1AccountAddress()
 
 		td.ApplyMessageExpectReceipt(
-			td.Producer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
+			td.MessageProducer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 	})
