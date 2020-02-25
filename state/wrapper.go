@@ -27,8 +27,8 @@ type VMWrapper interface {
 	// Set state on an actor in the state tree. The actors head is the cid of `state`.
 	SetActorState(addr address.Address, balance abi.TokenAmount, state runtime.CBORMarshaler) (Actor, error)
 
-	// Installs a new actor in the state tree, going through the init actor when appropriate.
-	CreateActor(code cid.Cid, addr address.Address, balance abi.TokenAmount, state runtime.CBORMarshaler) (Actor, error)
+	// Installs a new actor in the state tree, going through the init actor when appropriate and returning the ID address of the actor.
+	CreateActor(code cid.Cid, addr address.Address, balance abi.TokenAmount, state runtime.CBORMarshaler) (Actor, address.Address, error)
 }
 
 type KeyManager interface {
