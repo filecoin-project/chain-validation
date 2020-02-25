@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
-	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
@@ -18,7 +17,13 @@ import (
 
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
+	cron_spec "github.com/filecoin-project/specs-actors/actors/builtin/cron"
+	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
+	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
+	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	runtime_spec "github.com/filecoin-project/specs-actors/actors/runtime"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 
@@ -36,10 +41,78 @@ var (
 	EmptySetCid      cid.Cid
 )
 
+var (
+	DefaultInitActorState         ActorState
+	DefaultRewardActorState       ActorState
+	DefaultBurntFundsActorState   ActorState
+	DefaultStoragePowerActorState ActorState
+	DefaultSystemActorState       ActorState
+	DefaultCronActorState         ActorState
+	DefaultBuiltinActorsState     []ActorState
+)
+
 func init() {
 	ms := newMockStore()
 	if err := initializeStoreWithAdtRoots(ms); err != nil {
 		panic(err)
+	}
+
+	DefaultInitActorState = ActorState{
+		Addr:    builtin_spec.InitActorAddr,
+		Balance: big_spec.Zero(),
+		Code:    builtin_spec.InitActorCodeID,
+		State:   init_spec.ConstructState(EmptyMapCid, "chain-validation"),
+	}
+
+	DefaultRewardActorState = ActorState{
+		Addr:    builtin_spec.RewardActorAddr,
+		Balance: TotalNetworkBalance,
+		Code:    builtin_spec.RewardActorCodeID,
+		State:   reward_spec.ConstructState(EmptyMultiMapCid),
+	}
+
+	DefaultBurntFundsActorState = ActorState{
+		Addr:    builtin_spec.BurntFundsActorAddr,
+		Balance: big_spec.Zero(),
+		Code:    builtin_spec.AccountActorCodeID,
+		State:   &account_spec.State{Address: builtin_spec.BurntFundsActorAddr},
+	}
+
+	DefaultStoragePowerActorState = ActorState{
+		Addr:    builtin_spec.StoragePowerActorAddr,
+		Balance: big_spec.Zero(),
+		Code:    builtin_spec.StoragePowerActorCodeID,
+		State: &power_spec.State{
+			TotalNetworkPower:        abi_spec.NewStoragePower(0),
+			EscrowTable:              EmptyMapCid,
+			CronEventQueue:           EmptyMapCid,
+			PoStDetectedFaultMiners:  EmptyMapCid,
+			Claims:                   EmptyMapCid,
+			NumMinersMeetingMinPower: 0,
+		},
+	}
+
+	DefaultSystemActorState = ActorState{
+		Addr:    builtin_spec.SystemActorAddr,
+		Balance: big_spec.Zero(),
+		Code:    builtin_spec.SystemActorCodeID,
+		State:   &adt_spec.EmptyValue{},
+	}
+
+	DefaultCronActorState = ActorState{
+		Addr:    builtin_spec.CronActorAddr,
+		Balance: big_spec.Zero(),
+		Code:    builtin_spec.CronActorCodeID,
+		State:   &cron_spec.State{Entries: []cron_spec.Entry(nil)},
+	}
+
+	DefaultBuiltinActorsState = []ActorState{
+		DefaultInitActorState,
+		DefaultRewardActorState,
+		DefaultBurntFundsActorState,
+		DefaultStoragePowerActorState,
+		DefaultSystemActorState,
+		DefaultCronActorState,
 	}
 }
 
