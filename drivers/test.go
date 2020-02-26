@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
@@ -327,27 +326,6 @@ func (td *TestDriver) ComputeInitActorExecReturn(from address.Address, callSeq u
 		IDAddress:     expectedNewAddr,
 		RobustAddress: out,
 	}
-}
-
-func (td *TestDriver) CreateMinerActor(owner, worker, expectedMinerID address.Address) (miner address.Address) {
-	if expectedMinerID.Protocol() != address.ID {
-		panic("must provide expected miner address using ID address protocol")
-	}
-	// TODO all this miner creation boiler plate should be moved somewhere else
-	ret := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, expectedMinerID)
-	td.ApplyMessageExpectReceipt(
-		td.MessageProducer.PowerCreateMiner(builtin_spec.StoragePowerActorAddr, owner, power_spec.CreateMinerParams{
-			Worker:     worker,
-			SectorSize: 1,
-			Peer:       "peerid",
-		}, chain.Value(big_spec.NewInt(1_000_000)), chain.Nonce(0)),
-		types.MessageReceipt{
-			ExitCode:    exitcode.Ok,
-			ReturnValue: chain.MustSerialize(&ret),
-			GasUsed:     big_spec.Zero(),
-		},
-	)
-	return ret.IDAddress
 }
 
 func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt types.MessageReceipt) {
