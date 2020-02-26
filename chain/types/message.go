@@ -28,6 +28,6 @@ type Message struct {
 }
 
 type SignedMessage struct {
-	Message Message
+	Message   Message
 	Signature crypto.Signature
 }
