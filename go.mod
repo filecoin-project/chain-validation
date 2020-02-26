@@ -11,6 +11,8 @@ require (
 	github.com/ipfs/go-datastore v0.3.1
 	github.com/ipfs/go-ipfs-blockstore v0.1.3
 	github.com/ipfs/go-ipld-cbor v0.0.4
+	github.com/libp2p/go-libp2p-core v0.3.0
+	github.com/multiformats/go-varint v0.0.2
 	github.com/stretchr/testify v1.4.0
 	github.com/warpfork/go-wish v0.0.0-20190328234359-8b3e70f8e830 // indirect
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200206220010-03c9665e2a66

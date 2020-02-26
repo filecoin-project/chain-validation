@@ -7,6 +7,8 @@ import (
 	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 	paych_spec "github.com/filecoin-project/specs-actors/actors/builtin/paych"
+	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
+	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
@@ -36,5 +38,13 @@ func (mp *MessageProducer) CreateMultisigActor(from address.Address, signers []a
 			NumApprovalsThreshold: numApprovals,
 			UnlockDuration:        unlockDuration,
 		}),
+	}, opts...)
+}
+
+func (mp *MessageProducer) CreateMinerActor(owner, worker address.Address, sectorSize abi_spec.SectorSize, pid peer.ID, opts ...MsgOpt) *types.Message {
+	return mp.PowerCreateMiner(builtin_spec.StoragePowerActorAddr, owner, power_spec.CreateMinerParams{
+		Worker:     worker,
+		SectorSize: sectorSize,
+		Peer:       pid,
 	}, opts...)
 }

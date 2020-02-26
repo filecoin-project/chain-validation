@@ -1,8 +1,6 @@
 package chain
 
 import (
-	"github.com/filecoin-project/specs-actors/actors/abi"
-
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/state"
 )
@@ -22,6 +20,6 @@ func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VM
 	return v.applier.ApplyMessage(context, state, message)
 }
 
-func (v *Validator) ApplyTipSetMessages(state state.VMWrapper, blocks []types.BlockMessagesInfo, epoch abi.ChainEpoch, /*rnd state.RandomnessSource*/) ([]types.MessageReceipt, error) {
-	return v.applier.ApplyTipSetMessages(state, blocks, epoch) //, rnd)
+func (v *Validator) ApplyTipSetMessages(context *types.ExecutionContext, state state.VMWrapper, blocks []types.BlockMessagesInfo /*rnd state.RandomnessSource*/) ([]types.MessageReceipt, error) {
+	return v.applier.ApplyTipSetMessages(state, blocks, context.Epoch) //, rnd)
 }
