@@ -38,7 +38,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		td.ApplyMessageExpectReceipt(
-			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(1), chain.GasLimit(8)),
+			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(1), chain.GasLimit(8)),
 			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 	})
@@ -49,14 +49,14 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		// Expect Message application to fail due to lack of gas
 		td.ApplyMessageExpectReceipt(
-			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
+			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
 			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 
 		// Expect Message application to fail due to lack of gas when sender address is unknown
 		unknown := utils.NewIDAddr(t, 10000000)
 		td.ApplyMessageExpectReceipt(
-			td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
+			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
 			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 	})
@@ -68,14 +68,14 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 
 		// Expect Message application to fail due to callseqnum being invalid: 1 instead of 0
 		td.ApplyMessageExpectReceipt(
-			td.Producer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(1)),
+			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(1)),
 			types.MessageReceipt{ExitCode: exitcode.SysErrInvalidCallSeqNum, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 
 		// Expect message application to fail due to unknow actor when call seq num is also incorrect
 		unknown := utils.NewIDAddr(t, 10000000)
 		td.ApplyMessageExpectReceipt(
-			td.Producer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(1)),
+			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(1)),
 			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
 	})
@@ -103,19 +103,20 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		paychAddr := utils.NewIDAddr(t, 102) // 103
 		createRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
 		td.ApplyMessageExpectReceipt(
-			td.Producer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: big_spec.Zero()},
 		)
 
 		// message application fails due to invalid argument (signature).
 		td.ApplyMessageExpectReceipt(
-			td.Producer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
+			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
-					TimeLock:  pcTimeLock,
-					Lane:      pcLane,
-					Nonce:     pcNonce,
-					Amount:    pcAmount,
-					Signature: pcSig, // construct with invalid signature
+					TimeLockMin: pcTimeLock,
+					TimeLockMax: pcTimeLock,
+					Lane:        pcLane,
+					Nonce:       pcNonce,
+					Amount:      pcAmount,
+					Signature:   pcSig, // construct with invalid signature
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			types.MessageReceipt{ExitCode: exitcode.ErrIllegalArgument, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},

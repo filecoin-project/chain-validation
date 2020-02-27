@@ -46,7 +46,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 
 		// init actor creates the payment channel
 		td.ApplyMessageExpectReceipt(
-			td.Producer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: big_spec.Zero()},
 		)
 
@@ -79,18 +79,19 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		paychAddr := utils.NewIDAddr(t, 102) // 102
 		createRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
 		td.ApplyMessageExpectReceipt(
-			td.Producer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: big_spec.Zero()},
 		)
 
 		td.ApplyMessageExpectReceipt(
-			td.Producer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
+			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
-					TimeLock:  pcTimeLock,
-					Lane:      pcLane,
-					Nonce:     pcNonce,
-					Amount:    pcAmount,
-					Signature: pcSig,
+					TimeLockMin: pcTimeLock,
+					TimeLockMax: pcTimeLock,
+					Lane:        pcLane,
+					Nonce:       pcNonce,
+					Amount:      pcAmount,
+					Signature:   pcSig,
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
@@ -112,13 +113,13 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(drivers.SECP, initialBal) // 102
 		paychAddr := utils.NewIDAddr(t, 103)                        // 103
 		td.ApplyMessageExpectReceipt(
-			td.Producer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
+			td.MessageProducer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},
 		)
 		td.AssertBalance(paychAddr, toSend)
 
 		td.ApplyMessageExpectReceipt(
-			td.Producer.PaychCollect(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Nonce(1)),
+			td.MessageProducer.PaychCollect(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Nonce(1)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
 		)
 

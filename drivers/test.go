@@ -202,7 +202,7 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price big_spec.Int) *TestDriverB
 }
 
 func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
-	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewKeyManager())
+	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewKeyManager(), b.factory.NewRandomnessSource())
 
 	err := initializeStoreWithAdtRoots(sd.st.Store())
 	require.NoError(t, err)
@@ -217,11 +217,11 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	validator := chain.NewValidator(b.factory)
 
 	return &TestDriver{
-		T:           t,
-		StateDriver: sd,
-		Producer:    producer,
-		Validator:   validator,
-		ExeCtx:      exeCtx,
+		T:               t,
+		StateDriver:     sd,
+		MessageProducer: producer,
+		Validator:       validator,
+		ExeCtx:          exeCtx,
 
 		Config: b.factory.NewValidationConfig(),
 	}
@@ -230,10 +230,11 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 type TestDriver struct {
 	*StateDriver
 
-	T         testing.TB
-	Producer  *chain.MessageProducer
-	Validator *chain.Validator
-	ExeCtx    *types.ExecutionContext
+	T                    testing.TB
+	MessageProducer      *chain.MessageProducer
+	TipSetMessageBuilder *chain.TipSetMessageBuilder
+	Validator            *chain.Validator
+	ExeCtx               *types.ExecutionContext
 
 	Config state.ValidationConfig
 }
@@ -330,7 +331,7 @@ func (td *TestDriver) ComputeInitActorExecReturn(from address.Address, callSeq u
 func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt types.MessageReceipt) {
 	/* Create the Multisig actor*/
 	td.ApplyMessageExpectReceipt(
-		td.Producer.CreateMultisigActor(from, params.Signers, params.UnlockDuration, params.NumApprovalsThreshold, chain.Nonce(nonce), chain.Value(value)),
+		td.MessageProducer.CreateMultisigActor(from, params.Signers, params.UnlockDuration, params.NumApprovalsThreshold, chain.Nonce(nonce), chain.Value(value)),
 		receipt,
 	)
 	/* Assert the actor state was setup as expected */

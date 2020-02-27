@@ -8,5 +8,7 @@ type Factories interface {
 
 	NewValidationConfig() ValidationConfig
 
+	NewRandomnessSource() RandomnessSource
+
 	Applier
 }
