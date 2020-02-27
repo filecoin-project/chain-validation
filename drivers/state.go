@@ -26,11 +26,12 @@ type StateDriver struct {
 	tb testing.TB
 	st state.VMWrapper
 	w  state.KeyManager
+	rs state.RandomnessSource
 }
 
 // NewStateDriver creates a new state driver for a state.
-func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager) *StateDriver {
-	return &StateDriver{tb, st, w}
+func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager, rs state.RandomnessSource) *StateDriver {
+	return &StateDriver{tb, st, w, rs}
 }
 
 // State returns the state.
@@ -40,6 +41,10 @@ func (d *StateDriver) State() state.VMWrapper {
 
 func (d *StateDriver) Wallet() state.KeyManager {
 	return d.w
+}
+
+func (d *StateDriver) Randomness() state.RandomnessSource {
+	return d.rs
 }
 
 func (d *StateDriver) GetState(c cid.Cid, out cbg.CBORUnmarshaler) {

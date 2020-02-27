@@ -48,7 +48,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 			Build()
 
-		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs})
+		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
 		require.NoError(t, err)
 		require.Len(t, receipts, 1)
 
@@ -81,7 +81,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 			Build()
 
-		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs})
+		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
 		require.NoError(t, err)
 		// despite there being 2 messages there is only one receipt.
 		require.Len(t, receipts, 1)
@@ -114,7 +114,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
 			Build()
 
-		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs})
+		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
 		require.NoError(t, err)
 		require.Len(t, receipts, 1)
 
@@ -147,7 +147,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
 			Build()
 
-		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs})
+		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
 		require.NoError(t, err)
 		require.Len(t, receipts, 1)
 
@@ -180,7 +180,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 			Build()
 
-		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs})
+		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
 		require.NoError(t, err)
 		require.Len(t, receipts, 1)
 

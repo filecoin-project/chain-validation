@@ -20,6 +20,6 @@ func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VM
 	return v.applier.ApplyMessage(context, state, message)
 }
 
-func (v *Validator) ApplyTipSetMessages(context *types.ExecutionContext, state state.VMWrapper, blocks []types.BlockMessagesInfo /*rnd state.RandomnessSource*/) ([]types.MessageReceipt, error) {
-	return v.applier.ApplyTipSetMessages(state, blocks, context.Epoch) //, rnd)
+func (v *Validator) ApplyTipSetMessages(context *types.ExecutionContext, state state.VMWrapper, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) ([]types.MessageReceipt, error) {
+	return v.applier.ApplyTipSetMessages(state, blocks, context.Epoch, rnd)
 }

@@ -202,7 +202,7 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price big_spec.Int) *TestDriverB
 }
 
 func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
-	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewKeyManager())
+	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewKeyManager(), b.factory.NewRandomnessSource())
 
 	err := initializeStoreWithAdtRoots(sd.st.Store())
 	require.NoError(t, err)

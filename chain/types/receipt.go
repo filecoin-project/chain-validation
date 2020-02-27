@@ -9,5 +9,7 @@ import (
 type MessageReceipt struct {
 	ExitCode    exitcode.ExitCode
 	ReturnValue []byte
-	GasUsed     big.Int
+
+	// TODO make this an int64
+	GasUsed big.Int
 }
