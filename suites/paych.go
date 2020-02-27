@@ -86,11 +86,12 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
-					TimeLock:  pcTimeLock,
-					Lane:      pcLane,
-					Nonce:     pcNonce,
-					Amount:    pcAmount,
-					Signature: pcSig,
+					TimeLockMin: pcTimeLock,
+					TimeLockMax: pcTimeLock,
+					Lane:        pcLane,
+					Nonce:       pcNonce,
+					Amount:      pcAmount,
+					Signature:   pcSig,
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},

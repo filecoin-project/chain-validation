@@ -111,11 +111,12 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
-					TimeLock:  pcTimeLock,
-					Lane:      pcLane,
-					Nonce:     pcNonce,
-					Amount:    pcAmount,
-					Signature: pcSig, // construct with invalid signature
+					TimeLockMin: pcTimeLock,
+					TimeLockMax: pcTimeLock,
+					Lane:        pcLane,
+					Nonce:       pcNonce,
+					Amount:      pcAmount,
+					Signature:   pcSig, // construct with invalid signature
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			types.MessageReceipt{ExitCode: exitcode.ErrIllegalArgument, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
