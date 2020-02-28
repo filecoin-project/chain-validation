@@ -1,4 +1,6 @@
-package actors
+package message
+
+/*
 
 import (
 	"context"
@@ -15,7 +17,6 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
-	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 func TestMultiSigActor(t *testing.T, factory state.Factories) {
@@ -40,7 +41,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// expected address of the actor
-		multisigAddr := utils.NewIDAddr(t, 101)
+		multisigAddr := drivers.NewIDAddr(t, 101)
 
 		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -69,7 +70,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		bob, _ := td.NewAccountActor(drivers.SECP, initialBal)
 		outsider, _ := td.NewAccountActor(drivers.SECP, initialBal)
 
-		multisigAddr := utils.NewIDAddr(t, 103)
+		multisigAddr := drivers.NewIDAddr(t, 103)
 
 		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
 		// create the multisig actor
@@ -147,7 +148,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		outsider, _ := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// Multisig actor address
-		multisigAddr := utils.NewIDAddr(t, 104)
+		multisigAddr := drivers.NewIDAddr(t, 104)
 
 		// create the multisig actor
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -233,7 +234,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		duck, _ := td.NewAccountActor(drivers.SECP, initialBal)  // 104
 		var initialSigners = []address.Address{alice, bob}
 
-		multisigAddr := utils.NewIDAddr(t, 105)
+		multisigAddr := drivers.NewIDAddr(t, 105)
 
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
@@ -317,7 +318,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		duck, _ := td.NewAccountActor(drivers.SECP, initialBal)  // 104
 		var initialSigners = []address.Address{alice, bob, chuck, duck}
 
-		multisigAddr := utils.NewIDAddr(t, 105)
+		multisigAddr := drivers.NewIDAddr(t, 105)
 
 		// create a ms actor with 4 signers and 3 approvals required
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -403,7 +404,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		var initialSigners = []address.Address{alice, bob}
 
-		multisigAddr := utils.NewIDAddr(t, 104)
+		multisigAddr := drivers.NewIDAddr(t, 104)
 
 		// create a ms actor with 4 signers and 3 approvals required
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -467,3 +468,5 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		})
 	})
 }
+
+*/

@@ -1,8 +1,7 @@
-package init_
+package message
 
 import (
 	"context"
-	"testing"
 
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
@@ -12,10 +11,9 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
-	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
-func InitActorCreatesActorsWithSequentialIDAddresses(t *testing.T, factory state.Factories) {
+func InitActorCreatesActorsWithSequentialIDAddresses(h *drivers.ValidationHarness, factory state.Factories) {
 	td := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
@@ -24,7 +22,7 @@ func InitActorCreatesActorsWithSequentialIDAddresses(t *testing.T, factory state
 			drivers.DefaultRewardActorState,
 			drivers.DefaultBurntFundsActorState,
 			drivers.DefaultStoragePowerActorState,
-		}).Build(t)
+		}).Build(h)
 
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
 	var toSend = abi_spec.NewTokenAmount(10_000)
@@ -33,8 +31,8 @@ func InitActorCreatesActorsWithSequentialIDAddresses(t *testing.T, factory state
 
 	receiver, receiverID := td.NewAccountActor(drivers.SECP, initialBal)
 
-	firstPaychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
-	secondPaychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+2)
+	firstPaychAddr := drivers.NewIDAddr(h, drivers.IdFromAddress(receiverID)+1)
+	secondPaychAddr := drivers.NewIDAddr(h, drivers.IdFromAddress(receiverID)+2)
 
 	firstInitRet := td.ComputeInitActorExecReturn(senderID, 0, firstPaychAddr)
 	secondInitRet := td.ComputeInitActorExecReturn(senderID, 1, secondPaychAddr)

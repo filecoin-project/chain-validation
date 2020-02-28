@@ -1,8 +1,7 @@
-package account
+package message
 
 import (
 	"context"
-	"testing"
 
 	"github.com/filecoin-project/go-address"
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
@@ -13,10 +12,31 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
-	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
-func SuccessfullyCreateBLSAccountActor(t testing.TB, factory state.Factories) {
+var SECPTestShit []SecpTestScenario
+
+func init() {
+	SECPTestShit = []SecpTestScenario{
+		{
+			Scenario:    SuccessfullyCreateSECP256K1AccountActor,
+			Description: "Successfully transfer FIL between two secp256k1 account actors",
+		},
+		{
+			Scenario:    FailToCreateSECP256K1AccountActorWithInsufficientBalance,
+			Description: "Fail to transfer FIL between two secp256k1 account actors due to insufficient balance",
+		},
+	}
+}
+
+type ChainValidationTest func(v *drivers.ValidationHarness, factory state.Factories)
+
+type SecpTestScenario struct {
+	Scenario    ChainValidationTest
+	Description string
+}
+
+func SuccessfullyCreateSECP256K1AccountActor(h *drivers.ValidationHarness, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
@@ -26,19 +46,19 @@ func SuccessfullyCreateBLSAccountActor(t testing.TB, factory state.Factories) {
 			drivers.DefaultBurntFundsActorState,
 			drivers.DefaultStoragePowerActorState,
 		})
-	td := builder.Build(t)
+	td := builder.Build(h)
 
 	balance := abi_spec.NewTokenAmount(10_000_000)
 	send := abi_spec.NewTokenAmount(10_000)
 
-	existingAccountAddr, _ := td.NewAccountActor(address.BLS, balance)
+	existingAccountAddr, _ := td.NewAccountActor(address.SECP256K1, balance)
 	td.ApplyMessageExpectReceipt(
-		td.MessageProducer.Transfer(utils.NewBLSAddr(t, 1), existingAccountAddr, chain.Value(send), chain.Nonce(0)),
+		td.MessageProducer.Transfer(drivers.NewSECP256K1Addr(h, "pubkey"), existingAccountAddr, chain.Value(send), chain.Nonce(0)),
 		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
 	)
 }
 
-func FailToCreateBLSAccountActorWithInsufficientBalance(t testing.TB, factory state.Factories) {
+func FailToCreateSECP256K1AccountActorWithInsufficientBalance(h *drivers.ValidationHarness, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
@@ -48,14 +68,14 @@ func FailToCreateBLSAccountActorWithInsufficientBalance(t testing.TB, factory st
 			drivers.DefaultBurntFundsActorState,
 			drivers.DefaultStoragePowerActorState,
 		})
-	td := builder.Build(t)
+	td := builder.Build(h)
 
 	balance := abi_spec.NewTokenAmount(9_999)
 	send := abi_spec.NewTokenAmount(10_000)
 
-	existingAccountAddr, _ := td.NewAccountActor(address.BLS, balance)
+	existingAccountAddr, _ := td.NewAccountActor(address.SECP256K1, balance)
 	td.ApplyMessageExpectReceipt(
-		td.MessageProducer.Transfer(utils.NewBLSAddr(t, 1), existingAccountAddr, chain.Value(send), chain.Nonce(0)),
+		td.MessageProducer.Transfer(drivers.NewSECP256K1Addr(h, "pubkey"), existingAccountAddr, chain.Value(send), chain.Nonce(0)),
 		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
 	)
 

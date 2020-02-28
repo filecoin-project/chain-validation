@@ -2,7 +2,6 @@ package drivers
 
 import (
 	"context"
-	"testing"
 
 	"github.com/filecoin-project/go-address"
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
@@ -18,7 +17,6 @@ import (
 	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
 
 	"github.com/filecoin-project/chain-validation/state"
-	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 var (
@@ -28,15 +26,15 @@ var (
 
 // StateDriver mutates and inspects a state.
 type StateDriver struct {
-	tb testing.TB
+	h  *ValidationHarness
 	st state.VMWrapper
 	w  state.KeyManager
 	rs state.RandomnessSource
 }
 
 // NewStateDriver creates a new state driver for a state.
-func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager, rs state.RandomnessSource) *StateDriver {
-	return &StateDriver{tb, st, w, rs}
+func NewStateDriver(h *ValidationHarness, st state.VMWrapper, w state.KeyManager, rs state.RandomnessSource) *StateDriver {
+	return &StateDriver{h, st, w, rs}
 }
 
 // State returns the state.
@@ -54,19 +52,19 @@ func (d *StateDriver) Randomness() state.RandomnessSource {
 
 func (d *StateDriver) GetState(c cid.Cid, out cbg.CBORUnmarshaler) {
 	err := d.st.Store().Get(context.Background(), c, out)
-	require.NoError(d.tb, err)
+	require.NoError(d.h, err)
 }
 
 func (d *StateDriver) PutState(in cbg.CBORMarshaler) cid.Cid {
 	c, err := d.st.Store().Put(context.Background(), in)
-	require.NoError(d.tb, err)
+	require.NoError(d.h, err)
 	return c
 }
 
 func (d *StateDriver) GetActorState(actorAddr address.Address, out cbg.CBORUnmarshaler) {
 	actor, err := d.State().Actor(actorAddr)
-	require.NoError(d.tb, err)
-	require.NotNil(d.tb, actor)
+	require.NoError(d.h, err)
+	require.NotNil(d.h, actor)
 
 	d.GetState(actor.Head(), out)
 }
@@ -80,11 +78,11 @@ func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil 
 	case address.BLS:
 		addr = d.w.NewBLSAccountAddress()
 	default:
-		require.FailNowf(d.tb, "unsupported address", "protocol for account actor: %v", addrType)
+		require.FailNowf(d.h, "unsupported address", "protocol for account actor: %v", addrType)
 	}
 
 	_, idAddr, err := d.st.CreateActor(builtin_spec.AccountActorCodeID, addr, balanceAttoFil, &account_spec.State{Address: addr})
-	require.NoError(d.tb, err)
+	require.NoError(d.h, err)
 	return addr, idAddr
 }
 
@@ -94,8 +92,8 @@ func (d *StateDriver) newMinerAccountActor() address.Address {
 	// creat a miner, owner, and its worker
 	_, minerOwnerID := d.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 	_, minerWorkerID := d.NewAccountActor(address.BLS, big_spec.Zero())
-	expectedMinerActorIDAddress := utils.NewIDAddr(d.tb, utils.IdFromAddress(minerWorkerID)+1)
-	minerActorAddrs := computeInitActorExecReturn(d.tb, builtin_spec.StoragePowerActorAddr, 0, expectedMinerActorIDAddress)
+	expectedMinerActorIDAddress := NewIDAddr(d.h, IdFromAddress(minerWorkerID)+1)
+	minerActorAddrs := computeInitActorExecReturn(d.h, builtin_spec.StoragePowerActorAddr, 0, expectedMinerActorIDAddress)
 
 	// create the miner actor so it exists in the init actors map
 	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), &miner_spec.State{
@@ -115,9 +113,9 @@ func (d *StateDriver) newMinerAccountActor() address.Address {
 			NumConsecutiveFailures: 0,
 		},
 	})
-	require.NoError(d.tb, err)
+	require.NoError(d.h, err)
 	// sanity check above code
-	require.Equal(d.tb, expectedMinerActorIDAddress, minerActorIDAddr)
+	require.Equal(d.h, expectedMinerActorIDAddress, minerActorIDAddr)
 	// great the miner actor has been created, exists in the state tree, and has an entry in the init actor
 	// now we need to update the storage power actor such that it is aware of the miner
 	// get the spa state
@@ -127,7 +125,7 @@ func (d *StateDriver) newMinerAccountActor() address.Address {
 	// set the miners balance in the storage power actors state
 	table := adt_spec.AsBalanceTable(d.State().Store(), spa.EscrowTable)
 	err = table.Set(minerActorIDAddr, big_spec.Zero())
-	require.NoError(d.tb, err)
+	require.NoError(d.h, err)
 	spa.EscrowTable = table.Root()
 
 	// set the miners claim in the storage power actors state
@@ -136,7 +134,7 @@ func (d *StateDriver) newMinerAccountActor() address.Address {
 		Power:  abi_spec.NewStoragePower(0),
 		Pledge: abi_spec.NewTokenAmount(0),
 	})
-	require.NoError(d.tb, err)
+	require.NoError(d.h, err)
 	spa.Claims = hm.Root()
 
 	// now update its state in the tree

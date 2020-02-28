@@ -1,4 +1,6 @@
-package actors
+package message
+
+/*
 
 import (
 	"context"
@@ -16,7 +18,6 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
-	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 func TestPaych(t *testing.T, factory state.Factories) {
@@ -41,7 +42,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		receiver, receiverID := td.NewAccountActor(drivers.SECP, initialBal) // 101
 
 		// the _expected_ address of the payment channel
-		paychAddr := utils.NewIDAddr(t, 102) // 102
+		paychAddr := drivers.NewIDAddr(t, 102) // 102
 		createRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
 
 		// init actor creates the payment channel
@@ -76,7 +77,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(drivers.SECP, initialBal) // 101
 
 		// the _expected_ address of the payment channel
-		paychAddr := utils.NewIDAddr(t, 102) // 102
+		paychAddr := drivers.NewIDAddr(t, 102) // 102
 		createRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
@@ -111,7 +112,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		// create the payment channel
 		sender, _ := td.NewAccountActor(drivers.SECP, initialBal)   // 101
 		receiver, _ := td.NewAccountActor(drivers.SECP, initialBal) // 102
-		paychAddr := utils.NewIDAddr(t, 103)                        // 103
+		paychAddr := drivers.NewIDAddr(t, 103)                      // 103
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: paychAddr.Bytes(), GasUsed: big_spec.Zero()},
@@ -131,3 +132,5 @@ func TestPaych(t *testing.T, factory state.Factories) {
 	})
 
 }
+
+*/

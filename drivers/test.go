@@ -200,15 +200,15 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price big_spec.Int) *TestDriverB
 	return b
 }
 
-func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
-	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewKeyManager(), b.factory.NewRandomnessSource())
+func (b *TestDriverBuilder) Build(h *ValidationHarness) *TestDriver {
+	sd := NewStateDriver(h, b.factory.NewState(), b.factory.NewKeyManager(), b.factory.NewRandomnessSource())
 
 	err := initializeStoreWithAdtRoots(sd.st.Store())
-	require.NoError(t, err)
+	require.NoError(h, err)
 
 	for _, acts := range b.actorStates {
 		_, _, err := sd.State().CreateActor(acts.Code, acts.Addr, acts.Balance, acts.State)
-		require.NoError(t, err)
+		require.NoError(h, err)
 	}
 
 	minerActorIDAddr := sd.newMinerAccountActor()
@@ -218,7 +218,6 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	validator := chain.NewValidator(b.factory)
 
 	return &TestDriver{
-		T:               t,
 		StateDriver:     sd,
 		MessageProducer: producer,
 		Validator:       validator,
@@ -232,7 +231,6 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 type TestDriver struct {
 	*StateDriver
 
-	T                    testing.TB
 	MessageProducer      *chain.MessageProducer
 	TipSetMessageBuilder *chain.TipSetMessageBuilder
 	Validator            *chain.Validator
@@ -244,31 +242,31 @@ type TestDriver struct {
 // TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
 func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, receipt types.MessageReceipt) {
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
-	assert.NoError(td.T, err)
+	assert.NoError(td.h, err)
 
 	if td.Config.ValidateGas() {
-		assert.Equal(td.T, receipt.GasUsed, msgReceipt.GasUsed)
+		assert.Equal(td.h, receipt.GasUsed, msgReceipt.GasUsed)
 	}
 	if td.Config.ValidateExitCode() {
-		assert.Equal(td.T, receipt.ExitCode, msgReceipt.ExitCode)
+		assert.Equal(td.h, receipt.ExitCode, msgReceipt.ExitCode)
 	}
 	if td.Config.ValidateReturnValue() {
-		assert.Equal(td.T, receipt.ReturnValue, msgReceipt.ReturnValue)
+		assert.Equal(td.h, receipt.ReturnValue, msgReceipt.ReturnValue)
 	}
 }
 
 // AssertBalance checks an actor has an expected balance.
 func (td *TestDriver) AssertBalance(addr address.Address, expected big_spec.Int) {
 	actr, err := td.State().Actor(addr)
-	assert.NoError(td.T, err)
-	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
+	assert.NoError(td.h, err)
+	assert.Equal(td.h, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
 }
 
 func (td *TestDriver) AssertBalanceWithGas(addr address.Address, expected, gasUsed big_spec.Int) {
 	if td.Config.ValidateGas() {
 		actr, err := td.State().Actor(addr)
-		require.NoError(td.T, err)
-		assert.Equal(td.T, expected, big_spec.Sub(actr.Balance(), gasUsed), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
+		require.NoError(td.h, err)
+		assert.Equal(td.h, expected, big_spec.Sub(actr.Balance(), gasUsed), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
 	}
 }
 
@@ -279,10 +277,10 @@ func (td *TestDriver) AssertMultisigTransaction(multisigAddr address.Address, tx
 	txnMap := adt_spec.AsMap(td.State().Store(), msState.PendingTxns)
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
-	assert.NoError(td.T, err)
-	assert.True(td.T, found)
+	assert.NoError(td.h, err)
+	assert.True(td.h, found)
 
-	assert.Equal(td.T, txn, actualTxn)
+	assert.Equal(td.h, txn, actualTxn)
 }
 
 func (td *TestDriver) AssertMultisigContainsTransaction(multisigAddr address.Address, txnID multisig_spec.TxnID, contains bool) {
@@ -292,41 +290,41 @@ func (td *TestDriver) AssertMultisigContainsTransaction(multisigAddr address.Add
 	txnMap := adt_spec.AsMap(td.State().Store(), msState.PendingTxns)
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
-	require.NoError(td.T, err)
-	assert.Equal(td.T, contains, found)
+	require.NoError(td.h, err)
+	assert.Equal(td.h, contains, found)
 
 }
 
 func (td *TestDriver) AssertMultisigState(multisigAddr address.Address, expected multisig_spec.State) {
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
-	assert.NotNil(td.T, msState)
-	assert.Equal(td.T, expected.InitialBalance, msState.InitialBalance, fmt.Sprintf("expected InitialBalance: %v, actual InitialBalance: %v", expected.InitialBalance, msState.InitialBalance))
-	assert.Equal(td.T, expected.NextTxnID, msState.NextTxnID, fmt.Sprintf("expected NextTxnID: %v, actual NextTxnID: %v", expected.NextTxnID, msState.NextTxnID))
-	assert.Equal(td.T, expected.NumApprovalsThreshold, msState.NumApprovalsThreshold, fmt.Sprintf("expected NumApprovalsThreshold: %v, actual NumApprovalsThreshold: %v", expected.NumApprovalsThreshold, msState.NumApprovalsThreshold))
-	assert.Equal(td.T, expected.StartEpoch, msState.StartEpoch, fmt.Sprintf("expected StartEpoch: %v, actual StartEpoch: %v", expected.StartEpoch, msState.StartEpoch))
-	assert.Equal(td.T, expected.UnlockDuration, msState.UnlockDuration, fmt.Sprintf("expected UnlockDuration: %v, actual UnlockDuration: %v", expected.UnlockDuration, msState.UnlockDuration))
+	assert.NotNil(td.h, msState)
+	assert.Equal(td.h, expected.InitialBalance, msState.InitialBalance, fmt.Sprintf("expected InitialBalance: %v, actual InitialBalance: %v", expected.InitialBalance, msState.InitialBalance))
+	assert.Equal(td.h, expected.NextTxnID, msState.NextTxnID, fmt.Sprintf("expected NextTxnID: %v, actual NextTxnID: %v", expected.NextTxnID, msState.NextTxnID))
+	assert.Equal(td.h, expected.NumApprovalsThreshold, msState.NumApprovalsThreshold, fmt.Sprintf("expected NumApprovalsThreshold: %v, actual NumApprovalsThreshold: %v", expected.NumApprovalsThreshold, msState.NumApprovalsThreshold))
+	assert.Equal(td.h, expected.StartEpoch, msState.StartEpoch, fmt.Sprintf("expected StartEpoch: %v, actual StartEpoch: %v", expected.StartEpoch, msState.StartEpoch))
+	assert.Equal(td.h, expected.UnlockDuration, msState.UnlockDuration, fmt.Sprintf("expected UnlockDuration: %v, actual UnlockDuration: %v", expected.UnlockDuration, msState.UnlockDuration))
 
 	for _, e := range expected.Signers {
-		assert.Contains(td.T, msState.Signers, e, fmt.Sprintf("expected Signer: %v, actual Signer: %v", e, msState.Signers))
+		assert.Contains(td.h, msState.Signers, e, fmt.Sprintf("expected Signer: %v, actual Signer: %v", e, msState.Signers))
 	}
 }
 
 func (td *TestDriver) ComputeInitActorExecReturn(from address.Address, callSeq uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
-	return computeInitActorExecReturn(td.T, from, callSeq, expectedNewAddr)
+	return computeInitActorExecReturn(td.h, from, callSeq, expectedNewAddr)
 }
 
-func computeInitActorExecReturn(t testing.TB, from address.Address, callSeq uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
+func computeInitActorExecReturn(h *ValidationHarness, from address.Address, callSeq uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
 	buf := new(bytes.Buffer)
 
 	n, err := buf.Write(from.Bytes())
-	require.NoError(t, err)
-	require.Equal(t, n, len(from.Bytes()))
+	require.NoError(h, err)
+	require.Equal(h, n, len(from.Bytes()))
 
-	require.NoError(t, binary.Write(buf, binary.BigEndian, callSeq))
+	require.NoError(h, binary.Write(buf, binary.BigEndian, callSeq))
 
 	out, err := address.NewActorAddress(buf.Bytes())
-	require.NoError(t, err)
+	require.NoError(h, err)
 
 	return init_spec.ExecReturn{
 		IDAddress:     expectedNewAddr,
@@ -343,7 +341,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 	)
 	/* Assert the actor state was setup as expected */
 	pendingTxMap, err := adt_spec.MakeEmptyMap(newMockStore())
-	require.NoError(td.T, err)
+	require.NoError(td.h, err)
 	td.AssertMultisigState(multisigAddr, multisig_spec.State{
 		NextTxnID:      0,
 		InitialBalance: value,
@@ -356,4 +354,40 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 		PendingTxns: pendingTxMap.Root(),
 	})
 	td.AssertBalance(multisigAddr, value)
+}
+
+type ValidationHarness struct {
+	t         testing.TB
+	hasFailed bool
+}
+
+func NewValidationHarness(t testing.TB) *ValidationHarness {
+	return &ValidationHarness{
+		t:         t,
+		hasFailed: false,
+	}
+}
+
+func (h *ValidationHarness) Fail() {
+	h.hasFailed = true
+}
+
+func (h *ValidationHarness) Failed() bool {
+	return h.hasFailed
+}
+
+func (h *ValidationHarness) Errorf(format string, args ...interface{}) {
+	h.t.Logf(format, args)
+	h.hasFailed = true
+
+}
+
+func (h *ValidationHarness) Fatal(args ...interface{}) {
+	h.t.Log(fmt.Sprintln(args...))
+	h.FailNow()
+}
+
+// TODO maybe panic and recover in the call later
+func (h *ValidationHarness) FailNow() {
+	h.t.FailNow()
 }

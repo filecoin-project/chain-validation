@@ -1,5 +1,6 @@
-package transfer
+package message
 
+/*
 import (
 	"context"
 	"testing"
@@ -17,7 +18,6 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
-	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 type valueTransferTestCases struct {
@@ -35,8 +35,8 @@ type valueTransferTestCases struct {
 }
 
 func TestValueTransferSimple(t *testing.T, factories state.Factories) {
-	alice := utils.NewSECP256K1Addr(t, "1")
-	bob := utils.NewSECP256K1Addr(t, "2")
+	alice := drivers.NewSECP256K1Addr(t, "1")
+	bob := drivers.NewSECP256K1Addr(t, "2")
 
 	builder := drivers.NewBuilder(context.Background(), factories).
 		WithDefaultGasLimit(1_000_000).
@@ -216,3 +216,5 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		)
 	})
 }
+
+*/

@@ -1,5 +1,7 @@
 package message
 
+/*
+
 import (
 	"context"
 	"testing"
@@ -16,7 +18,6 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
-	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
@@ -55,7 +56,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		)
 
 		// Expect Message application to fail due to lack of gas when sender address is unknown
-		unknown := utils.NewIDAddr(t, 10000000)
+		unknown := drivers.NewIDAddr(t, 10000000)
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
 			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
@@ -74,7 +75,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		)
 
 		// Expect message application to fail due to unknow actor when call seq num is also incorrect
-		unknown := utils.NewIDAddr(t, 10000000)
+		unknown := drivers.NewIDAddr(t, 10000000)
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(1)),
 			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
@@ -101,7 +102,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		receiver, receiverID := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// the _expected_ address of the payment channel
-		paychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
+		paychAddr := drivers.NewIDAddr(t, drivers.IdFromAddress(receiverID)+1)
 		createRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
@@ -124,3 +125,5 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		)
 	})
 }
+
+*/
