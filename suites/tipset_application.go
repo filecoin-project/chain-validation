@@ -5,9 +5,7 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
-	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
-	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/crypto"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/stretchr/testify/require"
@@ -16,7 +14,6 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
-	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
@@ -28,21 +25,12 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 	t.Run("apply a single BLS message", func(t *testing.T) {
 		td := builder.Build(t)
 
-		// creat a miner, owner, and its worker
-		minerOwner, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
-		minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, big_spec.Zero())
-		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1))
-		td.ApplyMessageExpectReceipt(
-			td.MessageProducer.CreateMinerActor(minerOwner, minerWorker, abi_spec.SectorSize(1), "peerId", chain.Nonce(0), chain.Value(big_spec.NewInt(1_000_000))),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&expectedRet), GasUsed: big_spec.Zero()},
-		)
-
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
 			// miner addresses are required to use ID protocol.
-			WithMiner(expectedRet.IDAddress).
+			WithMiner(td.ExeCtx.Miner).
 			// send value from sender to receiver
 			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 			Build()
@@ -60,21 +48,12 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 	t.Run("apply a duplicated BLS message", func(t *testing.T) {
 		td := builder.Build(t)
 
-		// creat a miner, owner, and its worker
-		minerOwner, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
-		minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, big_spec.Zero())
-		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1))
-		td.ApplyMessageExpectReceipt(
-			td.MessageProducer.CreateMinerActor(minerOwner, minerWorker, abi_spec.SectorSize(1), "peerId", chain.Nonce(0), chain.Value(big_spec.NewInt(1_000_000))),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&expectedRet), GasUsed: big_spec.Zero()},
-		)
-
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
 			// miner addresses are required to use ID protocol.
-			WithMiner(expectedRet.IDAddress).
+			WithMiner(td.ExeCtx.Miner).
 			// duplicate the message
 			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
@@ -94,21 +73,12 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 	t.Run("apply a single SECP message", func(t *testing.T) {
 		td := builder.Build(t)
 
-		// creat a miner, owner, and its worker
-		minerOwner, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
-		minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, big_spec.Zero())
-		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1))
-		td.ApplyMessageExpectReceipt(
-			td.MessageProducer.CreateMinerActor(minerOwner, minerWorker, abi_spec.SectorSize(1), "peerId", chain.Nonce(0), chain.Value(big_spec.NewInt(1_000_000))),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&expectedRet), GasUsed: big_spec.Zero()},
-		)
-
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
 			// miner addresses are required to use ID protocol.
-			WithMiner(expectedRet.IDAddress).
+			WithMiner(td.ExeCtx.Miner).
 			// send value from sender to receiver
 			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
 			Build()
@@ -126,21 +96,12 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 	t.Run("apply duplicate SECP message", func(t *testing.T) {
 		td := builder.Build(t)
 
-		// creat a miner, owner, and its worker
-		minerOwner, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
-		minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, big_spec.Zero())
-		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1))
-		td.ApplyMessageExpectReceipt(
-			td.MessageProducer.CreateMinerActor(minerOwner, minerWorker, abi_spec.SectorSize(1), "peerId", chain.Nonce(0), chain.Value(big_spec.NewInt(1_000_000))),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&expectedRet), GasUsed: big_spec.Zero()},
-		)
-
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
 			// miner addresses are required to use ID protocol.
-			WithMiner(expectedRet.IDAddress).
+			WithMiner(td.ExeCtx.Miner).
 			// send value from sender to receiver
 			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
 			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
@@ -159,21 +120,12 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 	t.Run("apply duplicate BLS and SECP message", func(t *testing.T) {
 		td := builder.Build(t)
 
-		// creat a miner, owner, and its worker
-		minerOwner, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
-		minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, big_spec.Zero())
-		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1))
-		td.ApplyMessageExpectReceipt(
-			td.MessageProducer.CreateMinerActor(minerOwner, minerWorker, abi_spec.SectorSize(1), "peerId", chain.Nonce(0), chain.Value(big_spec.NewInt(1_000_000))),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&expectedRet), GasUsed: big_spec.Zero()},
-		)
-
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
 			// miner addresses are required to use ID protocol.
-			WithMiner(expectedRet.IDAddress).
+			WithMiner(td.ExeCtx.Miner).
 			// send value from sender to receiver
 			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
 			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
