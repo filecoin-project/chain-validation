@@ -6,6 +6,10 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
+	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+	miner_spec "github.com/filecoin-project/specs-actors/actors/builtin/miner"
+	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
+	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -14,6 +18,7 @@ import (
 	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
 
 	"github.com/filecoin-project/chain-validation/state"
+	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 var (
@@ -52,6 +57,12 @@ func (d *StateDriver) GetState(c cid.Cid, out cbg.CBORUnmarshaler) {
 	require.NoError(d.tb, err)
 }
 
+func (d *StateDriver) PutState(in cbg.CBORMarshaler) cid.Cid {
+	c, err := d.st.Store().Put(context.Background(), in)
+	require.NoError(d.tb, err)
+	return c
+}
+
 func (d *StateDriver) GetActorState(actorAddr address.Address, out cbg.CBORUnmarshaler) {
 	actor, err := d.State().Actor(actorAddr)
 	require.NoError(d.tb, err)
@@ -75,4 +86,62 @@ func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil 
 	_, idAddr, err := d.st.CreateActor(builtin_spec.AccountActorCodeID, addr, balanceAttoFil, &account_spec.State{Address: addr})
 	require.NoError(d.tb, err)
 	return addr, idAddr
+}
+
+// create miner without sending a message. modify the init and power actor manually
+func (d *StateDriver) newMinerAccountActor() address.Address {
+
+	// creat a miner, owner, and its worker
+	_, minerOwnerID := d.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
+	_, minerWorkerID := d.NewAccountActor(address.BLS, big_spec.Zero())
+	expectedMinerActorIDAddress := utils.NewIDAddr(d.tb, utils.IdFromAddress(minerWorkerID)+1)
+	minerActorAddrs := computeInitActorExecReturn(d.tb, builtin_spec.StoragePowerActorAddr, 0, expectedMinerActorIDAddress)
+
+	// create the miner actor so it exists in the init actors map
+	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), &miner_spec.State{
+		PreCommittedSectors: EmptyMapCid,
+		Sectors:             EmptyArrayCid,
+		FaultSet:            abi_spec.NewBitField(),
+		ProvingSet:          EmptyArrayCid,
+		Info: miner_spec.MinerInfo{
+			Owner:            minerOwnerID,
+			Worker:           minerWorkerID,
+			PendingWorkerKey: nil,
+			PeerId:           "chain-validation",
+			SectorSize:       0,
+		},
+		PoStState: miner_spec.PoStState{
+			ProvingPeriodStart:     -1,
+			NumConsecutiveFailures: 0,
+		},
+	})
+	require.NoError(d.tb, err)
+	// sanity check above code
+	require.Equal(d.tb, expectedMinerActorIDAddress, minerActorIDAddr)
+	// great the miner actor has been created, exists in the state tree, and has an entry in the init actor
+	// now we need to update the storage power actor such that it is aware of the miner
+	// get the spa state
+	var spa power_spec.State
+	d.GetActorState(builtin_spec.StoragePowerActorAddr, &spa)
+
+	// set the miners balance in the storage power actors state
+	table := adt_spec.AsBalanceTable(d.State().Store(), spa.EscrowTable)
+	err = table.Set(minerActorIDAddr, big_spec.Zero())
+	require.NoError(d.tb, err)
+	spa.EscrowTable = table.Root()
+
+	// set the miners claim in the storage power actors state
+	hm := adt_spec.AsMap(d.State().Store(), spa.Claims)
+	err = hm.Put(adt_spec.AddrKey(minerActorIDAddr), &power_spec.Claim{
+		Power:  abi_spec.NewStoragePower(0),
+		Pledge: abi_spec.NewTokenAmount(0),
+	})
+	require.NoError(d.tb, err)
+	spa.Claims = hm.Root()
+
+	// now update its state in the tree
+	d.PutState(&spa)
+
+	// tada a miner has been created without apply a message
+	return minerActorIDAddr
 }

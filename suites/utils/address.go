@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	addr "github.com/filecoin-project/go-address"
+	"github.com/multiformats/go-varint"
 )
 
+// If you use this method while writing a test you are more than likely doing something wrong.
 func NewIDAddr(t testing.TB, id uint64) addr.Address {
 	address, err := addr.NewIDAddress(id)
 	if err != nil {
@@ -43,4 +45,15 @@ func NewActorAddr(t testing.TB, data string) addr.Address {
 		t.Fatal(err)
 	}
 	return address
+}
+
+func IdFromAddress(a addr.Address) uint64 {
+	if a.Protocol() != addr.ID {
+		panic("must be ID protocol address")
+	}
+	id, _, err := varint.FromUvarint(a.Payload())
+	if err != nil {
+		panic(err)
+	}
+	return id
 }

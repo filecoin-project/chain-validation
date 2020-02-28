@@ -45,6 +45,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			drivers.DefaultInitActorState,
 			drivers.DefaultRewardActorState,
 			drivers.DefaultBurntFundsActorState,
+			drivers.DefaultStoragePowerActorState,
 		})
 
 	testCases := []valueTransferTestCases{
@@ -165,6 +166,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 			drivers.DefaultInitActorState,
 			drivers.DefaultRewardActorState,
 			drivers.DefaultBurntFundsActorState,
+			drivers.DefaultStoragePowerActorState,
 		})
 
 	t.Run("self transfer", func(t *testing.T) {

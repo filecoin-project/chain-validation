@@ -25,6 +25,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			drivers.DefaultInitActorState,
 			drivers.DefaultRewardActorState,
 			drivers.DefaultBurntFundsActorState,
+			drivers.DefaultStoragePowerActorState,
 		})
 
 	testCases := []struct {
@@ -112,6 +113,7 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 			drivers.DefaultInitActorState,
 			drivers.DefaultRewardActorState,
 			drivers.DefaultBurntFundsActorState,
+			drivers.DefaultStoragePowerActorState,
 		}).Build(t)
 
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
@@ -119,10 +121,10 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 
 	sender, senderID := td.NewAccountActor(drivers.SECP, initialBal)
 
-	receiver, _ := td.NewAccountActor(drivers.SECP, initialBal)
+	receiver, receiverID := td.NewAccountActor(drivers.SECP, initialBal)
 
-	firstPaychAddr := utils.NewIDAddr(t, 102)
-	secondPaychAddr := utils.NewIDAddr(t, 103)
+	firstPaychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
+	secondPaychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+2)
 
 	firstInitRet := td.ComputeInitActorExecReturn(senderID, 0, firstPaychAddr)
 	secondInitRet := td.ComputeInitActorExecReturn(senderID, 1, secondPaychAddr)
