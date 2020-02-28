@@ -244,23 +244,23 @@ type TestDriver struct {
 // TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
 func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, receipt types.MessageReceipt) {
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
-	require.NoError(td.T, err)
+	assert.NoError(td.T, err)
 
 	if td.Config.ValidateGas() {
-		require.Equal(td.T, receipt.GasUsed, msgReceipt.GasUsed)
+		assert.Equal(td.T, receipt.GasUsed, msgReceipt.GasUsed)
 	}
 	if td.Config.ValidateExitCode() {
-		require.Equal(td.T, receipt.ExitCode, msgReceipt.ExitCode)
+		assert.Equal(td.T, receipt.ExitCode, msgReceipt.ExitCode)
 	}
 	if td.Config.ValidateReturnValue() {
-		require.Equal(td.T, receipt.ReturnValue, msgReceipt.ReturnValue)
+		assert.Equal(td.T, receipt.ReturnValue, msgReceipt.ReturnValue)
 	}
 }
 
 // AssertBalance checks an actor has an expected balance.
 func (td *TestDriver) AssertBalance(addr address.Address, expected big_spec.Int) {
 	actr, err := td.State().Actor(addr)
-	require.NoError(td.T, err)
+	assert.NoError(td.T, err)
 	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
 }
 

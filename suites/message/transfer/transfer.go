@@ -1,4 +1,4 @@
-package suites
+package transfer
 
 import (
 	"context"

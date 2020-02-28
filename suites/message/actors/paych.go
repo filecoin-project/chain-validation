@@ -1,4 +1,4 @@
-package suites
+package actors
 
 import (
 	"context"
