@@ -167,7 +167,6 @@ type TestDriverBuilder struct {
 
 	actorStates []ActorState
 
-	defaultMiner    address.Address
 	defaultGasPrice big_spec.Int
 	defaultGasLimit int64
 }
@@ -212,7 +211,9 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		require.NoError(t, err)
 	}
 
-	exeCtx := types.NewExecutionContext(1, b.defaultMiner)
+	minerActorIDAddr := sd.newMinerAccountActor()
+
+	exeCtx := types.NewExecutionContext(1, minerActorIDAddr)
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
 	validator := chain.NewValidator(b.factory)
 
@@ -225,6 +226,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 
 		Config: b.factory.NewValidationConfig(),
 	}
+
 }
 
 type TestDriver struct {
@@ -311,21 +313,26 @@ func (td *TestDriver) AssertMultisigState(multisigAddr address.Address, expected
 }
 
 func (td *TestDriver) ComputeInitActorExecReturn(from address.Address, callSeq uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
+	return computeInitActorExecReturn(td.T, from, callSeq, expectedNewAddr)
+}
+
+func computeInitActorExecReturn(t testing.TB, from address.Address, callSeq uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
 	buf := new(bytes.Buffer)
 
 	n, err := buf.Write(from.Bytes())
-	require.NoError(td.T, err)
-	require.Equal(td.T, n, len(from.Bytes()))
+	require.NoError(t, err)
+	require.Equal(t, n, len(from.Bytes()))
 
-	require.NoError(td.T, binary.Write(buf, binary.BigEndian, callSeq))
+	require.NoError(t, binary.Write(buf, binary.BigEndian, callSeq))
 
 	out, err := address.NewActorAddress(buf.Bytes())
-	require.NoError(td.T, err)
+	require.NoError(t, err)
 
 	return init_spec.ExecReturn{
 		IDAddress:     expectedNewAddr,
 		RobustAddress: out,
 	}
+
 }
 
 func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt types.MessageReceipt) {

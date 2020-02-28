@@ -10,7 +10,6 @@ import (
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/crypto"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
-	"github.com/multiformats/go-varint"
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/chain"
@@ -32,7 +31,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 		// creat a miner, owner, and its worker
 		minerOwner, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 		minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, big_spec.Zero())
-		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, idFromAddress(minerWorkerID)+1))
+		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1))
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreateMinerActor(minerOwner, minerWorker, abi_spec.SectorSize(1), "peerId", chain.Nonce(0), chain.Value(big_spec.NewInt(1_000_000))),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&expectedRet), GasUsed: big_spec.Zero()},
@@ -64,7 +63,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 		// creat a miner, owner, and its worker
 		minerOwner, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 		minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, big_spec.Zero())
-		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, idFromAddress(minerWorkerID)+1))
+		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1))
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreateMinerActor(minerOwner, minerWorker, abi_spec.SectorSize(1), "peerId", chain.Nonce(0), chain.Value(big_spec.NewInt(1_000_000))),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&expectedRet), GasUsed: big_spec.Zero()},
@@ -98,7 +97,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 		// creat a miner, owner, and its worker
 		minerOwner, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 		minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, big_spec.Zero())
-		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, idFromAddress(minerWorkerID)+1))
+		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1))
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreateMinerActor(minerOwner, minerWorker, abi_spec.SectorSize(1), "peerId", chain.Nonce(0), chain.Value(big_spec.NewInt(1_000_000))),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&expectedRet), GasUsed: big_spec.Zero()},
@@ -130,7 +129,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 		// creat a miner, owner, and its worker
 		minerOwner, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 		minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, big_spec.Zero())
-		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, idFromAddress(minerWorkerID)+1))
+		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1))
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreateMinerActor(minerOwner, minerWorker, abi_spec.SectorSize(1), "peerId", chain.Nonce(0), chain.Value(big_spec.NewInt(1_000_000))),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&expectedRet), GasUsed: big_spec.Zero()},
@@ -163,7 +162,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 		// creat a miner, owner, and its worker
 		minerOwner, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 		minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, big_spec.Zero())
-		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, idFromAddress(minerWorkerID)+1))
+		expectedRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1))
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreateMinerActor(minerOwner, minerWorker, abi_spec.SectorSize(1), "peerId", chain.Nonce(0), chain.Value(big_spec.NewInt(1_000_000))),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&expectedRet), GasUsed: big_spec.Zero()},
@@ -190,17 +189,6 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
 
-}
-
-func idFromAddress(a address.Address) uint64 {
-	if a.Protocol() != address.ID {
-		panic("must be ID protocol address")
-	}
-	id, _, err := varint.FromUvarint(a.Payload())
-	if err != nil {
-		panic(err)
-	}
-	return id
 }
 
 // TODO produce a valid signature

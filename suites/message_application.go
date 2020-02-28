@@ -27,6 +27,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 			drivers.DefaultInitActorState,
 			drivers.DefaultRewardActorState,
 			drivers.DefaultBurntFundsActorState,
+			drivers.DefaultStoragePowerActorState,
 		})
 
 	var aliceBal = abi_spec.NewTokenAmount(1_000_000_000)
@@ -95,12 +96,12 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		}
 
 		// will create and send on payment channel
-		sender, senderID := td.NewAccountActor(drivers.SECP, initialBal) // 100
+		sender, senderID := td.NewAccountActor(drivers.SECP, initialBal)
 		// will be receiver on paych
-		receiver, _ := td.NewAccountActor(drivers.SECP, initialBal) // 101
+		receiver, receiverID := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// the _expected_ address of the payment channel
-		paychAddr := utils.NewIDAddr(t, 102) // 103
+		paychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
 		createRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
