@@ -41,12 +41,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factories).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithActorState([]drivers.ActorState{
-			drivers.DefaultInitActorState,
-			drivers.DefaultRewardActorState,
-			drivers.DefaultBurntFundsActorState,
-			drivers.DefaultStoragePowerActorState,
-		})
+		WithActorState(drivers.DefaultBuiltinActorsState)
 
 	testCases := []valueTransferTestCases{
 		{
@@ -162,12 +157,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithActorState([]drivers.ActorState{
-			drivers.DefaultInitActorState,
-			drivers.DefaultRewardActorState,
-			drivers.DefaultBurntFundsActorState,
-			drivers.DefaultStoragePowerActorState,
-		})
+		WithActorState(drivers.DefaultBuiltinActorsState)
 
 	t.Run("self transfer", func(t *testing.T) {
 		td := builder.Build(t)
