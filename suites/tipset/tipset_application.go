@@ -1,4 +1,4 @@
-package suites
+package tipset
 
 import (
 	"context"
