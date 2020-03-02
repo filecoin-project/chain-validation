@@ -21,12 +21,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithActorState([]drivers.ActorState{
-			drivers.DefaultInitActorState,
-			drivers.DefaultRewardActorState,
-			drivers.DefaultBurntFundsActorState,
-			drivers.DefaultStoragePowerActorState,
-		})
+		WithActorState(drivers.DefaultBuiltinActorsState)
 
 	testCases := []struct {
 		desc string
@@ -109,12 +104,7 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 	td := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithActorState([]drivers.ActorState{
-			drivers.DefaultInitActorState,
-			drivers.DefaultRewardActorState,
-			drivers.DefaultBurntFundsActorState,
-			drivers.DefaultStoragePowerActorState,
-		}).Build(t)
+		WithActorState(drivers.DefaultBuiltinActorsState).Build(t)
 
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
 	var toSend = abi_spec.NewTokenAmount(10_000)
