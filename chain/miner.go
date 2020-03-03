@@ -55,7 +55,11 @@ func (mp *MessageProducer) MinerDeclareTemporaryFaults(to, from address.Address,
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsMiner.DeclareTemporaryFaults, ser, opts...)
 }
-func (mp *MessageProducer) MinerOnDeferredCronEvent(to, from address.Address, params miner.OnDeferredCronEventParams, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) MinerOnDeferredCronEvent(to, from address.Address, params miner.CronEventPayload, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsMiner.OnDeferredCronEvent, ser, opts...)
+}
+func (mp *MessageProducer) MinerCheckSectorProven(to, from address.Address, params miner.CheckSectorProvenParams, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(&params)
+	return mp.Build(to, from, builtin_spec.MethodsMiner.CheckSectorProven, ser, opts...)
 }
