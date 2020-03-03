@@ -88,7 +88,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			existingAccountAddr, _ := td.NewAccountActor(tc.existingActorType, tc.existingActorBal)
 			td.ApplyMessageExpectReceipt(
 				td.MessageProducer.Transfer(tc.newActorAddr, existingAccountAddr, chain.Value(tc.newActorInitBal), chain.Nonce(0)),
-				types.MessageReceipt{ExitCode: tc.expExitCode, ReturnValue: drivers.EmptyReturnValue, GasUsed: tc.expGasCost},
+				types.MessageReceipt{ExitCode: tc.expExitCode, ReturnValue: nil, GasUsed: tc.expGasCost},
 			)
 
 			// new actor balance will only exist if message was applied successfully.

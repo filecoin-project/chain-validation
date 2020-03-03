@@ -36,7 +36,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// expected address of the actor
-		multisigAddr := utils.NewIDAddr(t, 101)
+		multisigAddr := utils.NewIDAddr(t, 1+utils.IdFromAddress(aliceId))
 
 		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -63,9 +63,9 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal)
 
 		bob, _ := td.NewAccountActor(drivers.SECP, initialBal)
-		outsider, _ := td.NewAccountActor(drivers.SECP, initialBal)
+		outsider, outsiderId := td.NewAccountActor(drivers.SECP, initialBal)
 
-		multisigAddr := utils.NewIDAddr(t, 103)
+		multisigAddr := utils.NewIDAddr(t, 1+utils.IdFromAddress(outsiderId))
 
 		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
 		// create the multisig actor
@@ -140,10 +140,10 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		bob, _ := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// Not Signer
-		outsider, _ := td.NewAccountActor(drivers.SECP, initialBal)
+		outsider, outsiderId := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// Multisig actor address
-		multisigAddr := utils.NewIDAddr(t, 104)
+		multisigAddr := utils.NewIDAddr(t, 1+utils.IdFromAddress(outsiderId))
 
 		// create the multisig actor
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -223,13 +223,13 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		td := builder.Build(t)
 
-		alice, _ := td.NewAccountActor(drivers.SECP, initialBal) // 101
-		bob, _ := td.NewAccountActor(drivers.SECP, initialBal)   // 102
-		chuck, _ := td.NewAccountActor(drivers.SECP, initialBal) // 103
-		duck, _ := td.NewAccountActor(drivers.SECP, initialBal)  // 104
+		alice, _ := td.NewAccountActor(drivers.SECP, initialBal)     // 101
+		bob, _ := td.NewAccountActor(drivers.SECP, initialBal)       // 102
+		chuck, _ := td.NewAccountActor(drivers.SECP, initialBal)     // 103
+		duck, duckId := td.NewAccountActor(drivers.SECP, initialBal) // 104
 		var initialSigners = []address.Address{alice, bob}
 
-		multisigAddr := utils.NewIDAddr(t, 105)
+		multisigAddr := utils.NewIDAddr(t, 1+utils.IdFromAddress(duckId))
 
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
