@@ -129,7 +129,7 @@ func initializeStoreWithAdtRoots(store adt_spec.Store) error {
 	}
 	EmptyMapCid = emptyMap.Root()
 
-	emptyMultiMap, err := adt_spec.MakeEmptyMultiap(store)
+	emptyMultiMap, err := adt_spec.MakeEmptyMultimap(store)
 	if err != nil {
 		return err
 	}
