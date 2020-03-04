@@ -16,7 +16,7 @@ import (
 	"github.com/filecoin-project/chain-validation/state"
 )
 
-func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
+func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
@@ -117,6 +117,7 @@ func TestBlockMessageInfoApplication(t *testing.T, factory state.Factories) {
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
 
+	// This case is near impossible, but exercise anyways.
 	t.Run("apply duplicate BLS and SECP message", func(t *testing.T) {
 		td := builder.Build(t)
 

@@ -245,16 +245,8 @@ type TestDriver struct {
 func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, receipt types.MessageReceipt) {
 	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 	require.NoError(td.T, err)
+	td.AssertReceipt(msgReceipt, receipt)
 
-	if td.Config.ValidateGas() {
-		require.Equal(td.T, receipt.GasUsed, msgReceipt.GasUsed)
-	}
-	if td.Config.ValidateExitCode() {
-		require.Equal(td.T, receipt.ExitCode, msgReceipt.ExitCode)
-	}
-	if td.Config.ValidateReturnValue() {
-		require.Equal(td.T, receipt.ReturnValue, msgReceipt.ReturnValue)
-	}
 }
 
 // AssertBalance checks an actor has an expected balance.
@@ -269,6 +261,18 @@ func (td *TestDriver) AssertBalanceWithGas(addr address.Address, expected, gasUs
 		actr, err := td.State().Actor(addr)
 		require.NoError(td.T, err)
 		assert.Equal(td.T, expected, big_spec.Sub(actr.Balance(), gasUsed), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
+	}
+}
+
+func (td *TestDriver) AssertReceipt(actual, expected types.MessageReceipt) {
+	if td.Config.ValidateGas() {
+		require.Equal(td.T, expected.GasUsed, actual.GasUsed, "Expected GasUsed: %s Actual GasUsed: %s", expected.GasUsed.String(), actual.GasUsed.String())
+	}
+	if td.Config.ValidateExitCode() {
+		require.Equal(td.T, expected.ExitCode, actual.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", expected.ExitCode.Error(), actual.ExitCode.Error())
+	}
+	if td.Config.ValidateReturnValue() {
+		require.Equal(td.T, expected.ReturnValue, actual.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", expected.ReturnValue, actual.ReturnValue)
 	}
 }
 
@@ -319,11 +323,9 @@ func (td *TestDriver) ComputeInitActorExecReturn(from address.Address, callSeq u
 func computeInitActorExecReturn(t testing.TB, from address.Address, callSeq uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
 	buf := new(bytes.Buffer)
 
-	n, err := buf.Write(from.Bytes())
-	require.NoError(t, err)
-	require.Equal(t, n, len(from.Bytes()))
-
+	require.NoError(t, from.MarshalCBOR(buf))
 	require.NoError(t, binary.Write(buf, binary.BigEndian, callSeq))
+	require.NoError(t, binary.Write(buf, binary.BigEndian, uint64(0))) // TODO this is wrong, but lotus does it this way
 
 	out, err := address.NewActorAddress(buf.Bytes())
 	require.NoError(t, err)
