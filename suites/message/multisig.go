@@ -194,7 +194,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		// outsider approves the value transfer alice sent. This fails as they are not a signer.
 		td.ApplyMessageExpectReceipt(
-			td.MessageProducer.MultisigApprove(multisigAddr, outsider, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
+			td.MessageProducer.MultisigApprove(multisigAddr, outsider, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(1000000)},
 		)
 
@@ -311,9 +311,9 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 
 		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal) // 101
-		_, bobId := td.NewAccountActor(drivers.SECP, initialBal)   // 102
-		_, chuckId := td.NewAccountActor(drivers.SECP, initialBal) // 103
-		_, duckId := td.NewAccountActor(drivers.SECP, initialBal)  // 104
+		_, bobId := td.NewAccountActor(drivers.SECP, initialBal)       // 102
+		_, chuckId := td.NewAccountActor(drivers.SECP, initialBal)     // 103
+		_, duckId := td.NewAccountActor(drivers.SECP, initialBal)      // 104
 		var initialSigners = []address.Address{aliceId, bobId, chuckId, duckId}
 
 		multisigAddr := utils.NewIDAddr(t, utils.IdFromAddress(duckId)+1)
@@ -396,7 +396,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 
 		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal) // 101
-		_, bobId := td.NewAccountActor(drivers.SECP, initialBal)   // 102
+		_, bobId := td.NewAccountActor(drivers.SECP, initialBal)       // 102
 		// chuck will be swapped in below
 		_, chuckId := td.NewAccountActor(drivers.SECP, initialBal) // 103
 
