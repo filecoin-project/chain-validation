@@ -7,4 +7,5 @@ type BlockMessagesInfo struct {
 	BLSMessages  []*Message
 	SECPMessages []*SignedMessage
 	Miner        address.Address
+	TicketCount  int64
 }
