@@ -60,8 +60,8 @@ func TestInternalMessageApplicationFailure(t *testing.T, factory state.Factories
 		createMsRet := receipts[0]
 		proposeMsRet := receipts[1]
 
-		td.AssertReceipt(createMsRet, types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: big_spec.Zero()})
-		td.AssertReceipt(proposeMsRet, types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()})
+		td.AssertReceipt(createMsRet, types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: abi_spec.NewTokenAmount(1282)})
+		td.AssertReceipt(proposeMsRet, types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(1235)})
 
 		var msa multisig_spec.State
 		td.GetActorState(multisigAddr, &msa)
