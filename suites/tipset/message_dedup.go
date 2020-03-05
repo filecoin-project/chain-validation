@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
+	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	"github.com/filecoin-project/specs-actors/actors/crypto"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
@@ -39,8 +40,11 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		require.NoError(t, err)
 		require.Len(t, receipts, 1)
 
-		require.Equal(t, exitcode.Ok, receipts[0].ExitCode)
-		require.Equal(t, drivers.EmptyReturnValue, receipts[0].ReturnValue)
+		td.AssertReceipt(types.MessageReceipt{
+			ExitCode:    exitcode.Ok,
+			ReturnValue: drivers.EmptyReturnValue,
+			GasUsed:     abi_spec.NewTokenAmount(128),
+		}, receipts[0])
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
@@ -64,8 +68,11 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		// despite there being 2 messages there is only one receipt.
 		require.Len(t, receipts, 1)
 
-		require.Equal(t, exitcode.Ok, receipts[0].ExitCode)
-		require.Equal(t, drivers.EmptyReturnValue, receipts[0].ReturnValue)
+		td.AssertReceipt(types.MessageReceipt{
+			ExitCode:    exitcode.Ok,
+			ReturnValue: drivers.EmptyReturnValue,
+			GasUsed:     abi_spec.NewTokenAmount(128),
+		}, receipts[0])
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
@@ -87,8 +94,11 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		require.NoError(t, err)
 		require.Len(t, receipts, 1)
 
-		require.Equal(t, exitcode.Ok, receipts[0].ExitCode)
-		require.Equal(t, drivers.EmptyReturnValue, receipts[0].ReturnValue)
+		td.AssertReceipt(types.MessageReceipt{
+			ExitCode:    exitcode.Ok,
+			ReturnValue: drivers.EmptyReturnValue,
+			GasUsed:     abi_spec.NewTokenAmount(128),
+		}, receipts[0])
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
@@ -111,8 +121,11 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		require.NoError(t, err)
 		require.Len(t, receipts, 1)
 
-		require.Equal(t, exitcode.Ok, receipts[0].ExitCode)
-		require.Equal(t, drivers.EmptyReturnValue, receipts[0].ReturnValue)
+		td.AssertReceipt(types.MessageReceipt{
+			ExitCode:    exitcode.Ok,
+			ReturnValue: drivers.EmptyReturnValue,
+			GasUsed:     abi_spec.NewTokenAmount(128),
+		}, receipts[0])
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
@@ -136,8 +149,11 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		require.NoError(t, err)
 		require.Len(t, receipts, 1)
 
-		require.Equal(t, exitcode.Ok, receipts[0].ExitCode)
-		require.Equal(t, drivers.EmptyReturnValue, receipts[0].ReturnValue)
+		td.AssertReceipt(types.MessageReceipt{
+			ExitCode:    exitcode.Ok,
+			ReturnValue: drivers.EmptyReturnValue,
+			GasUsed:     abi_spec.NewTokenAmount(128),
+		}, receipts[0])
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})

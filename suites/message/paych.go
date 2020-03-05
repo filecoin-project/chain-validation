@@ -27,6 +27,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
 	var toSend = abi_spec.NewTokenAmount(10_000)
+	var createPaychGasCost = abi_spec.NewTokenAmount(1416)
 	t.Run("happy path constructor", func(t *testing.T) {
 		td := builder.Build(t)
 
@@ -43,7 +44,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		// init actor creates the payment channel
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: createPaychGasCost},
 		)
 
 		var pcState paych_spec.State
@@ -76,7 +77,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		createRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: createPaychGasCost},
 		)
 
 		td.ApplyMessageExpectReceipt(
@@ -90,7 +91,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 					Signature:   pcSig,
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(319)},
 		)
 		var pcState paych_spec.State
 		td.GetActorState(paychAddr, &pcState)
@@ -111,9 +112,13 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		initRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&initRet), GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&initRet), GasUsed: createPaychGasCost},
 		)
 		td.AssertBalance(paychAddr, toSend)
+
+		updatePaychGasCost := abi_spec.NewTokenAmount(321)
+		settlePayChGasCost := abi_spec.NewTokenAmount(234)
+		collectPaychGasCost := abi_spec.NewTokenAmount(271)
 
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
@@ -129,13 +134,13 @@ func TestPaych(t *testing.T, factory state.Factories) {
 					},
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: updatePaychGasCost},
 		)
 
 		// settle the payment channel so it may be collected
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.PaychSettle(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: settlePayChGasCost},
 		)
 
 		// advance the epoch so the funds may be redeemed.
@@ -143,10 +148,11 @@ func TestPaych(t *testing.T, factory state.Factories) {
 
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.PaychCollect(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Nonce(1), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: collectPaychGasCost},
 		)
 
-		td.AssertBalance(receiver, big_spec.Add(toSend, initialBal))
+		// receiver_balance = initial_balance + paych_send - settle_paych_msg_gas - collect_paych_msg_gas
+		td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), settlePayChGasCost), collectPaychGasCost))
 		td.AssertBalance(paychAddr, big_spec.Zero())
 		var pcState paych_spec.State
 		td.GetActorState(paychAddr, &pcState)
