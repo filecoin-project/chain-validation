@@ -48,7 +48,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: chain.MustSerialize(&createRet),
-				GasUsed:     big_spec.NewInt(1125),
+				GasUsed:     big_spec.NewInt(1420),
 			})
 	})
 
@@ -62,7 +62,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal)
 
-		bob, _ := td.NewAccountActor(drivers.SECP, initialBal)
+		bob, bobId := td.NewAccountActor(drivers.SECP, initialBal)
 		outsider, outsiderId := td.NewAccountActor(drivers.SECP, initialBal)
 
 		multisigAddr := utils.NewIDAddr(t, 1+utils.IdFromAddress(outsiderId))
@@ -71,14 +71,14 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		// create the multisig actor
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
-				Signers:               []address.Address{alice, bob},
+				Signers:               []address.Address{aliceId, bobId},
 				NumApprovalsThreshold: numApprovals,
 				UnlockDuration:        unlockDuration,
 			},
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: chain.MustSerialize(&createRet),
-				GasUsed:     big_spec.NewInt(1387),
+				GasUsed:     big_spec.NewInt(1542),
 			})
 		td.AssertBalance(multisigAddr, valueSend)
 
@@ -95,30 +95,30 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		btxid := chain.MustSerialize(&multisig_spec.TxnIDParams{ID: txID0})
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.MultisigPropose(multisigAddr, alice, pparams, chain.Value(big_spec.Zero()), chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: btxid[1:], GasUsed: big_spec.NewInt(1280)},
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: btxid[1:], GasUsed: big_spec.NewInt(988)},
 		)
 		td.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.Transaction{
 			To:       pparams.To,
 			Value:    pparams.Value,
 			Method:   pparams.Method,
 			Params:   pparams.Params,
-			Approved: []address.Address{alice},
+			Approved: []address.Address{aliceId},
 		})
 
 		// bob cancels alice's transaction. This fails as bob did not create alice's transaction.
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.MultisigCancel(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(1000000)},
+			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(1_000_000)},
 		)
 
 		// alice cancels their transaction. The outsider doesn't receive any FIL, the multisig actor's balance is empty, and the
 		// transaction is canceled.
 		td.ApplyMessageExpectReceipt(
-			td.MessageProducer.MultisigCancel(multisigAddr, alice, multisig_spec.TxnIDParams{ID: txID0}, chain.Nonce(1), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(639)},
+			td.MessageProducer.MultisigCancel(multisigAddr, alice, multisig_spec.TxnIDParams{ID: txID0}, chain.Nonce(2), chain.Value(big_spec.Zero())),
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(483)},
 		)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
-			Signers:               []address.Address{alice, bob},
+			Signers:               []address.Address{aliceId, bobId},
 			NumApprovalsThreshold: numApprovals,
 			NextTxnID:             1,
 			InitialBalance:        valueSend,
@@ -132,12 +132,12 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		var initialBal = abi_spec.NewTokenAmount(200000000000)
 		const numApprovals = 2
-		const unlockDuration = 10
+		const unlockDuration = 1
 		var valueSend = abi_spec.NewTokenAmount(10)
 
 		// Signers
-		alice, _ := td.NewAccountActor(drivers.SECP, initialBal)
-		bob, _ := td.NewAccountActor(drivers.SECP, initialBal)
+		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal)
+		bob, bobId := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// Not Signer
 		outsider, outsiderId := td.NewAccountActor(drivers.SECP, initialBal)
@@ -148,14 +148,14 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		// create the multisig actor
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
-				Signers:               []address.Address{alice, bob},
+				Signers:               []address.Address{aliceId, bobId},
 				NumApprovalsThreshold: numApprovals,
 				UnlockDuration:        unlockDuration,
 			},
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: multisigAddr.Bytes(),
-				GasUsed:     big_spec.NewInt(1387),
+				GasUsed:     big_spec.NewInt(1542),
 			})
 
 		// setup propose expected values and params
@@ -171,14 +171,14 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		btxid := chain.MustSerialize(&multisig_spec.TxnIDParams{ID: txID0})
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.MultisigPropose(multisigAddr, alice, pparams, chain.Value(big_spec.Zero()), chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: btxid[1:], GasUsed: big_spec.NewInt(1280)},
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: btxid[1:], GasUsed: big_spec.NewInt(988)},
 		)
 		td.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.Transaction{
 			To:       pparams.To,
 			Value:    pparams.Value,
 			Method:   pparams.Method,
 			Params:   pparams.Params,
-			Approved: []address.Address{alice},
+			Approved: []address.Address{aliceId},
 		})
 
 		// outsider proposes themselves to receive 'valueSend' FIL. This fails as they are not a signer.
@@ -198,14 +198,17 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(1000000)},
 		)
 
+		// increment the epoch to unlock the funds
+		td.ExeCtx.Epoch++
+
 		// bob approves transfer of 'valueSend' FIL to outsider.
-		txID1 := multisig_spec.TxnID(1)
 		td.ApplyMessageExpectReceipt(
-			td.MessageProducer.MultisigApprove(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID1}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(1691)},
+			td.MessageProducer.MultisigApprove(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.NewInt(1190)},
 		)
+		txID1 := multisig_spec.TxnID(1)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
-			Signers:               []address.Address{alice, bob},
+			Signers:               []address.Address{aliceId, bobId},
 			NumApprovalsThreshold: numApprovals,
 			NextTxnID:             txID1,
 			InitialBalance:        valueSend,
@@ -240,7 +243,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: multisigAddr.Bytes(),
-				GasUsed:     big_spec.NewInt(1508),
+				GasUsed:     big_spec.NewInt(1794),
 			})
 
 		// alice fails to add a singer since this method can only be called by the multisig actors wallet address
@@ -250,7 +253,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 				Increase: false,
 			}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
 			types.MessageReceipt{
-				ExitCode:    exitcode_spec.SysErrActorNotFound, // TODO set the correct error code here, lotus returns 'SysErrActorNotFound`, which is probably wrong.
+				ExitCode:    exitcode_spec.ErrForbidden,
 				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(1_000_000),
 			})
@@ -264,7 +267,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: drivers.EmptyReturnValue,
-				GasUsed:     big_spec.NewInt(517),
+				GasUsed:     big_spec.NewInt(521),
 			})
 		// assert that chuck is now a signer
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
@@ -285,7 +288,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: drivers.EmptyReturnValue,
-				GasUsed:     big_spec.NewInt(583),
+				GasUsed:     big_spec.NewInt(587),
 			})
 		// assert that duck is noe a signer and the number of approvals required increased
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
@@ -307,13 +310,13 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		td := builder.Build(t)
 
-		alice, _ := td.NewAccountActor(drivers.SECP, initialBal) // 101
-		bob, _ := td.NewAccountActor(drivers.SECP, initialBal)   // 102
-		chuck, _ := td.NewAccountActor(drivers.SECP, initialBal) // 103
-		duck, _ := td.NewAccountActor(drivers.SECP, initialBal)  // 104
-		var initialSigners = []address.Address{alice, bob, chuck, duck}
+		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal) // 101
+		_, bobId := td.NewAccountActor(drivers.SECP, initialBal)   // 102
+		_, chuckId := td.NewAccountActor(drivers.SECP, initialBal) // 103
+		_, duckId := td.NewAccountActor(drivers.SECP, initialBal)  // 104
+		var initialSigners = []address.Address{aliceId, bobId, chuckId, duckId}
 
-		multisigAddr := utils.NewIDAddr(t, 105)
+		multisigAddr := utils.NewIDAddr(t, utils.IdFromAddress(duckId)+1)
 
 		// create a ms actor with 4 signers and 3 approvals required
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -325,17 +328,17 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: multisigAddr.Bytes(),
-				GasUsed:     big_spec.NewInt(1684),
+				GasUsed:     big_spec.NewInt(1680),
 			})
 
 		// alice fails to remove a singer since this method can only be called by the multisig actors wallet address
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.MultisigRemoveSigner(multisigAddr, alice, multisig_spec.RemoveSignerParams{
-				Signer:   chuck,
+				Signer:   chuckId,
 				Decrease: false,
 			}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
 			types.MessageReceipt{
-				ExitCode:    exitcode_spec.SysErrActorNotFound, // TODO set the correct error code here, lotus returns 'SysErrActorNotFound`, which is probably wrong.
+				ExitCode:    exitcode_spec.ErrForbidden,
 				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(1_000_000),
 			})
@@ -343,17 +346,17 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		// success when multisig actor calls the remove signer method and removes duck
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.MultisigRemoveSigner(multisigAddr, multisigAddr, multisig_spec.RemoveSignerParams{
-				Signer:   duck,
+				Signer:   duckId,
 				Decrease: false,
 			}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: drivers.EmptyReturnValue,
-				GasUsed:     big_spec.NewInt(561),
+				GasUsed:     big_spec.NewInt(347),
 			})
 		// assert that duck is no longer a signer and that the number of required approvals has remained unchanged.
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
-			Signers:               []address.Address{alice, bob, chuck},
+			Signers:               []address.Address{aliceId, bobId, chuckId},
 			NumApprovalsThreshold: initialNumApprovals,
 			NextTxnID:             0,
 			InitialBalance:        valueSend,
@@ -364,17 +367,17 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		// remove chuck and decrease the number of signers required
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.MultisigRemoveSigner(multisigAddr, multisigAddr, multisig_spec.RemoveSignerParams{
-				Signer:   chuck,
+				Signer:   chuckId,
 				Decrease: true,
 			}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: drivers.EmptyReturnValue,
-				GasUsed:     big_spec.NewInt(495),
+				GasUsed:     big_spec.NewInt(335),
 			})
 		// assert that duck is no a signer and the number of approvals required decreased.
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
-			Signers:               []address.Address{alice, bob},
+			Signers:               []address.Address{aliceId, bobId},
 			NumApprovalsThreshold: initialNumApprovals - 1,
 			NextTxnID:             0,
 			InitialBalance:        valueSend,
@@ -392,14 +395,14 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		td := builder.Build(t)
 
-		alice, _ := td.NewAccountActor(drivers.SECP, initialBal) // 101
-		bob, _ := td.NewAccountActor(drivers.SECP, initialBal)   // 102
+		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal) // 101
+		_, bobId := td.NewAccountActor(drivers.SECP, initialBal)   // 102
 		// chuck will be swapped in below
-		chuck, _ := td.NewAccountActor(drivers.SECP, initialBal) // 103
+		_, chuckId := td.NewAccountActor(drivers.SECP, initialBal) // 103
 
-		var initialSigners = []address.Address{alice, bob}
+		var initialSigners = []address.Address{aliceId, bobId}
 
-		multisigAddr := utils.NewIDAddr(t, 104)
+		multisigAddr := utils.NewIDAddr(t, utils.IdFromAddress(chuckId)+1)
 
 		// create a ms actor with 4 signers and 3 approvals required
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -411,19 +414,19 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: multisigAddr.Bytes(),
-				GasUsed:     big_spec.NewInt(1403),
+				GasUsed:     big_spec.NewInt(1558),
 			})
 
 		// create parameters to swap bob for chuck
 		swapParams := multisig_spec.SwapSignerParams{
-			From: bob,
-			To:   chuck,
+			From: bobId,
+			To:   chuckId,
 		}
 		// alice fails to since they are not the multisig address.
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.MultisigSwapSigner(multisigAddr, alice, swapParams, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			types.MessageReceipt{
-				ExitCode:    exitcode_spec.SysErrActorNotFound, // TODO set the correct error code here, lotus returns 'SysErrActorNotFound`, which is probably wrong.
+				ExitCode:    exitcode_spec.ErrForbidden,
 				ReturnValue: drivers.EmptyReturnValue,
 				GasUsed:     big_spec.NewInt(1_000_000),
 			})
@@ -434,10 +437,10 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: drivers.EmptyReturnValue,
-				GasUsed:     big_spec.NewInt(515),
+				GasUsed:     big_spec.NewInt(337),
 			})
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
-			Signers:               []address.Address{alice, chuck},
+			Signers:               []address.Address{aliceId, chuckId},
 			NumApprovalsThreshold: initialNumApprovals,
 			NextTxnID:             0,
 			InitialBalance:        valueSend,
@@ -451,10 +454,10 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
 				ReturnValue: drivers.EmptyReturnValue,
-				GasUsed:     big_spec.NewInt(427),
+				GasUsed:     big_spec.NewInt(323),
 			})
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
-			Signers:               []address.Address{alice, chuck},
+			Signers:               []address.Address{aliceId, chuckId},
 			NumApprovalsThreshold: initialNumApprovals - 1,
 			NextTxnID:             0,
 			InitialBalance:        valueSend,

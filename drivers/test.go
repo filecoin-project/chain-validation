@@ -266,13 +266,13 @@ func (td *TestDriver) AssertBalanceWithGas(addr address.Address, expected, gasUs
 
 func (td *TestDriver) AssertReceipt(actual, expected types.MessageReceipt) {
 	if td.Config.ValidateGas() {
-		require.Equal(td.T, expected.GasUsed, actual.GasUsed, "Expected GasUsed: %s Actual GasUsed: %s", expected.GasUsed.String(), actual.GasUsed.String())
+		assert.Equal(td.T, expected.GasUsed, actual.GasUsed, "Expected GasUsed: %s Actual GasUsed: %s", expected.GasUsed.String(), actual.GasUsed.String())
 	}
 	if td.Config.ValidateExitCode() {
-		require.Equal(td.T, expected.ExitCode, actual.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", expected.ExitCode.Error(), actual.ExitCode.Error())
+		assert.Equal(td.T, expected.ExitCode, actual.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", expected.ExitCode.Error(), actual.ExitCode.Error())
 	}
 	if td.Config.ValidateReturnValue() {
-		require.Equal(td.T, expected.ReturnValue, actual.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", expected.ReturnValue, actual.ReturnValue)
+		assert.Equal(td.T, expected.ReturnValue, actual.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", expected.ReturnValue, actual.ReturnValue)
 	}
 }
 
