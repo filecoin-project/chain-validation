@@ -43,7 +43,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			utils.NewSECP256K1Addr(t, "publickeyfoo"),
 			abi_spec.NewTokenAmount(10_000),
 
-			abi_spec.NewTokenAmount(0),
+			abi_spec.NewTokenAmount(130),
 			exitcode_spec.Ok,
 		},
 		{
@@ -54,7 +54,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			utils.NewBLSAddr(t, 1),
 			abi_spec.NewTokenAmount(10_000),
 
-			abi_spec.NewTokenAmount(0),
+			abi_spec.NewTokenAmount(188),
 			exitcode_spec.Ok,
 		},
 		{
@@ -65,18 +65,18 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			utils.NewSECP256K1Addr(t, "publickeybar"),
 			abi_spec.NewTokenAmount(10_000),
 
-			abi_spec.NewTokenAmount(0),
+			abi_spec.NewTokenAmount(1_000_000),
 			exitcode_spec.SysErrInsufficientFunds,
 		},
 		{
 			"fail create BLS account actor insufficient balance",
-			address.BLS,
+			address.SECP256K1,
 			abi_spec.NewTokenAmount(9_999),
 
-			utils.NewSECP256K1Addr(t, "publickeybaz"),
+			utils.NewBLSAddr(t, 1),
 			abi_spec.NewTokenAmount(10_000),
 
-			abi_spec.NewTokenAmount(0),
+			abi_spec.NewTokenAmount(1_000_000),
 			exitcode_spec.SysErrInsufficientFunds,
 		},
 		// TODO add edge case tests that have insufficient balance after gas fees
@@ -94,7 +94,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			// new actor balance will only exist if message was applied successfully.
 			if tc.expExitCode.IsSuccess() {
 				td.AssertBalance(tc.newActorAddr, tc.newActorInitBal)
-				td.AssertBalanceWithGas(existingAccountAddr, tc.existingActorBal, tc.expGasCost)
+				td.AssertBalance(existingAccountAddr, big_spec.Sub(big_spec.Sub(tc.existingActorBal, tc.expGasCost), tc.newActorInitBal))
 			}
 		})
 	}
@@ -121,11 +121,11 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 
 	td.ApplyMessageExpectReceipt(
 		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
-		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&firstInitRet), GasUsed: big_spec.Zero()},
+		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&firstInitRet), GasUsed: abi_spec.NewTokenAmount(1416)},
 	)
 
 	td.ApplyMessageExpectReceipt(
 		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(1)),
-		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&secondInitRet), GasUsed: big_spec.Zero()},
+		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&secondInitRet), GasUsed: abi_spec.NewTokenAmount(1506)},
 	)
 }

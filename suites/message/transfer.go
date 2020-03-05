@@ -93,7 +93,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.SysErrInsufficientFunds,
 				ReturnValue: drivers.EmptyReturnValue,
-				GasUsed:     big_spec.NewInt(0),
+				GasUsed:     big_spec.NewInt(1_000_000),
 			},
 		},
 		{
@@ -111,7 +111,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			receipt: types.MessageReceipt{
 				ExitCode:    exitcode.SysErrInsufficientFunds,
 				ReturnValue: drivers.EmptyReturnValue,
-				GasUsed:     big_spec.NewInt(0),
+				GasUsed:     big_spec.NewInt(1_000_000),
 			},
 		},
 	}
@@ -139,10 +139,10 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
 			// assert the actor balances changed as expected, the receiver balance should not change if transfer fails
 			if tc.receipt.ExitCode.IsSuccess() {
-				td.AssertBalanceWithGas(tc.sender, big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed)
+				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed))
 				td.AssertBalance(tc.receiver, tc.transferAmnt)
 			} else {
-				td.AssertBalanceWithGas(tc.sender, big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed)
+				td.AssertBalance(tc.sender,tc.senderBal)
 			}
 
 		})
@@ -150,9 +150,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 }
 
 func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
-	var gasCost = big_spec.Zero()
 	var aliceBal = abi_spec.NewTokenAmount(1_000_000_000)
-	var transferAmnt = abi_spec.NewTokenAmount(10)
 
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
@@ -162,12 +160,14 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 	t.Run("self transfer", func(t *testing.T) {
 		td := builder.Build(t)
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
+		gasCost := abi_spec.NewTokenAmount(128)
+		transferAmnt := abi_spec.NewTokenAmount(10)
 
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
-		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
+		td.AssertBalance(alice, big_spec.Sub(aliceBal, gasCost))
 	})
 
 	t.Run("transfer from known address to unknown account", func(t *testing.T) {
@@ -175,30 +175,36 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		unknown := td.Wallet().NewSECP256k1AccountAddress()
+		gasCost := abi_spec.NewTokenAmount(128)
+		transferAmnt := abi_spec.NewTokenAmount(10)
 
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
-		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
+		td.AssertBalance(alice, big_spec.Sub(big_spec.Sub(aliceBal, gasCost), transferAmnt))
+		td.AssertBalance(unknown, transferAmnt)
 	})
 
 	t.Run("fail to transfer from unknown account to known address", func(t *testing.T) {
 		td := builder.Build(t)
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		unknown := td.Wallet().NewSECP256k1AccountAddress()
+		gasCost := abi_spec.NewTokenAmount(1_000_000)
+		transferAmnt := abi_spec.NewTokenAmount(10)
 
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue, GasUsed: gasCost},
 		)
-		td.AssertBalanceWithGas(alice, aliceBal, gasCost)
 	})
 
 	t.Run("fail to transfer from unknown address to unknown address", func(t *testing.T) {
 		td := builder.Build(t)
 		unknown := td.Wallet().NewSECP256k1AccountAddress()
 		nobody := td.Wallet().NewSECP256k1AccountAddress()
+		gasCost := abi_spec.NewTokenAmount(1_000_000)
+		transferAmnt := abi_spec.NewTokenAmount(10)
 
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
