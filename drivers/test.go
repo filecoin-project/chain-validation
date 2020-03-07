@@ -8,6 +8,11 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
+	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
+	cron_spec "github.com/filecoin-project/specs-actors/actors/builtin/cron"
+	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
+	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
@@ -17,13 +22,8 @@ import (
 
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
-	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
-	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
-	cron_spec "github.com/filecoin-project/specs-actors/actors/builtin/cron"
 	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
-	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
-	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	runtime_spec "github.com/filecoin-project/specs-actors/actors/runtime"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 
@@ -217,6 +217,8 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
 	validator := chain.NewValidator(b.factory)
 
+	gv, err := NewGasRecorder("gasValues", false)
+	require.NoError(t, err)
 	return &TestDriver{
 		T:               t,
 		StateDriver:     sd,
@@ -225,6 +227,8 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		ExeCtx:          exeCtx,
 
 		Config: b.factory.NewValidationConfig(),
+
+		GasValidator: gv,
 	}
 
 }
@@ -239,13 +243,30 @@ type TestDriver struct {
 	ExeCtx               *types.ExecutionContext
 
 	Config state.ValidationConfig
+
+	GasValidator *GasRecorder
 }
 
 // TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
-func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, receipt types.MessageReceipt) {
-	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
+func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, expected types.MessageReceipt) {
+	oldState := td.State().Root()
+
+	actual, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 	require.NoError(td.T, err)
-	td.AssertReceipt(msgReceipt, receipt)
+
+	newState := td.State().Root()
+	td.GasValidator.Record(oldState, newState, msg, actual.GasUsed.Int64())
+
+	expectedGas := td.GasValidator.GasFor(oldState, newState, msg)
+	if td.Config.ValidateGas() {
+		assert.Equal(td.T, expected.GasUsed.Int64(), expectedGas, "Expected GasUsed: %s Actual GasUsed: %d", expected.GasUsed.String(), expectedGas)
+	}
+	if td.Config.ValidateExitCode() {
+		assert.Equal(td.T, expected.ExitCode, actual.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", expected.ExitCode.Error(), actual.ExitCode.Error())
+	}
+	if td.Config.ValidateReturnValue() {
+		assert.Equal(td.T, expected.ReturnValue, actual.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", expected.ReturnValue, actual.ReturnValue)
+	}
 
 }
 
@@ -254,14 +275,6 @@ func (td *TestDriver) AssertBalance(addr address.Address, expected big_spec.Int)
 	actr, err := td.State().Actor(addr)
 	require.NoError(td.T, err)
 	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
-}
-
-func (td *TestDriver) AssertBalanceWithGas(addr address.Address, expected, gasUsed big_spec.Int) {
-	if td.Config.ValidateGas() {
-		actr, err := td.State().Actor(addr)
-		require.NoError(td.T, err)
-		assert.Equal(td.T, expected, big_spec.Sub(actr.Balance(), gasUsed), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
-	}
 }
 
 func (td *TestDriver) AssertReceipt(actual, expected types.MessageReceipt) {
