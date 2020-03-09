@@ -120,4 +120,50 @@ func TestInternalMessageApplicationFailure(t *testing.T, factory state.Factories
 		td.AssertMultisigContainsTransaction(multisigAddr, 0, false)
 		assert.Equal(t, multisig_spec.TxnID(1), msa.NextTxnID)
 	})
+
+	t.Run("multisig internal message send fails when receiver is undefined address", func(t *testing.T) {
+		td := builder.Build(t)
+
+		// create the multisig actor, set number of approvals to 1 so propose goes through on first send.
+		_, aliceId := td.NewAccountActor(drivers.SECP, abi_spec.NewTokenAmount(2_000_000_000_000))
+		multisigAddr := utils.NewIDAddr(t, utils.IdFromAddress(aliceId)+1)
+		createMsMsg := td.MessageProducer.CreateMultisigActor(aliceId, []address.Address{aliceId}, 10, 1,
+			chain.Nonce(0), chain.Value(big_spec.Zero()))
+
+		// this address is the receiver with value undefined
+		nobody := address.Undef
+		params := multisig_spec.ProposeParams{
+			To:     nobody,
+			Value:  big_spec.Zero(),
+			Method: 0,
+			Params: nil,
+		}
+		ser := chain.MustSerialize(&params)
+		ser[2] = address.Unknown // the 3rd byte in the slice is the address protocol identifier, set to invalid protocol
+		proposeMsMsg := td.MessageProducer.Build(multisigAddr, aliceId, builtin_spec.MethodsMultisig.Propose, ser, chain.Nonce(1), chain.Value(big_spec.Zero()))
+
+		// Create the multisig actor and propose the send
+		blkMsgs := chain.NewTipSetMessageBuilder().
+			WithMiner(td.ExeCtx.Miner).
+			WithSECPMessage(signMessage(createMsMsg, td.Wallet())).
+			WithSECPMessage(signMessage(proposeMsMsg, td.Wallet())).
+			Build()
+
+		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
+		require.NoError(t, err)
+		require.Len(t, receipts, 2)
+
+		createMsRet := receipts[0]
+		proposeMsRet := receipts[1]
+
+		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
+		td.AssertReceipt(createMsRet, types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: abi_spec.NewTokenAmount(1282)})
+		td.AssertReceipt(proposeMsRet, types.MessageReceipt{ExitCode: exitcode.SysErrInvalidParameters, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(1235)})
+
+		// the multisig txnid should increment and the 0th transaction should have been removed
+		var msa multisig_spec.State
+		td.GetActorState(multisigAddr, &msa)
+		td.AssertMultisigContainsTransaction(multisigAddr, 0, false)
+		assert.Equal(t, multisig_spec.TxnID(1), msa.NextTxnID)
+	})
 }
