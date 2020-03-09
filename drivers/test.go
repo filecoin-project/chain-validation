@@ -13,6 +13,7 @@ import (
 	cron_spec "github.com/filecoin-project/specs-actors/actors/builtin/cron"
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
+	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
@@ -217,7 +218,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
 	validator := chain.NewValidator(b.factory)
 
-	gv, err := NewGasRecorder("gasValues", false)
+	gv, err := NewGasRecorder("gasValues", true)
 	require.NoError(t, err)
 	return &TestDriver{
 		T:               t,
@@ -248,7 +249,7 @@ type TestDriver struct {
 }
 
 // TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
-func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, expected types.MessageReceipt) {
+func (td *TestDriver) ApplyMessageExpectResult(msg *types.Message, code exitcode.ExitCode, retval []byte) int64 {
 	oldState := td.State().Root()
 
 	actual, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
@@ -259,15 +260,15 @@ func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, expected typ
 
 	expectedGas := td.GasValidator.GasFor(oldState, newState, msg)
 	if td.Config.ValidateGas() {
-		assert.Equal(td.T, expected.GasUsed.Int64(), expectedGas, "Expected GasUsed: %s Actual GasUsed: %d", expected.GasUsed.String(), expectedGas)
+		assert.Equal(td.T, expectedGas, actual.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGas, actual.GasUsed.Int64())
 	}
 	if td.Config.ValidateExitCode() {
-		assert.Equal(td.T, expected.ExitCode, actual.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", expected.ExitCode.Error(), actual.ExitCode.Error())
+		assert.Equal(td.T, code, actual.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code, actual.ExitCode.Error())
 	}
 	if td.Config.ValidateReturnValue() {
-		assert.Equal(td.T, expected.ReturnValue, actual.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", expected.ReturnValue, actual.ReturnValue)
+		assert.Equal(td.T, retval, actual.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, actual.ReturnValue)
 	}
-
+	return big_spec.Mul(big_spec.NewInt(expectedGas), msg.GasPrice).Int64()
 }
 
 // AssertBalance checks an actor has an expected balance.
@@ -352,9 +353,10 @@ func computeInitActorExecReturn(t testing.TB, from address.Address, callSeq uint
 
 func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt types.MessageReceipt) {
 	/* Create the Multisig actor*/
-	td.ApplyMessageExpectReceipt(
+	td.ApplyMessageExpectResult(
 		td.MessageProducer.CreateMultisigActor(from, params.Signers, params.UnlockDuration, params.NumApprovalsThreshold, chain.Nonce(nonce), chain.Value(value)),
-		receipt,
+		receipt.ExitCode,
+		receipt.ReturnValue,
 	)
 	/* Assert the actor state was setup as expected */
 	pendingTxMap, err := adt_spec.MakeEmptyMap(newMockStore())

@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -95,7 +96,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		)
 		var pcState paych_spec.State
 		td.GetActorState(paychAddr, &pcState)
-		assert.Equal(t, 1, len(pcState.LaneStates))
+		require.Equal(t, 1, len(pcState.LaneStates))
 		ls := pcState.LaneStates[0]
 		assert.Equal(t, pcAmount, ls.Redeemed)
 		assert.Equal(t, pcNonce, ls.Nonce)

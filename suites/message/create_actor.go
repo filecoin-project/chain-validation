@@ -11,7 +11,6 @@ import (
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"
-	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
 	"github.com/filecoin-project/chain-validation/suites/utils"
@@ -32,7 +31,6 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 		newActorAddr    address.Address
 		newActorInitBal abi_spec.TokenAmount
 
-		expGasCost  abi_spec.TokenAmount
 		expExitCode exitcode_spec.ExitCode
 	}{
 		{
@@ -43,7 +41,6 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			utils.NewSECP256K1Addr(t, "publickeyfoo"),
 			abi_spec.NewTokenAmount(10_000),
 
-			abi_spec.NewTokenAmount(130),
 			exitcode_spec.Ok,
 		},
 		{
@@ -54,7 +51,6 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			utils.NewBLSAddr(t, 1),
 			abi_spec.NewTokenAmount(10_000),
 
-			abi_spec.NewTokenAmount(188),
 			exitcode_spec.Ok,
 		},
 		{
@@ -65,7 +61,6 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			utils.NewSECP256K1Addr(t, "publickeybar"),
 			abi_spec.NewTokenAmount(10_000),
 
-			abi_spec.NewTokenAmount(1_000_000),
 			exitcode_spec.SysErrInsufficientFunds,
 		},
 		{
@@ -76,7 +71,6 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			utils.NewBLSAddr(t, 1),
 			abi_spec.NewTokenAmount(10_000),
 
-			abi_spec.NewTokenAmount(1_000_000),
 			exitcode_spec.SysErrInsufficientFunds,
 		},
 		// TODO add edge case tests that have insufficient balance after gas fees
@@ -86,15 +80,16 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			td := builder.Build(t)
 
 			existingAccountAddr, _ := td.NewAccountActor(tc.existingActorType, tc.existingActorBal)
-			td.ApplyMessageExpectReceipt(
+			gasUsed := td.ApplyMessageExpectResult(
 				td.MessageProducer.Transfer(tc.newActorAddr, existingAccountAddr, chain.Value(tc.newActorInitBal), chain.Nonce(0)),
-				types.MessageReceipt{ExitCode: tc.expExitCode, ReturnValue: nil, GasUsed: tc.expGasCost},
+				tc.expExitCode,
+				nil,
 			)
 
 			// new actor balance will only exist if message was applied successfully.
 			if tc.expExitCode.IsSuccess() {
 				td.AssertBalance(tc.newActorAddr, tc.newActorInitBal)
-				td.AssertBalance(existingAccountAddr, big_spec.Sub(big_spec.Sub(tc.existingActorBal, tc.expGasCost), tc.newActorInitBal))
+				td.AssertBalance(existingAccountAddr, big_spec.Sub(big_spec.Sub(tc.existingActorBal, tc.newActorInitBal), abi_spec.NewTokenAmount(gasUsed)))
 			}
 		})
 	}
@@ -119,13 +114,15 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 	firstInitRet := td.ComputeInitActorExecReturn(senderID, 0, firstPaychAddr)
 	secondInitRet := td.ComputeInitActorExecReturn(senderID, 1, secondPaychAddr)
 
-	td.ApplyMessageExpectReceipt(
+	td.ApplyMessageExpectResult(
 		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
-		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&firstInitRet), GasUsed: abi_spec.NewTokenAmount(1416)},
+		exitcode_spec.Ok,
+		chain.MustSerialize(&firstInitRet),
 	)
 
-	td.ApplyMessageExpectReceipt(
+	td.ApplyMessageExpectResult(
 		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(1)),
-		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&secondInitRet), GasUsed: abi_spec.NewTokenAmount(1506)},
+		exitcode_spec.Ok,
+		chain.MustSerialize(&secondInitRet),
 	)
 }

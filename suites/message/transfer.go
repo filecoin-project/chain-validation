@@ -123,26 +123,21 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			// Create the to and from actors with balance in the state tree
 			_, _, err := td.State().CreateActor(builtin_spec.AccountActorCodeID, tc.sender, tc.senderBal, &account_spec.State{Address: tc.sender})
 			require.NoError(t, err)
-			if tc.sender.String() != tc.receiver.String() {
-				_, _, err := td.State().CreateActor(builtin_spec.AccountActorCodeID, tc.receiver, tc.receiverBal, &account_spec.State{Address: tc.receiver})
-				require.NoError(t, err)
-			}
-
-			sendAct, err := td.State().Actor(tc.sender)
+			_, _, err = td.State().CreateActor(builtin_spec.AccountActorCodeID, tc.receiver, tc.receiverBal, &account_spec.State{Address: tc.receiver})
 			require.NoError(t, err)
-			require.Equal(t, tc.senderBal.String(), sendAct.Balance().String())
 
-			td.ApplyMessageExpectReceipt(
+			gasUsed := td.ApplyMessageExpectResult(
 				td.MessageProducer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0)),
-				tc.receipt,
+				tc.receipt.ExitCode,
+				tc.receipt.ReturnValue,
 			)
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
 			// assert the actor balances changed as expected, the receiver balance should not change if transfer fails
 			if tc.receipt.ExitCode.IsSuccess() {
-				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), tc.receipt.GasUsed))
+				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), abi_spec.NewTokenAmount(gasUsed)))
 				td.AssertBalance(tc.receiver, tc.transferAmnt)
 			} else {
-				td.AssertBalance(tc.sender,tc.senderBal)
+				td.AssertBalance(tc.sender, tc.senderBal)
 			}
 
 		})
