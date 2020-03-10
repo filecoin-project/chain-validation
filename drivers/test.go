@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
+	market_spec "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
@@ -42,13 +43,14 @@ var (
 )
 
 var (
-	DefaultInitActorState         ActorState
-	DefaultRewardActorState       ActorState
-	DefaultBurntFundsActorState   ActorState
-	DefaultStoragePowerActorState ActorState
-	DefaultSystemActorState       ActorState
-	DefaultCronActorState         ActorState
-	DefaultBuiltinActorsState     []ActorState
+	DefaultInitActorState          ActorState
+	DefaultRewardActorState        ActorState
+	DefaultBurntFundsActorState    ActorState
+	DefaultStoragePowerActorState  ActorState
+	DefaultStorageMarketActorState ActorState
+	DefaultSystemActorState        ActorState
+	DefaultCronActorState          ActorState
+	DefaultBuiltinActorsState      []ActorState
 )
 
 func init() {
@@ -92,6 +94,20 @@ func init() {
 		},
 	}
 
+	DefaultStorageMarketActorState = ActorState{
+		Addr:    builtin_spec.StorageMarketActorAddr,
+		Balance: big_spec.Zero(),
+		Code:    builtin_spec.StorageMarketActorCodeID,
+		State: &market_spec.State{
+			Proposals:      EmptyArrayCid,
+			States:         EmptyArrayCid,
+			EscrowTable:    EmptyMapCid,
+			LockedTable:    EmptyMapCid,
+			NextID:         abi_spec.DealID(0),
+			DealIDsByParty: EmptyMultiMapCid,
+		},
+	}
+
 	DefaultSystemActorState = ActorState{
 		Addr:    builtin_spec.SystemActorAddr,
 		Balance: big_spec.Zero(),
@@ -111,6 +127,7 @@ func init() {
 		DefaultRewardActorState,
 		DefaultBurntFundsActorState,
 		DefaultStoragePowerActorState,
+		DefaultStorageMarketActorState,
 		DefaultSystemActorState,
 		DefaultCronActorState,
 	}
