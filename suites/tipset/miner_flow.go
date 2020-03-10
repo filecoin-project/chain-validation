@@ -20,7 +20,6 @@ import (
 	miner_spec "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/namespace"
@@ -74,28 +73,32 @@ func TestHappyPathMinerStuff(t *testing.T, factory state.Factories) {
 			SectorSize: sectorSize,
 			Peer:       utils.RequireRandomPeerID(t),
 		}, chain.Value(collateral), chain.Nonce(0))
-		td.ApplyMessageExpectReceipt(createMinerMsg, types.MessageReceipt{
-			ExitCode:    exitcode.Ok,
-			ReturnValue: chain.MustSerialize(&createMinerRet),
-			GasUsed:     big_spec.Zero(),
-		})
+		createMinerRct := types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createMinerRet), GasUsed: big_spec.Zero()}
+
 		minerIdAddr := createMinerRet.IDAddress
-		log.Infow("Created Miner ", "owner", minerOwner, "worker", minerWorker, "robustMiner", createMinerRet.RobustAddress, "minerId", minerIdAddr)
 
 		// Step 0.5: Add market funds from miner and client
 		minerAddBalMsg := td.MessageProducer.MarketAddBalance(builtin_spec.StorageMarketActorAddr, minerWorker, minerIdAddr, chain.Nonce(0), chain.Value(collateral))
-		td.ApplyMessageExpectReceipt(minerAddBalMsg, types.MessageReceipt{
-			ExitCode:    exitcode.Ok,
-			ReturnValue: []byte{},
-			GasUsed:     big_spec.Zero(),
-		})
+		minerAddBalRct := types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
 
 		clientAddBalMsg := td.MessageProducer.MarketAddBalance(builtin_spec.StorageMarketActorAddr, minerOwner, minerWorker, chain.Nonce(1), chain.Value(collateral))
-		td.ApplyMessageExpectReceipt(clientAddBalMsg, types.MessageReceipt{
-			ExitCode:    exitcode.Ok,
-			ReturnValue: []byte{},
-			GasUsed:     big_spec.Zero(),
-		})
+		clientAddBalRct := types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
+
+		blkMsgs := chain.NewTipSetMessageBuilder().
+			WithMiner(td.ExeCtx.Miner).
+			WithBLSMessage(createMinerMsg).
+			WithBLSMessage(minerAddBalMsg).
+			WithBLSMessage(clientAddBalMsg).
+			Build()
+
+		td.ExeCtx.Epoch++
+		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
+		require.NoError(t, err)
+		require.Len(t, receipts, 3)
+
+		td.AssertReceipt(receipts[0], createMinerRct)
+		td.AssertReceipt(receipts[1], minerAddBalRct)
+		td.AssertReceipt(receipts[2], clientAddBalRct)
 
 		m1temp, err := ioutil.TempDir("", "preseal")
 		require.NoError(t, err)
@@ -113,15 +116,12 @@ func TestHappyPathMinerStuff(t *testing.T, factory state.Factories) {
 		dealID := abi_spec.DealID(0)
 		dealIDs := []abi_spec.DealID{dealID}
 		pubRet := chain.MustSerialize(&market_spec.PublishStorageDealsReturn{IDs: dealIDs})
+
 		pubDealMsg := td.MessageProducer.MarketPublishStorageDeals(builtin_spec.StorageMarketActorAddr, minerWorker, market_spec.PublishStorageDealsParams{Deals: []market_spec.ClientDealProposal{{
 			Proposal:        preseals[0].Deal,
 			ClientSignature: sig,
 		}}}, chain.Nonce(1), chain.Value(big_spec.Zero()))
-		td.ApplyMessageExpectReceipt(pubDealMsg, types.MessageReceipt{
-			ExitCode:    exitcode.Ok,
-			ReturnValue: pubRet,
-			GasUsed:     big_spec.Zero(),
-		})
+		pubDealRct := types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: pubRet, GasUsed: big_spec.Zero()}
 
 		// Step 1: Pre Committing Sectors
 		preCommitMsg := td.MessageProducer.MinerPreCommitSector(minerIdAddr, minerWorker, miner_spec.SectorPreCommitInfo{
@@ -132,66 +132,88 @@ func TestHappyPathMinerStuff(t *testing.T, factory state.Factories) {
 			DealIDs:         dealIDs,
 			Expiration:      preseals[0].Deal.EndEpoch,
 		}, chain.Nonce(2), chain.Value(big_spec.Zero()))
-		td.ApplyMessageExpectReceipt(preCommitMsg, types.MessageReceipt{
-			ExitCode:    exitcode.Ok,
-			ReturnValue: []byte{},
-			GasUsed:     big_spec.Zero(),
-		})
+		preCommitRct := types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
 
-		msd := miner_spec.MaxSealDuration[abi_spec.RegisteredProof_StackedDRG2KiBSeal]
-		expireBoundry := td.ExeCtx.Epoch + msd + 1
-		// assert the cron actor received an event for this
-		var powerActSt power_spec.State
-		td.GetActorState(builtin_spec.StoragePowerActorAddr, &powerActSt)
-		mmap := adt.AsMultimap(td.State().Store(), powerActSt.CronEventQueue)
-		var events []power_spec.CronEvent
-		var ev power_spec.CronEvent
-		err = mmap.ForEach(adt.IntKey(int64(expireBoundry)), &ev, func(i int64) error {
-			events = append(events, ev)
-			return nil
-		})
+		blkMsgs = chain.NewTipSetMessageBuilder().
+			WithMiner(td.ExeCtx.Miner).
+			WithBLSMessage(pubDealMsg).
+			WithBLSMessage(preCommitMsg).
+			Build()
+
+		td.ExeCtx.Epoch++
+		receipts, err = td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
 		require.NoError(t, err)
-		require.Len(t, events, 1)
+		require.Len(t, receipts, 2)
 
-		bf := abi_spec.NewBitField()
-		bf.Set(uint64(preseals[0].SectorID))
+		td.AssertReceipt(receipts[0], pubDealRct)
+		td.AssertReceipt(receipts[1], preCommitRct)
 
-		// Request deferred Cron check for PreCommit expiry check.
-		cronPayload := miner_spec.CronEventPayload{
-			EventType:       miner_spec.CronEventPreCommitExpiry,
-			Sectors:         &bf,
-			RegisteredProof: preseals[0].ProofType,
-		}
-
-		event := events[0]
-		require.Equal(t, minerIdAddr, event.MinerAddr)
-		require.Equal(t, chain.MustSerialize(&cronPayload), event.CallbackPayload)
-
-		td.ApplyMessageExpectReceipt(
-			td.MessageProducer.CronEpochTick(builtin_spec.CronActorAddr, builtin_spec.SystemActorAddr, adt.EmptyValue{}),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()},
-		)
-
-		td.GetActorState(builtin_spec.StoragePowerActorAddr, &powerActSt)
-		mmap = adt.AsMultimap(td.State().Store(), powerActSt.CronEventQueue)
-		events = nil
-		err = mmap.ForEach(adt.IntKey(int64(expireBoundry)), &ev, func(i int64) error {
-			events = append(events, ev)
-			return nil
-		})
-		require.NoError(t, err)
-		require.Len(t, events, 0)
-
-		td.ExeCtx.Epoch = 12
 		proveCommitMsg := td.MessageProducer.MinerProveCommitSector(minerIdAddr, minerWorker, miner_spec.ProveCommitSectorParams{
 			SectorNumber: preseals[0].SectorID,
 			Proof:        nil,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(3))
-		td.ApplyMessageExpectReceipt(proveCommitMsg, types.MessageReceipt{
-			ExitCode:    exitcode.Ok,
-			ReturnValue: nil,
-			GasUsed:     big_spec.Zero(),
-		})
+		proveCommitRct := types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
+
+		blkMsgs = chain.NewTipSetMessageBuilder().
+			WithMiner(td.ExeCtx.Miner).
+			WithBLSMessage(proveCommitMsg).
+			Build()
+
+		// TODO don't use magic numbers
+		td.ExeCtx.Epoch = 14
+
+		receipts, err = td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
+		require.NoError(t, err)
+		require.Len(t, receipts, 1)
+		td.AssertReceipt(receipts[0], proveCommitRct)
+
+		var pwrSt power_spec.State
+		td.GetActorState(builtin_spec.StoragePowerActorAddr, &pwrSt)
+		fmt.Println(pwrSt.TotalNetworkPower.String())
+		fmt.Println(pwrSt.MinerCount)
+
+		// a cron event type: CronEventWindowedPoStExpiration now exists in the power actors state
+		// advance the epoch s.t. the miner misses the proving window
+		transferMsg := td.MessageProducer.Transfer(minerOwner, minerOwner, chain.Nonce(2), chain.Value(big_spec.Zero()))
+		transferRct := types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
+
+		blkMsgs = chain.NewTipSetMessageBuilder().
+			WithMiner(td.ExeCtx.Miner).
+			WithBLSMessage(transferMsg).
+			Build()
+
+		td.ExeCtx.Epoch = 553
+		receipts, err = td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
+		require.NoError(t, err)
+		require.Len(t, receipts, 1)
+		td.AssertReceipt(receipts[0], transferRct)
+
+		transferMsg = td.MessageProducer.Transfer(minerOwner, minerOwner, chain.Nonce(3), chain.Value(big_spec.Zero()))
+		blkMsgs = chain.NewTipSetMessageBuilder().
+			WithMiner(td.ExeCtx.Miner).
+			WithBLSMessage(transferMsg).
+			Build()
+		td.ExeCtx.Epoch = 554
+		receipts, err = td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
+		require.NoError(t, err)
+		require.Len(t, receipts, 1)
+		td.AssertReceipt(receipts[0], transferRct)
+
+		transferMsg = td.MessageProducer.Transfer(minerOwner, minerOwner, chain.Nonce(4), chain.Value(big_spec.Zero()))
+		blkMsgs = chain.NewTipSetMessageBuilder().
+			WithMiner(td.ExeCtx.Miner).
+			WithBLSMessage(transferMsg).
+			Build()
+		td.ExeCtx.Epoch = 555
+		receipts, err = td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
+		require.NoError(t, err)
+		require.Len(t, receipts, 1)
+		td.AssertReceipt(receipts[0], transferRct)
+
+		// the miner should have been slashed, lets find out
+		td.GetActorState(builtin_spec.StoragePowerActorAddr, &pwrSt)
+		fmt.Println(pwrSt.TotalNetworkPower.String())
+		fmt.Println(pwrSt.MinerCount)
 
 	})
 }
@@ -289,7 +311,7 @@ func PreSealSectors(maddr, worker address.Address, pt abi_spec.RegisteredProof, 
 		})
 	}
 
-	if err := createDeals(sealedSectors, worker, maddr, ssize, 12, 9001); err != nil {
+	if err := createDeals(sealedSectors, worker, maddr, ssize, 14, 9001); err != nil {
 		panic(err)
 		return nil, fmt.Errorf("creating deals: %w", err)
 	}

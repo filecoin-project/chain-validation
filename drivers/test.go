@@ -85,7 +85,7 @@ func init() {
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.StoragePowerActorCodeID,
 		State: &power_spec.State{
-			TotalNetworkPower:        abi_spec.NewStoragePower(0),
+			TotalNetworkPower:        abi_spec.NewStoragePower(1),
 			EscrowTable:              EmptyMapCid,
 			CronEventQueue:           EmptyMapCid,
 			PoStDetectedFaultMiners:  EmptyMapCid,
