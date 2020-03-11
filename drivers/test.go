@@ -119,7 +119,12 @@ func init() {
 		Addr:    builtin_spec.CronActorAddr,
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.CronActorCodeID,
-		State:   &cron_spec.State{Entries: []cron_spec.Entry(nil)},
+		State:   &cron_spec.State{Entries: []cron_spec.Entry{
+			{
+				Receiver:  builtin_spec.StoragePowerActorAddr,
+				MethodNum: builtin_spec.MethodsPower.OnEpochTickEnd,
+			},
+		}},
 	}
 
 	DefaultBuiltinActorsState = []ActorState{
