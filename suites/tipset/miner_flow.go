@@ -2,22 +2,9 @@ package tipset
 
 import (
 	"context"
-	crypto_rand "crypto/rand"
-	"crypto/sha256"
-	"fmt"
-	"math/rand"
-	"os"
 	"testing"
 
-	"github.com/ipfs/go-cid"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/xerrors"
-
 	"github.com/filecoin-project/go-address"
-	fancypantscidmaker "github.com/filecoin-project/go-fil-commcid"
-	sectorbuilder "github.com/filecoin-project/go-sectorbuilder"
-	"github.com/filecoin-project/go-sectorbuilder/fs"
-
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
@@ -26,6 +13,7 @@ import (
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
+	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -40,7 +28,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState)
 
-	sectorBuilder := NewMockSectorBuilder()
+	sectorBuilder := drivers.NewMockSectorBuilder()
 	var dealStart = abi_spec.ChainEpoch(15)
 	var dealEnd = abi_spec.ChainEpoch(1000)
 
@@ -182,151 +170,4 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		// NB: the power actors TotalNetworkPower filed will not change since ConsensusMinerMinPower is larger than
 		// what would be a reasonable amount of sectors to seal in a test.
 	})
-}
-
-type MockSectorBuilder struct {
-	// PreSeal is intexted by sectorID
-	MinerSectors map[address.Address][]*PreSeal
-
-	cidGetter func() cid.Cid
-}
-
-func NewMockSectorBuilder() *MockSectorBuilder {
-	return &MockSectorBuilder{
-		MinerSectors: make(map[address.Address][]*PreSeal),
-		cidGetter:    NewProofCidForTestGetter(),
-	}
-}
-
-func (msb *MockSectorBuilder) NewPreSealedSector(miner, client address.Address, pt abi_spec.RegisteredProof, ssize abi_spec.SectorSize, start, end abi_spec.ChainEpoch) *PreSeal {
-	minerSectors := msb.MinerSectors[miner]
-	sectorID := len(minerSectors)
-
-	R := msb.cidGetter()
-	D := msb.cidGetter()
-	preseal := &PreSeal{
-		CommR:    R,
-		CommD:    D,
-		SectorID: abi_spec.SectorNumber(sectorID),
-		Deal: market_spec.DealProposal{
-			PieceCID:   D,
-			PieceSize:  abi_spec.PaddedPieceSize(ssize),
-			Client:     client,
-			Provider:   miner,
-			StartEpoch: start,
-			EndEpoch:   end,
-			// TODO how do we want to interact with these values?
-			StoragePricePerEpoch: big_spec.Zero(),
-			ProviderCollateral:   big_spec.Zero(),
-			ClientCollateral:     big_spec.Zero(),
-		},
-		ProofType: pt,
-	}
-
-	fmt.Println("D ", D, " R ", R)
-	msb.MinerSectors[miner] = append(msb.MinerSectors[miner], preseal)
-	return preseal
-}
-
-type PreSeal struct {
-	CommR     cid.Cid
-	CommD     cid.Cid
-	SectorID  abi_spec.SectorNumber
-	Deal      market_spec.DealProposal
-	ProofType abi_spec.RegisteredProof
-}
-
-func PreSealSectors(maddr address.Address, pt abi_spec.RegisteredProof, offset abi_spec.SectorNumber, sectors int, sbroot string, preimage []byte) ([]*PreSeal, error) {
-	ppt, err := pt.RegisteredPoStProof()
-	if err != nil {
-		return nil, err
-	}
-
-	spt, err := pt.RegisteredSealProof()
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := &sectorbuilder.Config{
-		Miner:         maddr,
-		SealProofType: spt,
-		PoStProofType: ppt,
-	}
-
-	if err := os.MkdirAll(sbroot, 0775); err != nil {
-		return nil, err
-	}
-
-	next := offset
-
-	sbfs := &fs.Basic{
-		Miner: maddr,
-		Root:  sbroot,
-	}
-
-	sb, err := sectorbuilder.New(sbfs, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	ssize, err := pt.SectorSize()
-	if err != nil {
-		return nil, err
-	}
-
-	var sealedSectors []*PreSeal
-	for i := 0; i < sectors; i++ {
-		sid := next
-		next++
-
-		pi, err := sb.AddPiece(context.TODO(), sid, nil, abi_spec.PaddedPieceSize(ssize).Unpadded(), crypto_rand.Reader)
-		if err != nil {
-			return nil, err
-		}
-
-		trand := sha256.Sum256(preimage)
-		ticket := abi_spec.SealRandomness(trand[:])
-
-		in2, err := sb.SealPreCommit1(context.TODO(), sid, ticket, []abi_spec.PieceInfo{pi})
-		if err != nil {
-			return nil, xerrors.Errorf("commit: %w", err)
-		}
-
-		scid, ucid, err := sb.SealPreCommit2(context.TODO(), sid, in2)
-		if err != nil {
-			return nil, xerrors.Errorf("commit: %w", err)
-		}
-
-		if err := sb.FinalizeSector(context.TODO(), sid); err != nil {
-			return nil, xerrors.Errorf("trim cache: %w", err)
-		}
-
-		sealedSectors = append(sealedSectors, &PreSeal{
-			CommR:     scid,
-			CommD:     ucid,
-			SectorID:  sid,
-			ProofType: pt,
-		})
-	}
-
-	return sealedSectors, nil
-}
-
-// NewProofCidForTestGetter returns a closure that returns a Cid unique to that invocation and has the CommD/R prefix
-// The Cid is unique wrt the closure returned, not globally. You can use this function
-// in tests.
-func NewProofCidForTestGetter() func() cid.Cid {
-	rand.Seed(1)
-	return func() cid.Cid {
-		token := make([]byte, 32)
-		_, err := rand.Read(token)
-		if err != nil {
-			panic(err)
-		}
-		proofCid, err := fancypantscidmaker.CommitmentToCID(token, fancypantscidmaker.FC_SEALED_V1)
-		if err != nil {
-			panic(err)
-		}
-		return proofCid
-	}
 }
