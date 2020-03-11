@@ -2,20 +2,9 @@ package tipset
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"io/ioutil"
-	"os"
 	"testing"
 
-	"github.com/ipfs/go-cid"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/xerrors"
-
 	"github.com/filecoin-project/go-address"
-	sectorbuilder "github.com/filecoin-project/go-sectorbuilder"
-	"github.com/filecoin-project/go-sectorbuilder/fs"
-
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
@@ -24,6 +13,7 @@ import (
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
+	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -38,6 +28,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState)
 
+	sectorBuilder := drivers.NewMockSectorBuilder()
 	var dealStart = abi_spec.ChainEpoch(15)
 	var dealEnd = abi_spec.ChainEpoch(1000)
 
@@ -56,7 +47,8 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		// TODO this is probably the wrong value and should be calculated instead based on sector size
 		collateral := abi_spec.NewTokenAmount(1_000_000)
 
-		sectorSize, err := abi_spec.RegisteredProof_StackedDRG2KiBSeal.SectorSize()
+		sectorProofType := abi_spec.RegisteredProof_StackedDRG32GiBSeal
+		sectorSize, err := sectorProofType.SectorSize()
 		require.NoError(t, err)
 
 		// Step 1: Register teh miner with the power actor
@@ -92,12 +84,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		td.AssertReceipt(receipts[1], minerAddBalRct)
 		td.AssertReceipt(receipts[2], clientAddBalRct)
 
-		m1temp, err := ioutil.TempDir("", "preseal")
-		require.NoError(t, err)
-		preseals, err := PreSealSectors(minerIdAddr, abi_spec.RegisteredProof_StackedDRG2KiBSeal, 0, 1, m1temp, []byte("some randomness"))
-		require.NoError(t, err)
-		err = createDeals(preseals, minerWorker, minerIdAddr, sectorSize, dealStart, dealEnd)
-		require.NoError(t, err)
+		sectorInfo := sectorBuilder.NewPreSealedSector(minerIdAddr, minerWorker, sectorProofType, sectorSize, dealStart, dealEnd)
 
 		// Step 3: Publish presealed deals
 		dealID := abi_spec.DealID(0)
@@ -105,19 +92,19 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		pubRet := chain.MustSerialize(&market_spec.PublishStorageDealsReturn{IDs: dealIDs})
 
 		pubDealMsg := td.MessageProducer.MarketPublishStorageDeals(builtin_spec.StorageMarketActorAddr, minerWorker, market_spec.PublishStorageDealsParams{Deals: []market_spec.ClientDealProposal{{
-			Proposal:        preseals[0].Deal,
+			Proposal:        sectorInfo.Deal,
 			ClientSignature: crypto_spec.Signature{Type: crypto_spec.SigTypeBLS, Data: []byte("doesnt matter")},
 		}}}, chain.Nonce(1), chain.Value(big_spec.Zero()))
 		pubDealRct := types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: pubRet, GasUsed: big_spec.Zero()}
 
 		// Step 4: Pre Committing Sectors
 		preCommitMsg := td.MessageProducer.MinerPreCommitSector(minerIdAddr, minerWorker, miner_spec.SectorPreCommitInfo{
-			RegisteredProof: preseals[0].ProofType,
-			SectorNumber:    preseals[0].SectorID,
-			SealedCID:       preseals[0].CommR,
+			RegisteredProof: sectorInfo.ProofType,
+			SectorNumber:    sectorInfo.SectorID,
+			SealedCID:       sectorInfo.CommR,
 			SealRandEpoch:   0,
 			DealIDs:         dealIDs,
-			Expiration:      preseals[0].Deal.EndEpoch,
+			Expiration:      sectorInfo.Deal.EndEpoch,
 		}, chain.Nonce(2), chain.Value(big_spec.Zero()))
 		preCommitRct := types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
 
@@ -136,7 +123,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		td.AssertReceipt(receipts[1], preCommitRct)
 
 		proveCommitMsg := td.MessageProducer.MinerProveCommitSector(minerIdAddr, minerWorker, miner_spec.ProveCommitSectorParams{
-			SectorNumber: preseals[0].SectorID,
+			SectorNumber: sectorInfo.SectorID,
 			Proof:        nil,
 		}, chain.Value(big_spec.Zero()), chain.Nonce(3))
 		proveCommitRct := types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
@@ -177,113 +164,10 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 
 		// after the application of the message and moving the epoch past the proving period the miner has had a fault
 		td.GetActorState(minerIdAddr, &minerSt)
+		require.True(t, minerSt.PoStState.HasFailedPost())
 		require.Equal(t, int64(1), minerSt.PoStState.NumConsecutiveFailures)
 
 		// NB: the power actors TotalNetworkPower filed will not change since ConsensusMinerMinPower is larger than
 		// what would be a reasonable amount of sectors to seal in a test.
 	})
-}
-
-type PreSeal struct {
-	CommR     cid.Cid
-	CommD     cid.Cid
-	SectorID  abi_spec.SectorNumber
-	Deal      market_spec.DealProposal
-	ProofType abi_spec.RegisteredProof
-}
-
-func PreSealSectors(maddr address.Address, pt abi_spec.RegisteredProof, offset abi_spec.SectorNumber, sectors int, sbroot string, preimage []byte) ([]*PreSeal, error) {
-	ppt, err := pt.RegisteredPoStProof()
-	if err != nil {
-		return nil, err
-	}
-
-	spt, err := pt.RegisteredSealProof()
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := &sectorbuilder.Config{
-		Miner:         maddr,
-		SealProofType: spt,
-		PoStProofType: ppt,
-	}
-
-	if err := os.MkdirAll(sbroot, 0775); err != nil {
-		return nil, err
-	}
-
-	next := offset
-
-	sbfs := &fs.Basic{
-		Miner: maddr,
-		Root:  sbroot,
-	}
-
-	sb, err := sectorbuilder.New(sbfs, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	ssize, err := pt.SectorSize()
-	if err != nil {
-		return nil, err
-	}
-
-	var sealedSectors []*PreSeal
-	for i := 0; i < sectors; i++ {
-		sid := next
-		next++
-
-		pi, err := sb.AddPiece(context.TODO(), sid, nil, abi_spec.PaddedPieceSize(ssize).Unpadded(), rand.Reader)
-		if err != nil {
-			return nil, err
-		}
-
-		trand := sha256.Sum256(preimage)
-		ticket := abi_spec.SealRandomness(trand[:])
-
-		in2, err := sb.SealPreCommit1(context.TODO(), sid, ticket, []abi_spec.PieceInfo{pi})
-		if err != nil {
-			return nil, xerrors.Errorf("commit: %w", err)
-		}
-
-		scid, ucid, err := sb.SealPreCommit2(context.TODO(), sid, in2)
-		if err != nil {
-			return nil, xerrors.Errorf("commit: %w", err)
-		}
-
-		if err := sb.FinalizeSector(context.TODO(), sid); err != nil {
-			return nil, xerrors.Errorf("trim cache: %w", err)
-		}
-
-		sealedSectors = append(sealedSectors, &PreSeal{
-			CommR:     scid,
-			CommD:     ucid,
-			SectorID:  sid,
-			ProofType: pt,
-		})
-	}
-
-	return sealedSectors, nil
-}
-
-func createDeals(preseal []*PreSeal, worker, maddr address.Address, ssize abi_spec.SectorSize, start, end abi_spec.ChainEpoch) error {
-	for _, sector := range preseal {
-		proposal := &market_spec.DealProposal{
-			PieceCID:             sector.CommD,
-			PieceSize:            abi_spec.PaddedPieceSize(ssize),
-			Client:               worker,
-			Provider:             maddr,
-			StartEpoch:           start,
-			EndEpoch:             end,
-			StoragePricePerEpoch: big_spec.Zero(),
-			ProviderCollateral:   big_spec.Zero(),
-			ClientCollateral:     big_spec.Zero(),
-		}
-
-		sector.Deal = *proposal
-	}
-
-	return nil
 }
