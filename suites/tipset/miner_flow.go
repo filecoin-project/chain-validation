@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/ipfs/go-cid"
+	cbor "github.com/ipfs/go-ipld-cbor"
+	mh "github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"
 
@@ -177,11 +179,55 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 
 		// after the application of the message and moving the epoch past the proving period the miner has had a fault
 		td.GetActorState(minerIdAddr, &minerSt)
+		require.True(t, minerSt.PoStState.HasFailedPost())
 		require.Equal(t, int64(1), minerSt.PoStState.NumConsecutiveFailures)
 
 		// NB: the power actors TotalNetworkPower filed will not change since ConsensusMinerMinPower is larger than
 		// what would be a reasonable amount of sectors to seal in a test.
 	})
+}
+
+type MockSectorBuilder struct {
+	// PreSeal is intexted by sectorID
+	MinerSectors map[address.Address][]*PreSeal
+
+	cidGetter func() cid.Cid
+}
+
+func NewMockSectorBuilder() *MockSectorBuilder {
+	return &MockSectorBuilder{
+		MinerSectors: make(map[address.Address][]*PreSeal),
+		cidGetter:    NewCidForTestGetter(),
+	}
+}
+
+func (msb *MockSectorBuilder) NewPreSealedSector(miner, client address.Address, pt abi_spec.RegisteredProof, ssize abi_spec.SectorSize, start, end abi_spec.ChainEpoch) *PreSeal {
+	minerSectors := msb.MinerSectors[miner]
+	sectorID := len(minerSectors)
+
+	R := msb.cidGetter()
+	D := msb.cidGetter()
+	preseal := &PreSeal{
+		CommR:    R,
+		CommD:    D,
+		SectorID: abi_spec.SectorNumber(sectorID),
+		Deal: market_spec.DealProposal{
+			PieceCID:   D,
+			PieceSize:  abi_spec.PaddedPieceSize(ssize),
+			Client:     client,
+			Provider:   miner,
+			StartEpoch: start,
+			EndEpoch:   end,
+			// TODO how do we want to interact with these values?
+			StoragePricePerEpoch: big_spec.Zero(),
+			ProviderCollateral:   big_spec.Zero(),
+			ClientCollateral:     big_spec.Zero(),
+		},
+		ProofType: pt,
+	}
+
+	msb.MinerSectors[miner] = append(msb.MinerSectors[miner], preseal)
+	return preseal
 }
 
 type PreSeal struct {
@@ -286,4 +332,19 @@ func createDeals(preseal []*PreSeal, worker, maddr address.Address, ssize abi_sp
 	}
 
 	return nil
+}
+
+// NewCidForTestGetter returns a closure that returns a Cid unique to that invocation.
+// The Cid is unique wrt the closure returned, not globally. You can use this function
+// in tests.
+func NewCidForTestGetter() func() cid.Cid {
+	i := 31337
+	return func() cid.Cid {
+		obj, err := cbor.WrapObject([]int{i}, uint64(mh.BLAKE2B_MIN+31), -1)
+		if err != nil {
+			panic(err)
+		}
+		i++
+		return obj.Cid()
+	}
 }
