@@ -94,7 +94,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 
 		m1temp, err := ioutil.TempDir("", "preseal")
 		require.NoError(t, err)
-		preseals, err := PreSealSectors(minerIdAddr, minerWorker, abi_spec.RegisteredProof_StackedDRG2KiBSeal, 0, 1, m1temp, []byte("some randomness"))
+		preseals, err := PreSealSectors(minerIdAddr, abi_spec.RegisteredProof_StackedDRG2KiBSeal, 0, 1, m1temp, []byte("some randomness"))
 		require.NoError(t, err)
 		err = createDeals(preseals, minerWorker, minerIdAddr, sectorSize, dealStart, dealEnd)
 		require.NoError(t, err)
@@ -175,7 +175,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		require.Len(t, receipts, 1)
 		td.AssertReceipt(receipts[0], transferRct)
 
-		// after the applicaiton of the message and moving the epoch past the proving period the miner has had a fault
+		// after the application of the message and moving the epoch past the proving period the miner has had a fault
 		td.GetActorState(minerIdAddr, &minerSt)
 		require.Equal(t, int64(1), minerSt.PoStState.NumConsecutiveFailures)
 
@@ -192,7 +192,7 @@ type PreSeal struct {
 	ProofType abi_spec.RegisteredProof
 }
 
-func PreSealSectors(maddr, worker address.Address, pt abi_spec.RegisteredProof, offset abi_spec.SectorNumber, sectors int, sbroot string, preimage []byte) ([]*PreSeal, error) {
+func PreSealSectors(maddr address.Address, pt abi_spec.RegisteredProof, offset abi_spec.SectorNumber, sectors int, sbroot string, preimage []byte) ([]*PreSeal, error) {
 	ppt, err := pt.RegisteredPoStProof()
 	if err != nil {
 		return nil, err
