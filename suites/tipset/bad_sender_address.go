@@ -33,6 +33,7 @@ func TestInvalidSenderAddress(t *testing.T, factory state.Factories) {
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
 			WithMiner(td.ExeCtx.Miner).
+			WithTicketCount(1).
 			WithBLSMessage(trnsferMsg).
 			Build()
 

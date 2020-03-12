@@ -70,6 +70,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		clientAddBalRct := types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
+			WithTicketCount(1).
 			WithMiner(td.ExeCtx.Miner).
 			WithBLSMessage(createMinerMsg).
 			WithBLSMessage(minerAddBalMsg).
@@ -109,6 +110,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		preCommitRct := types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
 
 		blkMsgs = chain.NewTipSetMessageBuilder().
+			WithTicketCount(1).
 			WithMiner(td.ExeCtx.Miner).
 			WithBLSMessage(pubDealMsg).
 			WithBLSMessage(preCommitMsg).
@@ -129,6 +131,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		proveCommitRct := types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
 
 		blkMsgs = chain.NewTipSetMessageBuilder().
+			WithTicketCount(1).
 			WithMiner(td.ExeCtx.Miner).
 			WithBLSMessage(proveCommitMsg).
 			Build()
@@ -153,6 +156,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 		transferRct := types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()}
 
 		blkMsgs = chain.NewTipSetMessageBuilder().
+			WithTicketCount(1).
 			WithMiner(td.ExeCtx.Miner).
 			WithBLSMessage(transferMsg).
 			Build()
