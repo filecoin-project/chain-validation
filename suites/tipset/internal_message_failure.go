@@ -51,6 +51,7 @@ func TestInternalMessageApplicationFailure(t *testing.T, factory state.Factories
 		// Create the multisig actor and propose the send
 		blkMsgs := chain.NewTipSetMessageBuilder().
 			WithMiner(td.ExeCtx.Miner).
+			WithTicketCount(1).
 			WithSECPMessage(signMessage(createMsMsg, td.Wallet())).
 			WithSECPMessage(signMessage(proposeMsMsg, td.Wallet())).
 			Build()
@@ -99,6 +100,7 @@ func TestInternalMessageApplicationFailure(t *testing.T, factory state.Factories
 		// Create the multisig actor and propose the send
 		blkMsgs := chain.NewTipSetMessageBuilder().
 			WithMiner(td.ExeCtx.Miner).
+			WithTicketCount(1).
 			WithSECPMessage(signMessage(createMsMsg, td.Wallet())).
 			WithSECPMessage(signMessage(proposeMsMsg, td.Wallet())).
 			Build()

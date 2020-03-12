@@ -30,6 +30,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
+			WithTicketCount(1).
 			// miner addresses are required to use ID protocol.
 			WithMiner(td.ExeCtx.Miner).
 			// send value from sender to receiver
@@ -56,6 +57,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
+			WithTicketCount(1).
 			// miner addresses are required to use ID protocol.
 			WithMiner(td.ExeCtx.Miner).
 			// duplicate the message
@@ -84,6 +86,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
+			WithTicketCount(1).
 			// miner addresses are required to use ID protocol.
 			WithMiner(td.ExeCtx.Miner).
 			// send value from sender to receiver
@@ -110,6 +113,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
+			WithTicketCount(1).
 			// miner addresses are required to use ID protocol.
 			WithMiner(td.ExeCtx.Miner).
 			// send value from sender to receiver
@@ -138,6 +142,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		blkMsgs := chain.NewTipSetMessageBuilder().
+			WithTicketCount(1).
 			// miner addresses are required to use ID protocol.
 			WithMiner(td.ExeCtx.Miner).
 			// send value from sender to receiver
