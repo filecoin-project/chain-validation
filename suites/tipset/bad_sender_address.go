@@ -7,7 +7,6 @@ import (
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
-	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -24,27 +23,18 @@ func TestInvalidSenderAddress(t *testing.T, factory state.Factories) {
 
 	t.Run("message sender address is defined but not in state tree", func(t *testing.T) {
 		td := builder.Build(t)
+		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		badSender := utils.NewSECP256K1Addr(t, "123")
 
 		receiver, _ := td.NewAccountActor(drivers.SECP, abi_spec.NewTokenAmount(1_000_000))
 
-		trnsferMsg := td.MessageProducer.Transfer(receiver, badSender, chain.Value(big_spec.NewInt(10)), chain.Nonce(0))
-
-		blkMsgs := chain.NewTipSetMessageBuilder().
-			WithMiner(td.ExeCtx.Miner).
-			WithTicketCount(1).
-			WithBLSMessage(trnsferMsg).
-			Build()
-
-		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
-		require.NoError(t, err)
-		require.Len(t, receipts, 1)
-
-		td.AssertReceipt(receipts[0], types.MessageReceipt{
-			ExitCode:    exitcode.SysErrActorNotFound,
-			ReturnValue: drivers.EmptyReturnValue,
-		})
+		blkBuilder.WithTicketCount(1).
+			WithBLSMessageAndReceipt(
+				td.MessageProducer.Transfer(receiver, badSender, chain.Value(big_spec.NewInt(10)), chain.Nonce(0)),
+				types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue},
+			).
+			ApplyAndValidate()
 
 		td.AssertBalance(receiver, abi_spec.NewTokenAmount(1_000_000))
 	})

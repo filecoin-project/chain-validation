@@ -119,7 +119,7 @@ func init() {
 		Addr:    builtin_spec.CronActorAddr,
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.CronActorCodeID,
-		State:   &cron_spec.State{Entries: []cron_spec.Entry{
+		State: &cron_spec.State{Entries: []cron_spec.Entry{
 			{
 				Receiver:  builtin_spec.StoragePowerActorAddr,
 				MethodNum: builtin_spec.MethodsPower.OnEpochTickEnd,
@@ -256,7 +256,7 @@ type TestDriver struct {
 
 	T                    testing.TB
 	MessageProducer      *chain.MessageProducer
-	TipSetMessageBuilder *chain.TipSetMessageBuilder
+	TipSetMessageBuilder *TipSetMessageBuilder
 	Validator            *chain.Validator
 	ExeCtx               *types.ExecutionContext
 
