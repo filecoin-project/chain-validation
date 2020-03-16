@@ -25,41 +25,29 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 
 	t.Run("apply a single BLS message", func(t *testing.T) {
 		td := builder.Build(t)
+		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
-		blkMsgs := chain.NewTipSetMessageBuilder().
-			WithTicketCount(1).
-			// miner addresses are required to use ID protocol.
-			WithMiner(td.ExeCtx.Miner).
+		blkBuilder.WithTicketCount(1).
 			// send value from sender to receiver
-			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
-			Build()
-
-		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
-		require.NoError(t, err)
-		require.Len(t, receipts, 1)
-
-		td.AssertReceipt(types.MessageReceipt{
-			ExitCode:    exitcode.Ok,
-			ReturnValue: drivers.EmptyReturnValue,
-			GasUsed:     abi_spec.NewTokenAmount(128),
-		}, receipts[0])
+			WithBLSMessageAndReceipt(
+				td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
+				types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(128)},
+			).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
 
 	t.Run("apply a duplicated BLS message", func(t *testing.T) {
 		td := builder.Build(t)
+		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
-		blkMsgs := chain.NewTipSetMessageBuilder().
-			WithTicketCount(1).
-			// miner addresses are required to use ID protocol.
-			WithMiner(td.ExeCtx.Miner).
+		blkMsgs := blkBuilder.WithTicketCount(1).
 			// duplicate the message
 			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
@@ -81,41 +69,31 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 
 	t.Run("apply a single SECP message", func(t *testing.T) {
 		td := builder.Build(t)
+		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
-		blkMsgs := chain.NewTipSetMessageBuilder().
-			WithTicketCount(1).
-			// miner addresses are required to use ID protocol.
-			WithMiner(td.ExeCtx.Miner).
+		blkBuilder.WithTicketCount(1).
 			// send value from sender to receiver
-			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
-			Build()
-
-		receipts, err := td.Validator.ApplyTipSetMessages(td.ExeCtx, td.State(), []types.BlockMessagesInfo{blkMsgs}, td.Randomness())
-		require.NoError(t, err)
-		require.Len(t, receipts, 1)
-
-		td.AssertReceipt(types.MessageReceipt{
-			ExitCode:    exitcode.Ok,
-			ReturnValue: drivers.EmptyReturnValue,
-			GasUsed:     abi_spec.NewTokenAmount(128),
-		}, receipts[0])
+			WithSECPMessageAndReceipt(
+				signMessage(
+					td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
+					td.Wallet()),
+				types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(128)},
+			).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
 
 	t.Run("apply duplicate SECP message", func(t *testing.T) {
 		td := builder.Build(t)
+		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
-		blkMsgs := chain.NewTipSetMessageBuilder().
-			WithTicketCount(1).
-			// miner addresses are required to use ID protocol.
-			WithMiner(td.ExeCtx.Miner).
+		blkMsgs := blkBuilder.WithTicketCount(1).
 			// send value from sender to receiver
 			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
 			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
@@ -137,14 +115,12 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 	// This case is near impossible, but exercise anyways.
 	t.Run("apply duplicate BLS and SECP message", func(t *testing.T) {
 		td := builder.Build(t)
+		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
-		blkMsgs := chain.NewTipSetMessageBuilder().
-			WithTicketCount(1).
-			// miner addresses are required to use ID protocol.
-			WithMiner(td.ExeCtx.Miner).
+		blkMsgs := blkBuilder.WithTicketCount(1).
 			// send value from sender to receiver
 			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
 			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
