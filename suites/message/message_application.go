@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"math/big"
 	"testing"
 
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
@@ -102,6 +103,9 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: abi_spec.NewTokenAmount(1416)},
 		)
 
+		sendActor, _ := td.State().Actor(sender)
+		senderBalance := sendActor.Balance()
+
 		// message application fails due to invalid argument (signature).
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
@@ -116,5 +120,11 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			types.MessageReceipt{ExitCode: exitcode.ErrIllegalArgument, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(1_000_000)},
 		)
+
+		// assert that the entire gas limit is deducted
+		gasReward := big.NewInt(td.MessageProducer.DefaultGasLimit())
+		gasReward = gasReward.Mul(gasReward, td.MessageProducer.DefaultGasPrice().Int)
+		senderBalance.Sub(senderBalance.Int, gasReward)
+		td.AssertBalance(sender, senderBalance)
 	})
 }

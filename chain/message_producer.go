@@ -30,6 +30,14 @@ func (mp *MessageProducer) Messages() []*types.Message {
 	return mp.messages
 }
 
+func (mp *MessageProducer) DefaultGasLimit() int64 {
+	return mp.defaults.gasLimit
+}
+
+func (mp *MessageProducer) DefaultGasPrice() big_spec.Int {
+	return mp.defaults.gasPrice
+}
+
 // BuildFull creates and returns a single message.
 func (mp *MessageProducer) BuildFull(to, from address.Address, method abi_spec.MethodNum, callSeq int64, value, gasPrice big_spec.Int, gasLimit int64, params []byte) *types.Message {
 	fm := &types.Message{
