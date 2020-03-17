@@ -38,7 +38,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		// expected address of the actor
 		multisigAddr := utils.NewIDAddr(t, 1+utils.IdFromAddress(aliceId))
 
-		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
+		createRet := td.ComputeInitActorExecReturn(alice, 0, 0, multisigAddr)
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
 				Signers:               []address.Address{alice},
@@ -67,7 +67,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		multisigAddr := utils.NewIDAddr(t, 1+utils.IdFromAddress(outsiderId))
 
-		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
+		createRet := td.ComputeInitActorExecReturn(alice, 0, 0, multisigAddr)
 		// create the multisig actor
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
@@ -144,6 +144,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		// Multisig actor address
 		multisigAddr := utils.NewIDAddr(t, 1+utils.IdFromAddress(outsiderId))
+		createRet := td.ComputeInitActorExecReturn(alice, 0, 0, multisigAddr)
 
 		// create the multisig actor
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -154,7 +155,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			},
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: multisigAddr.Bytes(),
+				ReturnValue: chain.MustSerialize(&createRet),
 				GasUsed:     big_spec.NewInt(1542),
 			})
 
@@ -233,6 +234,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		var initialSigners = []address.Address{alice, bob}
 
 		multisigAddr := utils.NewIDAddr(t, 1+utils.IdFromAddress(duckId))
+		createRet := td.ComputeInitActorExecReturn(alice, 0, 0, multisigAddr)
 
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
@@ -242,7 +244,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			},
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: multisigAddr.Bytes(),
+				ReturnValue: chain.MustSerialize(&createRet),
 				GasUsed:     big_spec.NewInt(1794),
 			})
 
@@ -317,6 +319,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		var initialSigners = []address.Address{aliceId, bobId, chuckId, duckId}
 
 		multisigAddr := utils.NewIDAddr(t, utils.IdFromAddress(duckId)+1)
+		createRet := td.ComputeInitActorExecReturn(alice, 0, 0, multisigAddr)
 
 		// create a ms actor with 4 signers and 3 approvals required
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
@@ -327,7 +330,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			},
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: multisigAddr.Bytes(),
+				ReturnValue: chain.MustSerialize(&createRet),
 				GasUsed:     big_spec.NewInt(1680),
 			})
 
@@ -403,7 +406,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		var initialSigners = []address.Address{aliceId, bobId}
 
 		multisigAddr := utils.NewIDAddr(t, utils.IdFromAddress(chuckId)+1)
-
+		createRet := td.ComputeInitActorExecReturn(alice, 0, 0, multisigAddr)
 		// create a ms actor with 4 signers and 3 approvals required
 		td.MustCreateAndVerifyMultisigActor(0, valueSend, multisigAddr, alice,
 			&multisig_spec.ConstructorParams{
@@ -413,7 +416,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			},
 			types.MessageReceipt{
 				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: multisigAddr.Bytes(),
+				ReturnValue: chain.MustSerialize(&createRet),
 				GasUsed:     big_spec.NewInt(1558),
 			})
 

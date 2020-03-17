@@ -90,13 +90,13 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		}
 
 		// will create and send on payment channel
-		sender, senderID := td.NewAccountActor(drivers.SECP, initialBal)
+		sender, _ := td.NewAccountActor(drivers.SECP, initialBal)
 		// will be receiver on paych
 		receiver, receiverID := td.NewAccountActor(drivers.SECP, initialBal)
 
 		// the _expected_ address of the payment channel
 		paychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
-		createRet := td.ComputeInitActorExecReturn(senderID, 0, paychAddr)
+		createRet := td.ComputeInitActorExecReturn(sender, 0, 0, paychAddr)
 		td.ApplyMessageExpectReceipt(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
 			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: abi_spec.NewTokenAmount(1416)},

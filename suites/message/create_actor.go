@@ -109,15 +109,15 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
 	var toSend = abi_spec.NewTokenAmount(10_000)
 
-	sender, senderID := td.NewAccountActor(drivers.SECP, initialBal)
+	sender, _ := td.NewAccountActor(drivers.SECP, initialBal)
 
 	receiver, receiverID := td.NewAccountActor(drivers.SECP, initialBal)
 
 	firstPaychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
 	secondPaychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+2)
 
-	firstInitRet := td.ComputeInitActorExecReturn(senderID, 0, firstPaychAddr)
-	secondInitRet := td.ComputeInitActorExecReturn(senderID, 1, secondPaychAddr)
+	firstInitRet := td.ComputeInitActorExecReturn(sender, 0, 0, firstPaychAddr)
+	secondInitRet := td.ComputeInitActorExecReturn(sender, 1, 0, secondPaychAddr)
 
 	td.ApplyMessageExpectReceipt(
 		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),

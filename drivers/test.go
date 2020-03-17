@@ -338,16 +338,16 @@ func (td *TestDriver) AssertMultisigState(multisigAddr address.Address, expected
 	}
 }
 
-func (td *TestDriver) ComputeInitActorExecReturn(from address.Address, callSeq uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
-	return computeInitActorExecReturn(td.T, from, callSeq, expectedNewAddr)
+func (td *TestDriver) ComputeInitActorExecReturn(from address.Address, callSeq int64, internalCallSeq int64, expectedNewAddr address.Address) init_spec.ExecReturn {
+	return computeInitActorExecReturn(td.T, from, callSeq, internalCallSeq, expectedNewAddr)
 }
 
-func computeInitActorExecReturn(t testing.TB, from address.Address, callSeq uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
+func computeInitActorExecReturn(t testing.TB, from address.Address, callSeq int64, internalCallSeq int64, expectedNewAddr address.Address) init_spec.ExecReturn {
 	buf := new(bytes.Buffer)
 
 	require.NoError(t, from.MarshalCBOR(buf))
 	require.NoError(t, binary.Write(buf, binary.BigEndian, callSeq))
-	require.NoError(t, binary.Write(buf, binary.BigEndian, uint64(0))) // TODO this is wrong, but lotus does it this way
+	require.NoError(t, binary.Write(buf, binary.BigEndian, internalCallSeq))
 
 	out, err := address.NewActorAddress(buf.Bytes())
 	require.NoError(t, err)
