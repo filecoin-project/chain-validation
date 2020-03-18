@@ -31,6 +31,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		var initialBal = abi_spec.NewTokenAmount(200000000000)
 
 		td := builder.Build(t)
+		defer td.Complete()
 
 		// creator of the multisig actor
 		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal)
@@ -59,6 +60,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		var initialBal = abi_spec.NewTokenAmount(200000000000)
 
 		td := builder.Build(t)
+		defer td.Complete()
 
 		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal)
 
@@ -130,6 +132,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 	t.Run("propose and approve", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 		var initialBal = abi_spec.NewTokenAmount(200000000000)
 		const numApprovals = 2
 		const unlockDuration = 1
@@ -226,6 +229,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		var initialBal = abi_spec.NewTokenAmount(200000000000)
 
 		td := builder.Build(t)
+		defer td.Complete()
 
 		alice, _ := td.NewAccountActor(drivers.SECP, initialBal)     // 101
 		bob, _ := td.NewAccountActor(drivers.SECP, initialBal)       // 102
@@ -311,6 +315,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		var initialBal = abi_spec.NewTokenAmount(200000000000)
 
 		td := builder.Build(t)
+		defer td.Complete()
 
 		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal) // 101
 		_, bobId := td.NewAccountActor(drivers.SECP, initialBal)       // 102
@@ -397,6 +402,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		var initialBal = abi_spec.NewTokenAmount(200000000000)
 
 		td := builder.Build(t)
+		defer td.Complete()
 
 		alice, aliceId := td.NewAccountActor(drivers.SECP, initialBal) // 101
 		_, bobId := td.NewAccountActor(drivers.SECP, initialBal)       // 102

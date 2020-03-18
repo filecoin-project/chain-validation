@@ -30,6 +30,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 
 	t.Run("fail to cover gas cost for message receipt on chain", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		td.ApplyMessageExpectReceipt(
@@ -40,6 +41,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 
 	t.Run("not enough gas to pay message on-chain-size cost", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		// Expect Message application to fail due to lack of gas
@@ -58,6 +60,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 
 	t.Run("invalid actor CallSeqNum", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 
@@ -77,6 +80,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 
 	t.Run("abort during actor execution", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 
 		const pcTimeLock = abi_spec.ChainEpoch(10)
 		const pcLane = uint64(123)
