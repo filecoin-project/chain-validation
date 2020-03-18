@@ -53,6 +53,11 @@ func (t *TipSetMessageBuilder) WithTicketCount(count int64) *TipSetMessageBuilde
 	return t
 }
 
+func (t *TipSetMessageBuilder) WithMessageReceipt(rc types.MessageReceipt) *TipSetMessageBuilder {
+	t.msgReceipts = append(t.msgReceipts, rc)
+	return t
+}
+
 func (t *TipSetMessageBuilder) Build() types.BlockMessagesInfo {
 	return types.BlockMessagesInfo{
 		BLSMessages:  t.blsMsgs,
@@ -63,7 +68,7 @@ func (t *TipSetMessageBuilder) Build() types.BlockMessagesInfo {
 }
 
 func (t *TipSetMessageBuilder) Apply() []types.MessageReceipt {
-	receipts, err := t.driver.Validator.ApplyTipSetMessages(t.driver.ExeCtx, t.driver.State(), []types.BlockMessagesInfo{t.Build()}, t.driver.Randomness())
+	receipts, err := t.driver.validator.ApplyTipSetMessages(t.driver.ExeCtx, t.driver.State(), []types.BlockMessagesInfo{t.Build()}, t.driver.Randomness())
 	require.NoError(t.driver.T, err)
 	return receipts
 }

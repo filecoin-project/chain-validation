@@ -43,7 +43,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			utils.NewSECP256K1Addr(t, "publickeyfoo"),
 			abi_spec.NewTokenAmount(10_000),
 
-			abi_spec.NewTokenAmount(130),
+			abi_spec.NewTokenAmount(131),
 			exitcode_spec.Ok,
 		},
 		{
@@ -84,9 +84,10 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			td := builder.Build(t)
+			defer td.Complete()
 
 			existingAccountAddr, _ := td.NewAccountActor(tc.existingActorType, tc.existingActorBal)
-			td.ApplyMessageExpectReceipt(
+			gasUsed := td.ApplyMessageExpectReceipt(
 				td.MessageProducer.Transfer(tc.newActorAddr, existingAccountAddr, chain.Value(tc.newActorInitBal), chain.Nonce(0)),
 				types.MessageReceipt{ExitCode: tc.expExitCode, ReturnValue: nil, GasUsed: tc.expGasCost},
 			)
@@ -94,7 +95,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			// new actor balance will only exist if message was applied successfully.
 			if tc.expExitCode.IsSuccess() {
 				td.AssertBalance(tc.newActorAddr, tc.newActorInitBal)
-				td.AssertBalance(existingAccountAddr, big_spec.Sub(big_spec.Sub(tc.existingActorBal, tc.expGasCost), tc.newActorInitBal))
+				td.AssertBalance(existingAccountAddr, big_spec.Sub(big_spec.Sub(tc.existingActorBal, big_spec.NewInt(gasUsed)), tc.newActorInitBal))
 			}
 		})
 	}
@@ -105,6 +106,7 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState).Build(t)
+	defer td.Complete()
 
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
 	var toSend = abi_spec.NewTokenAmount(10_000)

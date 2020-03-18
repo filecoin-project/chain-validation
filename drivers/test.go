@@ -243,10 +243,12 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		T:               t,
 		StateDriver:     sd,
 		MessageProducer: producer,
-		Validator:       validator,
+		validator:       validator,
 		ExeCtx:          exeCtx,
 
 		Config: b.factory.NewValidationConfig(),
+
+		GasMeter: NewGasMeter(t, Validate),
 	}
 
 }
@@ -257,18 +259,43 @@ type TestDriver struct {
 	T                    testing.TB
 	MessageProducer      *chain.MessageProducer
 	TipSetMessageBuilder *TipSetMessageBuilder
-	Validator            *chain.Validator
+	validator            *chain.Validator
 	ExeCtx               *types.ExecutionContext
 
 	Config state.ValidationConfig
+
+	GasMeter *GasMeter
+}
+
+func (td *TestDriver) Complete() {
+	td.GasMeter.Record()
 }
 
 // TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
-func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, receipt types.MessageReceipt) {
-	msgReceipt, err := td.Validator.ApplyMessage(td.ExeCtx, td.State(), msg)
-	require.NoError(td.T, err)
-	td.AssertReceipt(msgReceipt, receipt)
+func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, expected types.MessageReceipt) int64 {
+	prevState := td.State().Root()
 
+	actual, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
+	require.NoError(td.T, err)
+
+	newState := td.State().Root()
+
+	td.GasMeter.Track(prevState, newState, msg, actual)
+
+	expectedGasUsed := td.GasMeter.GasFor(prevState, msg)
+	if td.Config.ValidateGas() {
+		assert.Equal(td.T, expectedGasUsed, actual.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, actual.GasUsed.Int64())
+	}
+	if td.Config.ValidateExitCode() {
+		assert.Equal(td.T, expected.ExitCode, actual.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", expected.ExitCode.Error(), actual.ExitCode.Error())
+	}
+	if td.Config.ValidateReturnValue() {
+		assert.Equal(td.T, expected.ReturnValue, actual.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", expected.ReturnValue, actual.ReturnValue)
+	}
+
+	// TODO in the very near future we will be validating the stateroot here, keep in back of head.
+
+	return expectedGasUsed
 }
 
 // AssertBalance checks an actor has an expected balance.
@@ -276,14 +303,6 @@ func (td *TestDriver) AssertBalance(addr address.Address, expected big_spec.Int)
 	actr, err := td.State().Actor(addr)
 	require.NoError(td.T, err)
 	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
-}
-
-func (td *TestDriver) AssertBalanceWithGas(addr address.Address, expected, gasUsed big_spec.Int) {
-	if td.Config.ValidateGas() {
-		actr, err := td.State().Actor(addr)
-		require.NoError(td.T, err)
-		assert.Equal(td.T, expected, big_spec.Sub(actr.Balance(), gasUsed), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
-	}
 }
 
 func (td *TestDriver) AssertReceipt(actual, expected types.MessageReceipt) {
