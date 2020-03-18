@@ -42,7 +42,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 	minerWorker, minerWorkerID := td.NewAccountActor(address.BLS, abi_spec.NewTokenAmount(1_000_000_000))
 	// The address of the miner actor
 	minerActorID := utils.NewIDAddr(t, utils.IdFromAddress(minerWorkerID)+1)
-	createMinerRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, minerActorID)
+	createMinerRet := td.ComputeInitActorExecReturn(minerOwner, 0, 1, minerActorID)
 	// collaterall the miner will pledge
 	collateral := abi_spec.NewTokenAmount(1_000_000)
 
@@ -71,7 +71,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 				minerActorID,
 				chain.Nonce(0), chain.Value(collateral),
 			),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		// Step 2.B: Add market funds for miner
 		WithBLSMessageAndReceipt(
@@ -79,7 +79,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 				minerWorker,
 				chain.Nonce(1), chain.Value(collateral),
 			),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		ApplyAndValidate()
 
@@ -118,7 +118,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 					Expiration:      sectorInfo.Deal.EndEpoch,
 				},
 				chain.Nonce(2), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		ApplyAndValidate()
 
@@ -130,7 +130,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 			td.MessageProducer.MinerProveCommitSector(minerActorID, minerWorker,
 				miner_spec.ProveCommitSectorParams{SectorNumber: sectorInfo.SectorID, Proof: nil},
 				chain.Value(big_spec.Zero()), chain.Nonce(3)),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		ApplyAndValidate()
 
@@ -147,7 +147,7 @@ func TestMinerCreateProveCommitAndMissPoStChallengeWindow(t *testing.T, factory 
 			td.MessageProducer.Transfer(minerOwner, minerOwner,
 				chain.Nonce(2), chain.Value(big_spec.Zero()),
 			),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: []byte{}, GasUsed: big_spec.Zero()},
+			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		ApplyAndValidate()
 

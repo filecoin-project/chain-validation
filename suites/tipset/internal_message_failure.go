@@ -39,7 +39,7 @@ func TestInternalMessageApplicationFailure(t *testing.T, factory state.Factories
 
 		multisigAddr := utils.NewIDAddr(t, utils.IdFromAddress(aliceId)+1)
 
-		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
+		createRet := td.ComputeInitActorExecReturn(aliceId, 0, 1, multisigAddr)
 		// Create the multisig actor and propose the send
 		blkBuilder.WithTicketCount(1).
 			WithSECPMessageAndReceipt(
@@ -85,7 +85,7 @@ func TestInternalMessageApplicationFailure(t *testing.T, factory state.Factories
 		proposeParams := chain.MustSerialize(&params)
 		proposeParams[2] = address.Unknown // the 3rd byte in the slice is the address protocol identifier, set to invalid protocol
 
-		createRet := td.ComputeInitActorExecReturn(aliceId, 0, multisigAddr)
+		createRet := td.ComputeInitActorExecReturn(aliceId, 0, 1, multisigAddr)
 		blkBuilder.WithTicketCount(1).
 			WithSECPMessageAndReceipt(
 				signMessage(
