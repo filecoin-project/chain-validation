@@ -53,6 +53,9 @@ var (
 	DefaultBuiltinActorsState      []ActorState
 )
 
+// if this number is 0 we get a specs-actors panic since it divides by 0
+const InitialTotalNetworkPower = 1
+
 func init() {
 	ms := newMockStore()
 	if err := initializeStoreWithAdtRoots(ms); err != nil {
@@ -85,7 +88,7 @@ func init() {
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.StoragePowerActorCodeID,
 		State: &power_spec.State{
-			TotalNetworkPower:        abi_spec.NewStoragePower(1),
+			TotalNetworkPower:        abi_spec.NewStoragePower(InitialTotalNetworkPower),
 			EscrowTable:              EmptyMapCid,
 			CronEventQueue:           EmptyMapCid,
 			PoStDetectedFaultMiners:  EmptyMapCid,
@@ -303,6 +306,12 @@ func (td *TestDriver) AssertBalance(addr address.Address, expected big_spec.Int)
 	actr, err := td.State().Actor(addr)
 	require.NoError(td.T, err)
 	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
+}
+func (td *TestDriver) AssertBalanceCallback(addr address.Address, thing func(actorBalance abi_spec.TokenAmount) bool) {
+	actr, err := td.State().Actor(addr)
+	require.NoError(td.T, err)
+	assert.True(td.T, thing(actr.Balance()))
+	//assert.True(td.T, , actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
 }
 
 func (td *TestDriver) AssertReceipt(actual, expected types.MessageReceipt) {

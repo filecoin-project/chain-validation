@@ -27,7 +27,7 @@ func RandPeerID() (peer.ID, error) {
 }
 
 // RequireRandomPeerID returns a new libp2p peer ID or panics.
-func RequireRandomPeerID(t *testing.T) peer.ID {
+func RequireRandomPeerID(t testing.TB) peer.ID {
 	pid, err := RandPeerID()
 	require.NoError(t, err)
 	return pid

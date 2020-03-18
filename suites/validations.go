@@ -27,6 +27,7 @@ func TipSetTestCases() []TestCase {
 		tipset.TestBlockMessageDeduplication,
 		tipset.TestInternalMessageApplicationFailure,
 		tipset.TestInvalidSenderAddress,
-		tipset.TestMinerCreateProveCommitAndMissPoStChallengeWindow,
+		tipset.TestMinerMissPoStChallengeWindow,
+		tipset.TestMinerSubmitFallbackPoSt,
 	}
 }
