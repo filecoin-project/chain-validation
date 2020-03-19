@@ -8,6 +8,7 @@ import (
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	market_spec "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	miner_spec "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
@@ -49,13 +50,18 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 		return workerCallSeq
 	}
 
+	// since its unknown how many times new actors have been created at this point we need to calculate here.
+	var initSt init_spec.State
+	td.GetActorState(builtin_spec.InitActorAddr, &initSt)
+	newActorAddressCount := builtin_spec.FirstNonSingletonActorId - initSt.NextID
+
 	sectorBuilder := drivers.NewMockSectorBuilder()
 	bb := drivers.NewTipSetMessageBuilder(td)
 
 	sectorSize, err := sectorType.SectorSize()
 	require.NoError(td.T, err)
 
-	createMinerRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, 2, minerIDAddr)
+	createMinerRet := td.ComputeInitActorExecReturn(builtin_spec.StoragePowerActorAddr, 0, uint64(newActorAddressCount), minerIDAddr)
 
 	// Create a miner and add finds to the storage market actor for the miner and a client
 	bb.WithTicketCount(1).
@@ -167,7 +173,7 @@ func TestMinerMissPoStChallengeWindow(t *testing.T, factory state.Factories) {
 	require.NoError(td.T, err)
 	ownerCallSeq := ownerActor.CallSeqNum()
 	incOwnerCallSeq := func() int64 {
-		ownerCallSeq++
+		defer func() { ownerCallSeq += 1 }()
 		return ownerCallSeq
 	}
 
