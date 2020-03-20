@@ -61,7 +61,7 @@ func (gm *GasMeter) GasFor(oldState cid.Cid, msg *types.Message) int64 {
 		key := makeKey(oldState, msg)
 		gasUsed, ok := gas.GasConstants[key]
 		if !ok {
-			gm.T.Errorf("failed to find gas cost for state: %s message: %+v", oldState, msg)
+			gm.T.Logf("WARNING: failed to find gas cost for state: %s message: %+v", oldState, msg)
 		}
 		return gasUsed
 	}
