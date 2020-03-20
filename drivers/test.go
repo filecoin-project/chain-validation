@@ -285,8 +285,9 @@ func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, expected typ
 
 	td.GasMeter.Track(prevState, newState, msg, actual)
 
-	expectedGasUsed := td.GasMeter.GasFor(prevState, msg)
+	var expectedGasUsed int64 = 0
 	if td.Config.ValidateGas() {
+		expectedGasUsed := td.GasMeter.GasFor(prevState, msg)
 		assert.Equal(td.T, expectedGasUsed, actual.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, actual.GasUsed.Int64())
 	}
 	if td.Config.ValidateExitCode() {
