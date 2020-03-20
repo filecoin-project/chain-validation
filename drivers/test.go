@@ -31,6 +31,7 @@ import (
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
+	"github.com/filecoin-project/chain-validation/gasmeter"
 	"github.com/filecoin-project/chain-validation/state"
 )
 
@@ -243,6 +244,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
 	validator := chain.NewValidator(b.factory)
 
+	vconfig := b.factory.NewValidationConfig()
 	return &TestDriver{
 		T:               t,
 		StateDriver:     sd,
@@ -250,9 +252,9 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		validator:       validator,
 		ExeCtx:          exeCtx,
 
-		Config: b.factory.NewValidationConfig(),
+		Config: vconfig,
 
-		GasMeter: NewGasMeter(t),
+		GasMeter: gasmeter.NewGasMeter(t),
 	}
 }
 
@@ -267,7 +269,7 @@ type TestDriver struct {
 
 	Config state.ValidationConfig
 
-	GasMeter *GasMeter
+	GasMeter *gasmeter.GasMeter
 }
 
 func (td *TestDriver) Complete() {
@@ -313,7 +315,7 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 		assert.Equal(td.T, retval, receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, receipt.ReturnValue)
 	}
 	if td.Config.ValidateGas() {
-		expectedGasUsed, ok := td.GasMeter.Expected(prevState, msg)
+		expectedGasUsed, ok := td.GasMeter.ExpectedGasUnit()
 		if ok {
 			assert.Equal(td.T, expectedGasUsed, receipt.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, receipt.GasUsed.Int64())
 		} else {
