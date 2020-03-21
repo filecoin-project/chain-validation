@@ -91,7 +91,7 @@ func (gm *GasMeter) Record() {
 func LoadGasForTest(t testing.TB) []int64 {
 	f, found := box.Get(filenameFromTest(t))
 	if !found {
-		t.Fatal("can't find file")
+		t.Fatalf("can't find file: %s", filenameFromTest(t))
 	}
 
 	var gasUnits []int64
@@ -112,9 +112,7 @@ func LoadGasForTest(t testing.TB) []int64 {
 func getTestDataFilePath(t testing.TB) string {
 	dataPath := os.Getenv(ValidationDataEnvVar)
 	if dataPath == "" {
-		// FIXME before mergin, make dev easier
-		//t.Fatalf("failed to find validation data path, make sure %s is set", ValidationDataEnvVar)
-		dataPath = "/home/frrist/src/github.com/filecoin-project/chain-validation/gasmeter/gas_files"
+		t.Fatalf("failed to find validation data path, make sure %s is set", ValidationDataEnvVar)
 	}
 	return filepath.Join(dataPath, filenameFromTest(t))
 }
