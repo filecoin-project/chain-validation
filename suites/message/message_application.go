@@ -9,11 +9,9 @@ import (
 	paych_spec "github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 
-	//crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"
-	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
 	"github.com/filecoin-project/chain-validation/suites/utils"
@@ -33,10 +31,9 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		defer td.Complete()
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectCode(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(1), chain.GasLimit(8)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(8)},
-		)
+			exitcode.SysErrOutOfGas)
 	})
 
 	t.Run("not enough gas to pay message on-chain-size cost", func(t *testing.T) {
@@ -45,17 +42,15 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		// Expect Message application to fail due to lack of gas
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectCode(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(1)},
-		)
+			exitcode.SysErrOutOfGas)
 
 		// Expect Message application to fail due to lack of gas when sender address is unknown
 		unknown := utils.NewIDAddr(t, 10000000)
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectCode(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrOutOfGas, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(1)},
-		)
+			exitcode.SysErrOutOfGas)
 	})
 
 	t.Run("invalid actor CallSeqNum", func(t *testing.T) {
@@ -65,17 +60,15 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 
 		// Expect Message application to fail due to callseqnum being invalid: 1 instead of 0
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectCode(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrInvalidCallSeqNum, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(1_000_000)},
-		)
+			exitcode.SysErrInvalidCallSeqNum)
 
 		// Expect message application to fail due to unknow actor when call seq num is also incorrect
 		unknown := utils.NewIDAddr(t, 10000000)
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectCode(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(1_000_000)},
-		)
+			exitcode.SysErrActorNotFound)
 	})
 
 	t.Run("abort during actor execution", func(t *testing.T) {
@@ -101,13 +94,12 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		// the _expected_ address of the payment channel
 		paychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
 		createRet := td.ComputeInitActorExecReturn(sender, 0, 0, paychAddr)
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectSuccessAndReturn(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: chain.MustSerialize(&createRet), GasUsed: abi_spec.NewTokenAmount(1416)},
-		)
+			chain.MustSerialize(&createRet))
 
 		// message application fails due to invalid argument (signature).
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectCode(
 			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
 					TimeLockMin: pcTimeLock,
@@ -118,7 +110,6 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 					Signature:   pcSig, // construct with invalid signature
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode.ErrIllegalArgument, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(1_000_000)},
-		)
+			exitcode.ErrIllegalArgument)
 	})
 }

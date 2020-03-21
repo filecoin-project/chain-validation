@@ -12,7 +12,6 @@ import (
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"
-	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
 	"github.com/filecoin-project/chain-validation/suites/utils"
@@ -46,11 +45,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 				NumApprovalsThreshold: numApprovals,
 				UnlockDuration:        unlockDuration,
 			},
-			types.MessageReceipt{
-				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: chain.MustSerialize(&createRet),
-				GasUsed:     big_spec.Zero(), // Ignored
-			})
+			exitcode_spec.Ok, chain.MustSerialize(&createRet))
 	})
 
 	t.Run("propose and cancel", func(t *testing.T) {
@@ -77,11 +72,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 				NumApprovalsThreshold: numApprovals,
 				UnlockDuration:        unlockDuration,
 			},
-			types.MessageReceipt{
-				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: chain.MustSerialize(&createRet),
-				GasUsed:     big_spec.Zero(), // Ignored
-			})
+			exitcode_spec.Ok, chain.MustSerialize(&createRet))
 		td.AssertBalance(multisigAddr, valueSend)
 
 		// alice proposes that outsider should receive 'valueSend' FIL.
@@ -97,10 +88,10 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		// TODO: stop using TxnIDParams since it's not being passed as params to any method.
 		// Just get the right serialized bytes for the return value.
 		btxid := chain.MustSerialize(&multisig_spec.TxnIDParams{ID: txID0})
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectSuccessAndReturn(
 			td.MessageProducer.MultisigPropose(multisigAddr, alice, pparams, chain.Value(big_spec.Zero()), chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: btxid[1:], GasUsed: big_spec.Zero()}, // Gas ignored
-		)
+			btxid[1:])
+
 		td.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.Transaction{
 			To:       pparams.To,
 			Value:    pparams.Value,
@@ -110,16 +101,14 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		})
 
 		// bob cancels alice's transaction. This fails as bob did not create alice's transaction.
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectCode(
 			td.MessageProducer.MultisigCancel(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()}, // Gas ignored
-		)
+			exitcode_spec.ErrForbidden)
 
 		// alice cancels their transaction. The outsider doesn't receive any FIL, the multisig actor's balance is empty, and the
 		// transaction is canceled.
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectSuccess(
 			td.MessageProducer.MultisigCancel(multisigAddr, alice, multisig_spec.TxnIDParams{ID: txID0}, chain.Nonce(2), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()}, // Gas ignored
 		)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{aliceId, bobId},
@@ -158,11 +147,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 				NumApprovalsThreshold: numApprovals,
 				UnlockDuration:        unlockDuration,
 			},
-			types.MessageReceipt{
-				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: chain.MustSerialize(&createRet),
-				GasUsed:     big_spec.NewInt(1542),
-			})
+			exitcode_spec.Ok, chain.MustSerialize(&createRet))
 
 		// setup propose expected values and params
 		txID0 := multisig_spec.TxnID(0)
@@ -175,10 +160,10 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		// propose the transaction and assert it exists in the actor state
 		btxid := chain.MustSerialize(&multisig_spec.TxnIDParams{ID: txID0})
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectSuccessAndReturn(
 			td.MessageProducer.MultisigPropose(multisigAddr, alice, pparams, chain.Value(big_spec.Zero()), chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: btxid[1:], GasUsed: big_spec.Zero()}, // Gas ignored
-		)
+			btxid[1:])
+
 		td.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.Transaction{
 			To:       pparams.To,
 			Value:    pparams.Value,
@@ -188,30 +173,27 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		})
 
 		// outsider proposes themselves to receive 'valueSend' FIL. This fails as they are not a signer.
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectCode(
 			td.MessageProducer.MultisigPropose(multisigAddr, outsider, multisig_spec.ProposeParams{
 				To:     outsider,
 				Value:  valueSend,
 				Method: builtin_spec.MethodSend,
 				Params: []byte{},
 			}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()}, // Gas ignored
-		)
+			exitcode_spec.ErrForbidden)
 
 		// outsider approves the value transfer alice sent. This fails as they are not a signer.
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectCode(
 			td.MessageProducer.MultisigApprove(multisigAddr, outsider, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
-			types.MessageReceipt{ExitCode: exitcode_spec.ErrForbidden, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()}, // Gas ignored
-		)
+			exitcode_spec.ErrForbidden)
 
 		// increment the epoch to unlock the funds
 		td.ExeCtx.Epoch += unlockDuration
 		balanceBefore := td.GetBalance(outsider)
 
 		// bob approves transfer of 'valueSend' FIL to outsider.
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectSuccess(
 			td.MessageProducer.MultisigApprove(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: big_spec.Zero()}, // Gas ignored
 		)
 		txID1 := multisig_spec.TxnID(1)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
@@ -249,11 +231,9 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 				NumApprovalsThreshold: initialNumApprovals,
 				UnlockDuration:        0,
 			},
-			types.MessageReceipt{
-				ExitCode:    exitcode_spec.Ok,
-				ReturnValue: chain.MustSerialize(&createRet),
-				GasUsed:     big_spec.Zero(), // Gas ignored
-			})
+			exitcode_spec.Ok,
+			chain.MustSerialize(&createRet),
+		)
 
 		addSignerParams := multisig_spec.AddSignerParams{
 			Signer:   bobId,
@@ -261,13 +241,10 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		}
 
 		// alice fails to call directly since AddSigner
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectCode(
 			td.MessageProducer.MultisigAddSigner(multisigAddr, alice, addSignerParams, chain.Nonce(1)),
-			types.MessageReceipt{
-				ExitCode:    exitcode_spec.SysErrForbidden,
-				ReturnValue: drivers.EmptyReturnValue,
-				GasUsed:     big_spec.Zero(), // Gas ignored
-			})
+			exitcode_spec.SysErrForbidden,
+		)
 
 		// AddSigner must be staged through the multisig itself
 		txID0 := multisig_spec.TxnID(0)
@@ -275,14 +252,14 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		// Alice proposes the AddSigner.
 		// Since approvals = 1 this auto-approves the transaction.
 		btxid := chain.MustSerialize(&multisig_spec.TxnIDParams{ID: txID0})
-		td.ApplyMessageExpectReceipt(
+		td.ApplyMessageExpectSuccessAndReturn(
 			td.MessageProducer.MultisigPropose(multisigAddr, alice, multisig_spec.ProposeParams{
 				To:     multisigAddr,
 				Value:  big_spec.Zero(),
 				Method: builtin_spec.MethodsMultisig.AddSigner,
 				Params: chain.MustSerialize(&addSignerParams),
 			}, chain.Nonce(2)),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: btxid[1:], GasUsed: big_spec.Zero()}, // Gas ignored
+			btxid[1:],
 		)
 
 		// TODO also exercise the approvals = 2 case with explicit approval.
