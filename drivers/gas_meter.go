@@ -13,13 +13,6 @@ import (
 	"github.com/filecoin-project/chain-validation/gas_gen/gas"
 )
 
-type MeterMode int
-
-const (
-	Record = MeterMode(iota)
-	Validate
-)
-
 type trackerElement struct {
 	oldState cid.Cid
 	newState cid.Cid
@@ -34,51 +27,37 @@ func (te *trackerElement) fileKey() string {
 type GasMeter struct {
 	tracker *list.List
 	T       testing.TB
-	mode    MeterMode
 }
 
-func NewGasMeter(t testing.TB, mode MeterMode) *GasMeter {
+func NewGasMeter(t testing.TB) *GasMeter {
 	return &GasMeter{
 		tracker: list.New(),
 		T:       t,
-		mode:    mode,
 	}
 }
 
 func (gm *GasMeter) Track(oldState, newState cid.Cid, msg *types.Message, receipt types.MessageReceipt) {
-	if gm.mode == Record {
-		gm.tracker.PushBack(&trackerElement{
-			oldState: oldState,
-			newState: newState,
-			msg:      msg,
-			receipt:  receipt,
-		})
-	}
+	gm.tracker.PushBack(&trackerElement{
+		oldState: oldState,
+		newState: newState,
+		msg:      msg,
+		receipt:  receipt,
+	})
 }
 
-func (gm *GasMeter) GasFor(oldState cid.Cid, msg *types.Message) int64 {
-	if gm.mode == Validate {
-		key := makeKey(oldState, msg)
-		gasUsed, ok := gas.GasConstants[key]
-		if !ok {
-			gm.T.Logf("WARNING: failed to find gas cost for state: %s message: %+v", oldState, msg)
-		}
-		return gasUsed
-	}
-	return 0
+func (gm *GasMeter) Expected(oldState cid.Cid, msg *types.Message) (int64, bool) {
+	key := makeKey(oldState, msg)
+	gasUsed, ok := gas.GasConstants[key]
+	return gasUsed, ok
 }
 
 func (gm *GasMeter) Record() {
-	if gm.mode != Record {
-		return
-	}
-
 	file := fileNameFromTest(gm.T)
 	f, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		gm.T.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	for e := gm.tracker.Front(); e != nil; e = e.Next() {
 		_, err := fmt.Fprintf(f, "%s\n", e.Value.(*trackerElement).fileKey())

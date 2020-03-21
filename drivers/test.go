@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	market_spec "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	"github.com/ipfs/go-cid"
-	"github.com/ipfs/go-datastore"
+	datastore "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	"github.com/stretchr/testify/assert"
@@ -251,9 +251,8 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 
 		Config: b.factory.NewValidationConfig(),
 
-		GasMeter: NewGasMeter(t, Validate),
+		GasMeter: NewGasMeter(t),
 	}
-
 }
 
 type TestDriver struct {
@@ -271,35 +270,42 @@ type TestDriver struct {
 }
 
 func (td *TestDriver) Complete() {
-	td.GasMeter.Record()
+	//
+	// Gas expectation recording.
+	// Uncomment the following line to persist the actual gas values used to file as the new set
+	// of expectations.
+	//
+	//td.GasMeter.Record()
 }
 
 // TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
 func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, expected types.MessageReceipt) int64 {
 	prevState := td.State().Root()
 
-	actual, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
+	receipt, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 	require.NoError(td.T, err)
 
 	newState := td.State().Root()
+	td.GasMeter.Track(prevState, newState, msg, receipt)
 
-	td.GasMeter.Track(prevState, newState, msg, actual)
-
-	var expectedGasUsed int64 = 0
 	if td.Config.ValidateGas() {
-		expectedGasUsed := td.GasMeter.GasFor(prevState, msg)
-		assert.Equal(td.T, expectedGasUsed, actual.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, actual.GasUsed.Int64())
+		expectedGasUsed, ok := td.GasMeter.Expected(prevState, msg)
+		if ok {
+			assert.Equal(td.T, expectedGasUsed, receipt.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, receipt.GasUsed.Int64())
+		} else {
+			td.T.Logf("WARNING: failed to find expected gas cost for state: %s message: %+v", prevState, msg)
+		}
 	}
 	if td.Config.ValidateExitCode() {
-		assert.Equal(td.T, expected.ExitCode, actual.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", expected.ExitCode.Error(), actual.ExitCode.Error())
+		assert.Equal(td.T, expected.ExitCode, receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", expected.ExitCode.Error(), receipt.ExitCode.Error())
 	}
 	if td.Config.ValidateReturnValue() {
-		assert.Equal(td.T, expected.ReturnValue, actual.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", expected.ReturnValue, actual.ReturnValue)
+		assert.Equal(td.T, expected.ReturnValue, receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", expected.ReturnValue, receipt.ReturnValue)
 	}
 
 	// TODO in the very near future we will be validating the stateroot here, keep in back of head.
 
-	return expectedGasUsed
+	return receipt.GasUsed.Int64()
 }
 
 // AssertBalance checks an actor has an expected balance.
