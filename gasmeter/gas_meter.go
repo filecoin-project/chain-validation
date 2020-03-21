@@ -2,6 +2,7 @@ package gasmeter
 
 import (
 	"bufio"
+	"bytes"
 	"container/list"
 	"fmt"
 	"os"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/ipfs/go-cid"
 
+	"github.com/filecoin-project/chain-validation/box"
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
@@ -87,15 +89,13 @@ func (gm *GasMeter) Record() {
 // Given a testing T, load the gas file associated with it and return a slice of the gas used by the test
 // an index in the slice represents the order of apply message calls.
 func LoadGasForTest(t testing.TB) []int64 {
-	path := getTestDataFilePath(t)
-	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
-	if err != nil {
-		t.Fatal(err)
+	f, found := box.Get(filenameFromTest(t))
+	if !found {
+		t.Fatal("can't find file")
 	}
-	defer f.Close()
 
 	var gasUnits []int64
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(bytes.NewReader(f))
 	for scanner.Scan() {
 		gas, err := gasFromTestFileLine(scanner.Text())
 		if err != nil {
@@ -148,5 +148,5 @@ func filenameFromTest(t testing.TB) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return reg.ReplaceAllString(t.Name(), "")
+	return fmt.Sprintf("/%s", reg.ReplaceAllString(t.Name(), ""))
 }
