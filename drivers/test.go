@@ -192,7 +192,7 @@ type TestDriverBuilder struct {
 
 	actorStates []ActorState
 
-	defaultGasPrice big_spec.Int
+	defaultGasPrice abi_spec.TokenAmount
 	defaultGasLimit int64
 }
 
@@ -205,7 +205,7 @@ func NewBuilder(ctx context.Context, factory state.Factories) *TestDriverBuilder
 
 type ActorState struct {
 	Addr    address.Address
-	Balance big_spec.Int
+	Balance abi_spec.TokenAmount
 	Code    cid.Cid
 	State   runtime_spec.CBORMarshaler
 }
@@ -220,7 +220,7 @@ func (b *TestDriverBuilder) WithDefaultGasLimit(limit int64) *TestDriverBuilder 
 	return b
 }
 
-func (b *TestDriverBuilder) WithDefaultGasPrice(price big_spec.Int) *TestDriverBuilder {
+func (b *TestDriverBuilder) WithDefaultGasPrice(price abi_spec.TokenAmount) *TestDriverBuilder {
 	b.defaultGasPrice = price
 	return b
 }
@@ -308,8 +308,14 @@ func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, expected typ
 	return receipt.GasUsed.Int64()
 }
 
+func (td *TestDriver) GetBalance(addr address.Address) abi_spec.TokenAmount {
+	actr, err := td.State().Actor(addr)
+	require.NoError(td.T, err)
+	return actr.Balance()
+}
+
 // AssertBalance checks an actor has an expected balance.
-func (td *TestDriver) AssertBalance(addr address.Address, expected big_spec.Int) {
+func (td *TestDriver) AssertBalance(addr address.Address, expected abi_spec.TokenAmount) {
 	actr, err := td.State().Actor(addr)
 	require.NoError(td.T, err)
 	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
@@ -402,10 +408,16 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_sp
 	/* Assert the actor state was setup as expected */
 	pendingTxMap, err := adt_spec.MakeEmptyMap(newMockStore())
 	require.NoError(td.T, err)
+	initialBalance := big_spec.Zero()
+	startEpoch := abi_spec.ChainEpoch(0)
+	if params.UnlockDuration > 0 {
+		initialBalance = value
+		startEpoch = td.ExeCtx.Epoch
+	}
 	td.AssertMultisigState(multisigAddr, multisig_spec.State{
 		NextTxnID:      0,
-		InitialBalance: value,
-		StartEpoch:     td.ExeCtx.Epoch,
+		InitialBalance: initialBalance,
+		StartEpoch:     startEpoch,
 
 		Signers:               params.Signers,
 		UnlockDuration:        params.UnlockDuration,
