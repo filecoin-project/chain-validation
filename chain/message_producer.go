@@ -19,6 +19,7 @@ type MessageProducer struct {
 func NewMessageProducer(defaultGasLimit int64, defaultGasPrice big_spec.Int) *MessageProducer {
 	return &MessageProducer{
 		defaults: msgOpts{
+			value:    big_spec.Zero(),
 			gasLimit: defaultGasLimit,
 			gasPrice: defaultGasPrice,
 		},
