@@ -151,9 +151,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		)
 
 		// receiver_balance = initial_balance + paych_send - settle_paych_msg_gas - collect_paych_msg_gas
-		if td.Config.ValidateGas() {
-			td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), abi_spec.NewTokenAmount(settlePayChGasCost)), abi_spec.NewTokenAmount(collectPaychGasCost)))
-		}
+		td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), abi_spec.NewTokenAmount(settlePayChGasCost)), abi_spec.NewTokenAmount(collectPaychGasCost)))
 		td.AssertBalance(paychAddr, big_spec.Zero())
 		var pcState paych_spec.State
 		td.GetActorState(paychAddr, &pcState)

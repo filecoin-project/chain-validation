@@ -95,9 +95,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			// new actor balance will only exist if message was applied successfully.
 			if tc.expExitCode.IsSuccess() {
 				td.AssertBalance(tc.newActorAddr, tc.newActorInitBal)
-				if td.Config.ValidateGas() {
-					td.AssertBalance(existingAccountAddr, big_spec.Sub(big_spec.Sub(tc.existingActorBal, big_spec.NewInt(gasUsed)), tc.newActorInitBal))
-				}
+				td.AssertBalance(existingAccountAddr, big_spec.Sub(big_spec.Sub(tc.existingActorBal, big_spec.NewInt(gasUsed)), tc.newActorInitBal))
 			}
 		})
 	}
