@@ -40,7 +40,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		createRet := td.ComputeInitActorExecReturn(sender, 0, 0, paychAddr)
 
 		// init actor creates the payment channel
-		td.ApplyMessageExpectSuccessAndReturn(
+		td.ApplyExpect(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
 			chain.MustSerialize(&createRet))
 
@@ -73,11 +73,11 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		// the _expected_ address of the payment channel
 		paychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
 		createRet := td.ComputeInitActorExecReturn(sender, 0, 0, paychAddr)
-		td.ApplyMessageExpectSuccessAndReturn(
+		td.ApplyExpect(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
 			chain.MustSerialize(&createRet))
 
-		td.ApplyMessageExpectSuccess(
+		td.ApplyOk(
 			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
 					TimeLockMin: pcTimeLock,
@@ -106,12 +106,12 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		receiver, receiverID := td.NewAccountActor(drivers.SECP, initialBal)
 		paychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
 		initRet := td.ComputeInitActorExecReturn(sender, 0, 0, paychAddr)
-		td.ApplyMessageExpectSuccessAndReturn(
+		td.ApplyExpect(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
 			chain.MustSerialize(&initRet))
 		td.AssertBalance(paychAddr, toSend)
 
-		td.ApplyMessageExpectSuccess(
+		td.ApplyOk(
 			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
 					TimeLockMin: abi_spec.ChainEpoch(1),
@@ -127,13 +127,13 @@ func TestPaych(t *testing.T, factory state.Factories) {
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())))
 
 		// settle the payment channel so it may be collected
-		settlePayChGasCost := td.ApplyMessageExpectSuccess(
+		settlePayChGasCost := td.ApplyOk(
 			td.MessageProducer.PaychSettle(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Value(big_spec.Zero()), chain.Nonce(0)))
 
 		// advance the epoch so the funds may be redeemed.
 		td.ExeCtx.Epoch++
 
-		collectPaychGasCost := td.ApplyMessageExpectSuccess(
+		collectPaychGasCost := td.ApplyOk(
 			td.MessageProducer.PaychCollect(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Nonce(1), chain.Value(big_spec.Zero())))
 
 		// receiver_balance = initial_balance + paych_send - settle_paych_msg_gas - collect_paych_msg_gas

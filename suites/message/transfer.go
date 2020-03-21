@@ -116,7 +116,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			require.NoError(t, err)
 			require.Equal(t, tc.senderBal.String(), sendAct.Balance().String())
 
-			gasUsed := td.ApplyMessageExpectCode(
+			gasUsed := td.ApplyFailure(
 				td.MessageProducer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0)),
 				tc.code,
 			)
@@ -147,7 +147,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceInitialBalance)
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		gasUsed := td.ApplyMessageExpectSuccess(
+		gasUsed := td.ApplyOk(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)))
 		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
 		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, abi_spec.NewTokenAmount(gasUsed)))
@@ -161,7 +161,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		unknown := td.Wallet().NewSECP256k1AccountAddress()
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		gasUsed := td.ApplyMessageExpectSuccess(
+		gasUsed := td.ApplyOk(
 			td.MessageProducer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0)),
 		)
 		td.AssertBalance(alice, big_spec.Sub(big_spec.Sub(aliceInitialBalance, abi_spec.NewTokenAmount(gasUsed)), transferAmnt))
@@ -176,7 +176,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		unknown := td.Wallet().NewSECP256k1AccountAddress()
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		td.ApplyMessageExpectCode(
+		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
 			exitcode.SysErrActorNotFound)
 		td.Complete()
@@ -190,7 +190,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		nobody := td.Wallet().NewSECP256k1AccountAddress()
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		td.ApplyMessageExpectCode(
+		td.ApplyFailure(
 			td.MessageProducer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
 			exitcode.SysErrActorNotFound)
 	})

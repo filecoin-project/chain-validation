@@ -31,7 +31,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		defer td.Complete()
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
-		td.ApplyMessageExpectCode(
+		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(1), chain.GasLimit(8)),
 			exitcode.SysErrOutOfGas)
 	})
@@ -42,13 +42,13 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		// Expect Message application to fail due to lack of gas
-		td.ApplyMessageExpectCode(
+		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
 			exitcode.SysErrOutOfGas)
 
 		// Expect Message application to fail due to lack of gas when sender address is unknown
 		unknown := utils.NewIDAddr(t, 10000000)
-		td.ApplyMessageExpectCode(
+		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
 			exitcode.SysErrOutOfGas)
 	})
@@ -60,13 +60,13 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 
 		// Expect Message application to fail due to callseqnum being invalid: 1 instead of 0
-		td.ApplyMessageExpectCode(
+		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(1)),
 			exitcode.SysErrInvalidCallSeqNum)
 
 		// Expect message application to fail due to unknow actor when call seq num is also incorrect
 		unknown := utils.NewIDAddr(t, 10000000)
-		td.ApplyMessageExpectCode(
+		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(1)),
 			exitcode.SysErrActorNotFound)
 	})
@@ -94,12 +94,12 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		// the _expected_ address of the payment channel
 		paychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
 		createRet := td.ComputeInitActorExecReturn(sender, 0, 0, paychAddr)
-		td.ApplyMessageExpectSuccessAndReturn(
+		td.ApplyExpect(
 			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
 			chain.MustSerialize(&createRet))
 
 		// message application fails due to invalid argument (signature).
-		td.ApplyMessageExpectCode(
+		td.ApplyFailure(
 			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
 					TimeLockMin: pcTimeLock,

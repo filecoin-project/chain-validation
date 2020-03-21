@@ -86,7 +86,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			defer td.Complete()
 
 			existingAccountAddr, _ := td.NewAccountActor(tc.existingActorType, tc.existingActorBal)
-			gasUsed := td.ApplyMessageExpectCode(
+			gasUsed := td.ApplyFailure(
 				td.MessageProducer.Transfer(tc.newActorAddr, existingAccountAddr, chain.Value(tc.newActorInitBal), chain.Nonce(0)),
 				tc.expExitCode,
 			)
@@ -120,12 +120,12 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 	firstInitRet := td.ComputeInitActorExecReturn(sender, 0, 0, firstPaychAddr)
 	secondInitRet := td.ComputeInitActorExecReturn(sender, 1, 0, secondPaychAddr)
 
-	td.ApplyMessageExpectSuccessAndReturn(
+	td.ApplyExpect(
 		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
 		chain.MustSerialize(&firstInitRet),
 	)
 
-	td.ApplyMessageExpectSuccessAndReturn(
+	td.ApplyExpect(
 		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
 		chain.MustSerialize(&secondInitRet),
 	)

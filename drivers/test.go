@@ -279,19 +279,19 @@ func (td *TestDriver) Complete() {
 	//td.GasMeter.Record()
 }
 
-func (td *TestDriver) ApplyMessageExpectSuccess(msg *types.Message) int64 {
-	return td.ApplyMessageExpectSuccessAndReturn(msg, nil)
+func (td *TestDriver) ApplyOk(msg *types.Message) int64 {
+	return td.ApplyExpect(msg, nil)
 }
 
-func (td *TestDriver) ApplyMessageExpectSuccessAndReturn(msg *types.Message, retval []byte) int64 {
-	return td.ApplyMessageExpectCodeAndReturn(msg, exitcode.Ok, retval)
+func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) int64 {
+	return td.applyMessageExpectCodeAndReturn(msg, exitcode.Ok, retval)
 }
 
-func (td *TestDriver) ApplyMessageExpectCode(msg *types.Message, code exitcode.ExitCode) int64 {
-	return td.ApplyMessageExpectCodeAndReturn(msg, code, nil)
+func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) int64 {
+	return td.applyMessageExpectCodeAndReturn(msg, code, nil)
 }
 
-func (td *TestDriver) ApplyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) int64 {
+func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) int64 {
 	prevState := td.State().Root()
 
 	receipt, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
@@ -413,7 +413,7 @@ func computeInitActorExecReturn(t testing.TB, from address.Address, originatorCa
 
 func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, code exitcode.ExitCode, retval []byte) {
 	/* Create the Multisig actor*/
-	td.ApplyMessageExpectCodeAndReturn(
+	td.applyMessageExpectCodeAndReturn(
 		td.MessageProducer.CreateMultisigActor(from, params.Signers, params.UnlockDuration, params.NumApprovalsThreshold, chain.Nonce(nonce), chain.Value(value)),
 		code, retval)
 	/* Assert the actor state was setup as expected */
