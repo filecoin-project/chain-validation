@@ -254,7 +254,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 
 		Config: vconfig,
 
-		GasMeter: gasmeter.NewGasMeter(t),
+		GasMeter: gasmeter.NewGasMeter(t, vconfig.RecordGas()),
 	}
 }
 
@@ -278,7 +278,7 @@ func (td *TestDriver) Complete() {
 	// Uncomment the following line to persist the actual gas values used to file as the new set
 	// of expectations.
 	//
-	//td.GasMeter.Record()
+	td.GasMeter.Record()
 }
 
 func (td *TestDriver) ApplyMessage(msg *types.Message) types.MessageReceipt {
@@ -301,12 +301,9 @@ func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) i
 }
 
 func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) int64 {
-	prevState := td.State().Root()
-
 	receipt := td.ApplyMessage(msg)
 
-	newState := td.State().Root()
-	td.GasMeter.Track(prevState, newState, msg, receipt)
+	td.GasMeter.Track(receipt)
 
 	if td.Config.ValidateExitCode() {
 		assert.Equal(td.T, code, receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), receipt.ExitCode.Error())
@@ -319,7 +316,7 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 		if ok {
 			assert.Equal(td.T, expectedGasUsed, receipt.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, receipt.GasUsed.Int64())
 		} else {
-			td.T.Logf("WARNING: failed to find expected gas cost for state: %s message: %+v", prevState, msg)
+			td.T.Logf("WARNING: failed to find expected gas cost for message: %+v", msg)
 		}
 	}
 

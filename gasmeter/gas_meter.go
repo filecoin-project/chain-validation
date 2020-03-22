@@ -12,8 +12,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ipfs/go-cid"
-
 	"github.com/filecoin-project/chain-validation/box"
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
@@ -21,41 +19,37 @@ import (
 const ValidationDataEnvVar = "CHAIN_VALIDATION_DATA"
 
 type trackerElement struct {
-	oldState cid.Cid
-	newState cid.Cid
-	msg      *types.Message
-	receipt  types.MessageReceipt
+	receipt types.MessageReceipt
 }
 
 func (te *trackerElement) fileKey() string {
-	return fmt.Sprintf("%s,%s,%s,%d", te.oldState, te.msg.Cid(), te.newState, te.receipt.GasUsed.Int64())
+	return fmt.Sprintf("%d", te.receipt.GasUsed.Int64())
 }
 
 type GasMeter struct {
 	tracker *list.List
 	T       testing.TB
+
+	record bool
 	// index in gasUnits of expected gas
 	gasIdx int
 	// slice of gas units used by the test
 	expectedGasUnits []int64
 }
 
-func NewGasMeter(t testing.TB) *GasMeter {
-	var gasUnits []int64
+func NewGasMeter(t testing.TB, record bool) *GasMeter {
 	return &GasMeter{
 		tracker:          list.New(),
 		T:                t,
+		record:           true,
 		gasIdx:           0,
-		expectedGasUnits: gasUnits,
+		expectedGasUnits: LoadGasForTest(t),
 	}
 }
 
-func (gm *GasMeter) Track(oldState, newState cid.Cid, msg *types.Message, receipt types.MessageReceipt) {
+func (gm *GasMeter) Track(receipt types.MessageReceipt) {
 	gm.tracker.PushBack(&trackerElement{
-		oldState: oldState,
-		newState: newState,
-		msg:      msg,
-		receipt:  receipt,
+		receipt: receipt,
 	})
 }
 
@@ -71,10 +65,14 @@ func (gm *GasMeter) ExpectedGasUnit() (int64, bool) {
 // write the contents of gm.tracker to a file using the format:
 // oldStateCID,msgCID,newStateCID,GasUnits
 func (gm *GasMeter) Record() {
+	if !gm.record {
+		return
+	}
 	file := getTestDataFilePath(gm.T)
 	f, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
-		gm.T.Fatal(err)
+		gm.T.Log(err)
+		return
 	}
 	defer f.Close()
 
@@ -89,9 +87,11 @@ func (gm *GasMeter) Record() {
 // Given a testing T, load the gas file associated with it and return a slice of the gas used by the test
 // an index in the slice represents the order of apply message calls.
 func LoadGasForTest(t testing.TB) []int64 {
-	f, found := box.Get(filenameFromTest(t))
+	fileName := filenameFromTest(t)
+	f, found := box.Get(fileName)
 	if !found {
-		t.Fatalf("can't find file: %s", filenameFromTest(t))
+		t.Logf("can't find file: %s", fileName)
+		return []int64{}
 	}
 
 	var gasUnits []int64
@@ -112,7 +112,9 @@ func LoadGasForTest(t testing.TB) []int64 {
 func getTestDataFilePath(t testing.TB) string {
 	dataPath := os.Getenv(ValidationDataEnvVar)
 	if dataPath == "" {
-		t.Fatalf("failed to find validation data path, make sure %s is set", ValidationDataEnvVar)
+		// XXX: remove this before meting
+		dataPath = "/home/frrist/src/github.com/filecoin-project/chain-validation/box/resources"
+		//t.Fatalf("failed to find validation data path, make sure %s is set", ValidationDataEnvVar)
 	}
 	return filepath.Join(dataPath, filenameFromTest(t))
 }
@@ -122,15 +124,12 @@ func getTestDataFilePath(t testing.TB) string {
 // return gasUnits as an int64
 func gasFromTestFileLine(l string) (int64, error) {
 	tokens := strings.Split(l, ",")
-	// expect tokens to always be length 4 (oldState,msgCid,newState,gasCost)
-	if len(tokens) != 4 {
-		return -1, fmt.Errorf("invalid gas line, expected 4 tokens, got %d: %s", len(tokens), tokens)
+	// expect tokens to always be length 3 (oldState,newState,gasCost)
+	if len(tokens) != 1 {
+		return -1, fmt.Errorf("invalid gas line, expected 1 tokens, got %d: %s", len(tokens), tokens)
 	}
 
-	//oldState := tokens[0]
-	//msgCid := tokens[1]
-	//newState := tokens[2]
-	gasUnits := tokens[3]
+	gasUnits := tokens[0]
 
 	g, err := strconv.ParseInt(gasUnits, 10, 64)
 	if err != nil {

@@ -71,12 +71,14 @@ func (t *TipSetMessageBuilder) Build() types.BlockMessagesInfo {
 func (t *TipSetMessageBuilder) Apply() []types.MessageReceipt {
 	receipts, err := t.driver.validator.ApplyTipSetMessages(t.driver.ExeCtx, t.driver.State(), []types.BlockMessagesInfo{t.Build()}, t.driver.Randomness())
 	require.NoError(t.driver.T, err)
+
 	return receipts
 }
 
 func (t *TipSetMessageBuilder) ApplyAndValidate() {
 	receipts := t.Apply()
 	for i := range receipts {
+		t.driver.GasMeter.Track(receipts[i])
 		if t.driver.Config.ValidateExitCode() {
 			assert.Equal(t.driver.T, t.msgReceipts[i].ExitCode, receipts[i].ExitCode, "Message Number: %d Expected ExitCode: %s Actual ExitCode: %s", i, t.msgReceipts[i].ExitCode.Error(), receipts[i].ExitCode.Error())
 		}
@@ -84,7 +86,12 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() {
 			assert.Equal(t.driver.T, t.msgReceipts[i].ReturnValue, receipts[i].ReturnValue, "Message Number: %d Expected ReturnValue: %v Actual ReturnValue: %v", t.msgReceipts[i].ReturnValue, receipts[i].ReturnValue)
 		}
 		if t.driver.Config.ValidateGas() {
-			assert.Equal(t.driver.T, t.msgReceipts[i].GasUsed, receipts[i].GasUsed, "Message Number: %d Expected GasUsed: %s Actual GasUsed: %s", t.msgReceipts[i].GasUsed.String(), receipts[i].GasUsed.String())
+			expectedGas, found := t.driver.GasMeter.ExpectedGasUnit()
+			if found {
+				assert.Equal(t.driver.T, expectedGas, receipts[i].GasUsed, "Message Number: %d Expected GasUsed: %s Actual GasUsed: %s", expectedGas, receipts[i].GasUsed.String())
+			} else {
+				t.driver.T.Logf("WARNING: failed to find expected gas cost for message number: %d", i)
+			}
 		}
 	}
 	t.Clear()

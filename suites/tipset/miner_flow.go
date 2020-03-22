@@ -144,6 +144,7 @@ func TestMinerMissPoStChallengeWindow(t *testing.T, factory state.Factories) {
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState).
 		Build(t)
+	defer td.Complete()
 
 	bb := drivers.NewTipSetMessageBuilder(td)
 
@@ -199,6 +200,7 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState).
 		Build(t)
+	defer td.Complete()
 
 	bb := drivers.NewTipSetMessageBuilder(td)
 
