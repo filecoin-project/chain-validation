@@ -16,6 +16,7 @@ func MessageTestCases() []TestCase {
 		message.TestInitActorSequentialIDAddressCreate,
 		message.TestMessageApplicationEdgecases,
 		message.TestMultiSigActor,
+		message.TestNestedSends,
 		message.TestPaych,
 		message.TestValueTransferAdvance,
 		message.TestValueTransferSimple,

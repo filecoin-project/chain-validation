@@ -279,6 +279,13 @@ func (td *TestDriver) Complete() {
 	//td.GasMeter.Record()
 }
 
+func (td *TestDriver) ApplyMessage(msg *types.Message) types.MessageReceipt {
+	// TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
+	receipt, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
+	require.NoError(td.T, err)
+	return receipt
+}
+
 func (td *TestDriver) ApplyOk(msg *types.Message) int64 {
 	return td.ApplyExpect(msg, nil)
 }
@@ -294,12 +301,17 @@ func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) i
 func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) int64 {
 	prevState := td.State().Root()
 
-	receipt, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
-	require.NoError(td.T, err)
+	receipt := td.ApplyMessage(msg)
 
 	newState := td.State().Root()
 	td.GasMeter.Track(prevState, newState, msg, receipt)
 
+	if td.Config.ValidateExitCode() {
+		assert.Equal(td.T, code, receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), receipt.ExitCode.Error())
+	}
+	if td.Config.ValidateReturnValue() {
+		assert.Equal(td.T, retval, receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, receipt.ReturnValue)
+	}
 	if td.Config.ValidateGas() {
 		expectedGasUsed, ok := td.GasMeter.Expected(prevState, msg)
 		if ok {
@@ -307,12 +319,6 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 		} else {
 			td.T.Logf("WARNING: failed to find expected gas cost for state: %s message: %+v", prevState, msg)
 		}
-	}
-	if td.Config.ValidateExitCode() {
-		assert.Equal(td.T, code, receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), receipt.ExitCode.Error())
-	}
-	if td.Config.ValidateReturnValue() {
-		assert.Equal(td.T, retval, receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, receipt.ReturnValue)
 	}
 
 	// TODO in the very near future we will be validating the stateroot here, keep in back of head.
