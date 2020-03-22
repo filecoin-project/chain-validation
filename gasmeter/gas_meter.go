@@ -51,7 +51,7 @@ func (gm *GasMeter) Track(receipt types.MessageReceipt) {
 	})
 }
 
-func (gm *GasMeter) ExpectedGasUnit() (int64, bool) {
+func (gm *GasMeter) NextExpectedGas() (int64, bool) {
 	defer func() { gm.gasIdx += 1 }()
 	if gm.gasIdx > len(gm.expectedGasUnits)-1 {
 		// didn't find any gas
@@ -61,7 +61,9 @@ func (gm *GasMeter) ExpectedGasUnit() (int64, bool) {
 }
 
 // write the contents of gm.tracker to a file using the format:
-// oldStateCID,msgCID,newStateCID,GasUnits
+// GasUnit
+// GasUnit
+// ...
 func (gm *GasMeter) Record() {
 	file := getTestDataFilePath(gm.T)
 	f, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
@@ -86,7 +88,7 @@ func LoadGasForTest(t testing.TB) []int64 {
 	f, found := box.Get(fileName)
 	if !found {
 		t.Logf("can't find file: %s", fileName)
-		// return an empty slice here since `ExpectedGasUnit` performs bounds checking
+		// return an empty slice here since `NextExpectedGas` performs bounds checking
 		return []int64{}
 	}
 
@@ -114,11 +116,13 @@ func getTestDataFilePath(t testing.TB) string {
 }
 
 // given a line of the form:
-// oldState,messageCid,newState,gasUnits
+// GasUnit
+// GasUnit
+// ...
 // return gasUnits as an int64
 func gasFromTestFileLine(l string) (int64, error) {
 	tokens := strings.Split(l, ",")
-	// expect tokens to always be length 3 (oldState,newState,gasCost)
+	// expect tokens to always be length 1
 	if len(tokens) != 1 {
 		return -1, fmt.Errorf("invalid gas line, expected 1 tokens, got %d: %s", len(tokens), tokens)
 	}

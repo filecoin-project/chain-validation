@@ -86,7 +86,7 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() {
 			assert.Equal(t.driver.T, t.msgReceipts[i].ReturnValue, receipts[i].ReturnValue, "Message Number: %d Expected ReturnValue: %v Actual ReturnValue: %v", t.msgReceipts[i].ReturnValue, receipts[i].ReturnValue)
 		}
 		if t.driver.Config.ValidateGas() {
-			expectedGas, found := t.driver.GasMeter.ExpectedGasUnit()
+			expectedGas, found := t.driver.GasMeter.NextExpectedGas()
 			if found {
 				assert.Equal(t.driver.T, expectedGas, receipts[i].GasUsed.Int64(), "Message Number: %d Expected GasUsed: %s Actual GasUsed: %s", expectedGas, receipts[i].GasUsed.String())
 			} else {
