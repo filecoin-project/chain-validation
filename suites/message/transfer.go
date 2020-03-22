@@ -70,7 +70,6 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			code: exitcode.Ok,
 		},
 		{
-			// Note: this test current fails for lotus as it returns an error instead of a message receipt
 			desc: "fail to transfer more funds than sender balance > 0",
 
 			sender:    alice,
@@ -84,7 +83,6 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			code: exitcode.SysErrInsufficientFunds,
 		},
 		{
-			// Note: this test current fails for lotus as it returns an error instead of a message receipt
 			desc: "fail to transfer more funds than sender has when sender balance == zero",
 
 			sender:    alice,

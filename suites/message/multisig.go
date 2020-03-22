@@ -10,6 +10,7 @@ import (
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
+	typegen "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/drivers"
@@ -76,7 +77,6 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		td.AssertBalance(multisigAddr, valueSend)
 
 		// alice proposes that outsider should receive 'valueSend' FIL.
-		txID0 := multisig_spec.TxnID(0)
 		pparams := multisig_spec.ProposeParams{
 			To:     outsider,
 			Value:  valueSend,
@@ -85,12 +85,11 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		}
 
 		// propose the transaction and assert it exists in the actor state
-		// TODO: stop using TxnIDParams since it's not being passed as params to any method.
-		// Just get the right serialized bytes for the return value.
-		btxid := chain.MustSerialize(&multisig_spec.TxnIDParams{ID: txID0})
+		txID0 := multisig_spec.TxnID(0)
+		expected := typegen.CborInt(txID0)
 		td.ApplyExpect(
-			td.MessageProducer.MultisigPropose(multisigAddr, alice, pparams, chain.Value(big_spec.Zero()), chain.Nonce(1)),
-			btxid[1:])
+			td.MessageProducer.MultisigPropose(multisigAddr, alice, pparams, chain.Nonce(1)),
+			chain.MustSerialize(&expected))
 
 		td.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.Transaction{
 			To:       pparams.To,
@@ -102,13 +101,13 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		// bob cancels alice's transaction. This fails as bob did not create alice's transaction.
 		td.ApplyFailure(
-			td.MessageProducer.MultisigCancel(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
+			td.MessageProducer.MultisigCancel(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Nonce(0)),
 			exitcode_spec.ErrForbidden)
 
 		// alice cancels their transaction. The outsider doesn't receive any FIL, the multisig actor's balance is empty, and the
 		// transaction is canceled.
 		td.ApplyOk(
-			td.MessageProducer.MultisigCancel(multisigAddr, alice, multisig_spec.TxnIDParams{ID: txID0}, chain.Nonce(2), chain.Value(big_spec.Zero())),
+			td.MessageProducer.MultisigCancel(multisigAddr, alice, multisig_spec.TxnIDParams{ID: txID0}, chain.Nonce(2)),
 		)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{aliceId, bobId},
@@ -150,7 +149,6 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 			exitcode_spec.Ok, chain.MustSerialize(&createRet))
 
 		// setup propose expected values and params
-		txID0 := multisig_spec.TxnID(0)
 		pparams := multisig_spec.ProposeParams{
 			To:     outsider,
 			Value:  valueSend,
@@ -159,10 +157,11 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		}
 
 		// propose the transaction and assert it exists in the actor state
-		btxid := chain.MustSerialize(&multisig_spec.TxnIDParams{ID: txID0})
+		txID0 := multisig_spec.TxnID(0)
+		expected := typegen.CborInt(txID0)
 		td.ApplyExpect(
-			td.MessageProducer.MultisigPropose(multisigAddr, alice, pparams, chain.Value(big_spec.Zero()), chain.Nonce(1)),
-			btxid[1:])
+			td.MessageProducer.MultisigPropose(multisigAddr, alice, pparams, chain.Nonce(1)),
+			chain.MustSerialize(&expected))
 
 		td.AssertMultisigTransaction(multisigAddr, txID0, multisig_spec.Transaction{
 			To:       pparams.To,
@@ -174,17 +173,12 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		// outsider proposes themselves to receive 'valueSend' FIL. This fails as they are not a signer.
 		td.ApplyFailure(
-			td.MessageProducer.MultisigPropose(multisigAddr, outsider, multisig_spec.ProposeParams{
-				To:     outsider,
-				Value:  valueSend,
-				Method: builtin_spec.MethodSend,
-				Params: []byte{},
-			}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
+			td.MessageProducer.MultisigPropose(multisigAddr, outsider, pparams, chain.Nonce(0)),
 			exitcode_spec.ErrForbidden)
 
 		// outsider approves the value transfer alice sent. This fails as they are not a signer.
 		td.ApplyFailure(
-			td.MessageProducer.MultisigApprove(multisigAddr, outsider, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(1)),
+			td.MessageProducer.MultisigApprove(multisigAddr, outsider, multisig_spec.TxnIDParams{ID: txID0}, chain.Nonce(1)),
 			exitcode_spec.ErrForbidden)
 
 		// increment the epoch to unlock the funds
@@ -193,7 +187,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 
 		// bob approves transfer of 'valueSend' FIL to outsider.
 		td.ApplyOk(
-			td.MessageProducer.MultisigApprove(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Value(big_spec.Zero()), chain.Nonce(0)),
+			td.MessageProducer.MultisigApprove(multisigAddr, bob, multisig_spec.TxnIDParams{ID: txID0}, chain.Nonce(0)),
 		)
 		txID1 := multisig_spec.TxnID(1)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
@@ -247,11 +241,10 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 		)
 
 		// AddSigner must be staged through the multisig itself
-		txID0 := multisig_spec.TxnID(0)
-
 		// Alice proposes the AddSigner.
 		// Since approvals = 1 this auto-approves the transaction.
-		btxid := chain.MustSerialize(&multisig_spec.TxnIDParams{ID: txID0})
+		txID0 := multisig_spec.TxnID(0)
+		expected := typegen.CborInt(txID0)
 		td.ApplyExpect(
 			td.MessageProducer.MultisigPropose(multisigAddr, alice, multisig_spec.ProposeParams{
 				To:     multisigAddr,
@@ -259,7 +252,7 @@ func TestMultiSigActor(t *testing.T, factory state.Factories) {
 				Method: builtin_spec.MethodsMultisig.AddSigner,
 				Params: chain.MustSerialize(&addSignerParams),
 			}, chain.Nonce(2)),
-			btxid[1:],
+			chain.MustSerialize(&expected),
 		)
 
 		// TODO also exercise the approvals = 2 case with explicit approval.
