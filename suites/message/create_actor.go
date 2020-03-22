@@ -11,7 +11,6 @@ import (
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"
-	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
 	"github.com/filecoin-project/chain-validation/suites/utils"
@@ -87,9 +86,9 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			defer td.Complete()
 
 			existingAccountAddr, _ := td.NewAccountActor(tc.existingActorType, tc.existingActorBal)
-			gasUsed := td.ApplyMessageExpectReceipt(
+			gasUsed := td.ApplyFailure(
 				td.MessageProducer.Transfer(tc.newActorAddr, existingAccountAddr, chain.Value(tc.newActorInitBal), chain.Nonce(0)),
-				types.MessageReceipt{ExitCode: tc.expExitCode, ReturnValue: nil, GasUsed: tc.expGasCost},
+				tc.expExitCode,
 			)
 
 			// new actor balance will only exist if message was applied successfully.
@@ -121,13 +120,13 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 	firstInitRet := td.ComputeInitActorExecReturn(sender, 0, 0, firstPaychAddr)
 	secondInitRet := td.ComputeInitActorExecReturn(sender, 1, 0, secondPaychAddr)
 
-	td.ApplyMessageExpectReceipt(
+	td.ApplyExpect(
 		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
-		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&firstInitRet), GasUsed: abi_spec.NewTokenAmount(1416)},
+		chain.MustSerialize(&firstInitRet),
 	)
 
-	td.ApplyMessageExpectReceipt(
-		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(1)),
-		types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&secondInitRet), GasUsed: abi_spec.NewTokenAmount(1506)},
+	td.ApplyExpect(
+		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+		chain.MustSerialize(&secondInitRet),
 	)
 }

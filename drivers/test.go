@@ -9,6 +9,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	market_spec "github.com/filecoin-project/specs-actors/actors/builtin/market"
+	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/ipfs/go-cid"
 	datastore "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
@@ -278,8 +279,19 @@ func (td *TestDriver) Complete() {
 	//td.GasMeter.Record()
 }
 
-// TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
-func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, expected types.MessageReceipt) int64 {
+func (td *TestDriver) ApplyOk(msg *types.Message) int64 {
+	return td.ApplyExpect(msg, nil)
+}
+
+func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) int64 {
+	return td.applyMessageExpectCodeAndReturn(msg, exitcode.Ok, retval)
+}
+
+func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) int64 {
+	return td.applyMessageExpectCodeAndReturn(msg, code, nil)
+}
+
+func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) int64 {
 	prevState := td.State().Root()
 
 	receipt, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
@@ -297,10 +309,10 @@ func (td *TestDriver) ApplyMessageExpectReceipt(msg *types.Message, expected typ
 		}
 	}
 	if td.Config.ValidateExitCode() {
-		assert.Equal(td.T, expected.ExitCode, receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", expected.ExitCode.Error(), receipt.ExitCode.Error())
+		assert.Equal(td.T, code, receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), receipt.ExitCode.Error())
 	}
 	if td.Config.ValidateReturnValue() {
-		assert.Equal(td.T, expected.ReturnValue, receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", expected.ReturnValue, receipt.ReturnValue)
+		assert.Equal(td.T, retval, receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, receipt.ReturnValue)
 	}
 
 	// TODO in the very near future we will be validating the stateroot here, keep in back of head.
@@ -399,12 +411,11 @@ func computeInitActorExecReturn(t testing.TB, from address.Address, originatorCa
 	}
 }
 
-func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, receipt types.MessageReceipt) {
+func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, code exitcode.ExitCode, retval []byte) {
 	/* Create the Multisig actor*/
-	td.ApplyMessageExpectReceipt(
+	td.applyMessageExpectCodeAndReturn(
 		td.MessageProducer.CreateMultisigActor(from, params.Signers, params.UnlockDuration, params.NumApprovalsThreshold, chain.Nonce(nonce), chain.Value(value)),
-		receipt,
-	)
+		code, retval)
 	/* Assert the actor state was setup as expected */
 	pendingTxMap, err := adt_spec.MakeEmptyMap(newMockStore())
 	require.NoError(td.T, err)
