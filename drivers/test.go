@@ -386,11 +386,16 @@ func (td *TestDriver) AssertMultisigState(multisigAddr address.Address, expected
 }
 
 func (td *TestDriver) ComputeInitActorExecReturn(from address.Address, originatorCallSeq uint64, newActorAddressCount uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
+	td.T.Helper()
 	return computeInitActorExecReturn(td.T, from, originatorCallSeq, newActorAddressCount, expectedNewAddr)
 }
 
 func computeInitActorExecReturn(t testing.TB, from address.Address, originatorCallSeq uint64, newActorAddressCount uint64, expectedNewAddr address.Address) init_spec.ExecReturn {
+	t.Helper()
 	buf := new(bytes.Buffer)
+	if from.Protocol() == address.ID {
+		t.Fatal("cannot compute init actor address return from ID address", from)
+	}
 
 	require.NoError(t, from.MarshalCBOR(buf))
 	require.NoError(t, binary.Write(buf, binary.BigEndian, originatorCallSeq))

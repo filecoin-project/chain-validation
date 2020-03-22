@@ -93,9 +93,9 @@ func (d *StateDriver) newMinerAccountActor() address.Address {
 
 	// creat a miner, owner, and its worker
 	_, minerOwnerID := d.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
-	_, minerWorkerID := d.NewAccountActor(address.BLS, big_spec.Zero())
+	minerWorkerPk, minerWorkerID := d.NewAccountActor(address.BLS, big_spec.Zero())
 	expectedMinerActorIDAddress := utils.NewIDAddr(d.tb, utils.IdFromAddress(minerWorkerID)+1)
-	minerActorAddrs := computeInitActorExecReturn(d.tb, builtin_spec.StoragePowerActorAddr, 0, 1, expectedMinerActorIDAddress)
+	minerActorAddrs := computeInitActorExecReturn(d.tb, minerWorkerPk, 0, 1, expectedMinerActorIDAddress)
 
 	// create the miner actor so it exists in the init actors map
 	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), &miner_spec.State{
