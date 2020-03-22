@@ -126,7 +126,7 @@ func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factorie
 	)
 
 	td.ApplyExpect(
-		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+		td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(1)),
 		chain.MustSerialize(&secondInitRet),
 	)
 }
