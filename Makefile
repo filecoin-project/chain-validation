@@ -34,6 +34,9 @@ clean:
 gen:
 	$(GOBIN) run ./pkg/gen/main.go
 
+gen-gas:
+	$(GOBIN) generate ./box/...
+
 tidy:
 	$(GOBIN) mod tidy
 .PHONY: tidy
