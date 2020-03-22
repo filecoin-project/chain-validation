@@ -32,11 +32,11 @@ func (mp *MessageProducer) Messages() []*types.Message {
 }
 
 // BuildFull creates and returns a single message.
-func (mp *MessageProducer) BuildFull(to, from address.Address, method abi_spec.MethodNum, callSeq int64, value, gasPrice big_spec.Int, gasLimit int64, params []byte) *types.Message {
+func (mp *MessageProducer) BuildFull(to, from address.Address, method abi_spec.MethodNum, callSeq uint64, value, gasPrice big_spec.Int, gasLimit int64, params []byte) *types.Message {
 	fm := &types.Message{
 		To:         to,
 		From:       from,
-		CallSeqNum: callSeq,
+		CallSeqNum: int64(callSeq), // FIXME should be a uint64 in message
 		Value:      value,
 		Method:     method,
 		Params:     params,
@@ -60,7 +60,7 @@ func (mp *MessageProducer) Build(to, from address.Address, method abi_spec.Metho
 // msgOpts specifies value and gas parameters for a message, supporting a functional options pattern
 // for concise but customizable message construction.
 type msgOpts struct {
-	nonce    int64
+	nonce    uint64
 	value    big_spec.Int
 	gasPrice big_spec.Int
 	gasLimit int64
@@ -75,7 +75,7 @@ func Value(value big_spec.Int) MsgOpt {
 	}
 }
 
-func Nonce(n int64) MsgOpt {
+func Nonce(n uint64) MsgOpt {
 	return func(opts *msgOpts) {
 		opts.nonce = n
 	}
