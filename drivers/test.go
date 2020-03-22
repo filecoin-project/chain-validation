@@ -244,7 +244,6 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
 	validator := chain.NewValidator(b.factory)
 
-	vconfig := b.factory.NewValidationConfig()
 	return &TestDriver{
 		T:               t,
 		StateDriver:     sd,
@@ -252,7 +251,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		validator:       validator,
 		ExeCtx:          exeCtx,
 
-		Config: vconfig,
+		Config: b.factory.NewValidationConfig(),
 
 		GasMeter: gasmeter.NewGasMeter(t),
 	}
