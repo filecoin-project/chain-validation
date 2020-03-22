@@ -1,6 +1,7 @@
 package drivers
 
 import (
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -76,7 +77,15 @@ func (t *TipSetMessageBuilder) Apply() []types.MessageReceipt {
 func (t *TipSetMessageBuilder) ApplyAndValidate() {
 	receipts := t.Apply()
 	for i := range receipts {
-		t.driver.AssertReceipt(receipts[i], t.msgReceipts[i])
+		if t.driver.Config.ValidateExitCode() {
+			assert.Equal(t.driver.T, t.msgReceipts[i].ExitCode, receipts[i].ExitCode, "Message Number: %d Expected ExitCode: %s Actual ExitCode: %s", i, t.msgReceipts[i].ExitCode.Error(), receipts[i].ExitCode.Error())
+		}
+		if t.driver.Config.ValidateReturnValue() {
+			assert.Equal(t.driver.T, t.msgReceipts[i].ReturnValue, receipts[i].ReturnValue, "Message Number: %d Expected ReturnValue: %v Actual ReturnValue: %v", t.msgReceipts[i].ReturnValue, receipts[i].ReturnValue)
+		}
+		if t.driver.Config.ValidateGas() {
+			assert.Equal(t.driver.T, t.msgReceipts[i].GasUsed, receipts[i].GasUsed, "Message Number: %d Expected GasUsed: %s Actual GasUsed: %s", t.msgReceipts[i].GasUsed.String(), receipts[i].GasUsed.String())
+		}
 	}
 	t.Clear()
 }

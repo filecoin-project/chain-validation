@@ -336,19 +336,6 @@ func (td *TestDriver) AssertBalanceCallback(addr address.Address, thing func(act
 	actr, err := td.State().Actor(addr)
 	require.NoError(td.T, err)
 	assert.True(td.T, thing(actr.Balance()))
-	//assert.True(td.T, , actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
-}
-
-func (td *TestDriver) AssertReceipt(actual, expected types.MessageReceipt) {
-	if td.Config.ValidateGas() {
-		assert.Equal(td.T, expected.GasUsed, actual.GasUsed, "Expected GasUsed: %s Actual GasUsed: %s", expected.GasUsed.String(), actual.GasUsed.String())
-	}
-	if td.Config.ValidateExitCode() {
-		assert.Equal(td.T, expected.ExitCode, actual.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", expected.ExitCode.Error(), actual.ExitCode.Error())
-	}
-	if td.Config.ValidateReturnValue() {
-		assert.Equal(td.T, expected.ReturnValue, actual.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", expected.ReturnValue, actual.ReturnValue)
-	}
 }
 
 func (td *TestDriver) AssertMultisigTransaction(multisigAddr address.Address, txnID multisig_spec.TxnID, txn multisig_spec.Transaction) {
