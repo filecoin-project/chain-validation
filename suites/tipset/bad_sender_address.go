@@ -23,6 +23,7 @@ func TestInvalidSenderAddress(t *testing.T, factory state.Factories) {
 
 	t.Run("message sender address is defined but not in state tree", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		badSender := utils.NewSECP256K1Addr(t, "123")

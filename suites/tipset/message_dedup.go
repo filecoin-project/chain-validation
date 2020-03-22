@@ -24,6 +24,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 
 	t.Run("apply a single BLS message", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
@@ -41,6 +42,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 
 	t.Run("apply a duplicated BLS message", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
@@ -57,6 +59,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 
 	t.Run("apply a single SECP message", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
@@ -76,6 +79,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 
 	t.Run("apply duplicate SECP message", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))

@@ -31,6 +31,7 @@ import (
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
+	"github.com/filecoin-project/chain-validation/gasmeter"
 	"github.com/filecoin-project/chain-validation/state"
 )
 
@@ -252,7 +253,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 
 		Config: b.factory.NewValidationConfig(),
 
-		GasMeter: NewGasMeter(t),
+		GasMeter: gasmeter.NewGasMeter(t),
 	}
 }
 
@@ -267,7 +268,7 @@ type TestDriver struct {
 
 	Config state.ValidationConfig
 
-	GasMeter *GasMeter
+	GasMeter *gasmeter.GasMeter
 }
 
 func (td *TestDriver) Complete() {
@@ -299,12 +300,9 @@ func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) i
 }
 
 func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) int64 {
-	prevState := td.State().Root()
-
 	receipt := td.ApplyMessage(msg)
 
-	newState := td.State().Root()
-	td.GasMeter.Track(prevState, newState, msg, receipt)
+	td.GasMeter.Track(receipt)
 
 	if td.Config.ValidateExitCode() {
 		assert.Equal(td.T, code, receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), receipt.ExitCode.Error())
@@ -313,11 +311,11 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 		assert.Equal(td.T, retval, receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, receipt.ReturnValue)
 	}
 	if td.Config.ValidateGas() {
-		expectedGasUsed, ok := td.GasMeter.Expected(prevState, msg)
+		expectedGasUsed, ok := td.GasMeter.NextExpectedGas()
 		if ok {
 			assert.Equal(td.T, expectedGasUsed, receipt.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, receipt.GasUsed.Int64())
 		} else {
-			td.T.Logf("WARNING: failed to find expected gas cost for state: %s message: %+v", prevState, msg)
+			td.T.Logf("WARNING: failed to find expected gas cost for message: %+v", msg)
 		}
 	}
 

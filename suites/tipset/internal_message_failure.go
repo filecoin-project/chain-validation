@@ -29,6 +29,7 @@ func TestInternalMessageApplicationFailure(t *testing.T, factory state.Factories
 
 	t.Run("multisig internal message send fails and receiver of message does not exist in state", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		alice, aliceId := td.NewAccountActor(drivers.SECP, abi.NewTokenAmount(2_000_000_000_000))
@@ -60,6 +61,7 @@ func TestInternalMessageApplicationFailure(t *testing.T, factory state.Factories
 
 	t.Run("multisig internal message send fails when receiver is invalid address protocol", func(t *testing.T) {
 		td := builder.Build(t)
+		defer td.Complete()
 		blkBuilder := drivers.NewTipSetMessageBuilder(td)
 
 		// create the multisig actor, set number of approvals to 1 so propose goes through on first send.
