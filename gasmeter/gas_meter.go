@@ -41,7 +41,7 @@ func NewGasMeter(t testing.TB, record bool) *GasMeter {
 	return &GasMeter{
 		tracker:          list.New(),
 		T:                t,
-		record:           true,
+		record:           record,
 		gasIdx:           0,
 		expectedGasUnits: LoadGasForTest(t),
 	}
@@ -91,6 +91,7 @@ func LoadGasForTest(t testing.TB) []int64 {
 	f, found := box.Get(fileName)
 	if !found {
 		t.Logf("can't find file: %s", fileName)
+		// return an empty slice here since `ExpectedGasUnit` performs bounds checking
 		return []int64{}
 	}
 
@@ -112,9 +113,7 @@ func LoadGasForTest(t testing.TB) []int64 {
 func getTestDataFilePath(t testing.TB) string {
 	dataPath := os.Getenv(ValidationDataEnvVar)
 	if dataPath == "" {
-		// XXX: remove this before meting
-		dataPath = "/home/frrist/src/github.com/filecoin-project/chain-validation/box/resources"
-		//t.Fatalf("failed to find validation data path, make sure %s is set", ValidationDataEnvVar)
+		t.Fatalf("failed to find validation data path, make sure %s is set", ValidationDataEnvVar)
 	}
 	return filepath.Join(dataPath, filenameFromTest(t))
 }
