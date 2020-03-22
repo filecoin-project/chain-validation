@@ -88,7 +88,7 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() {
 		if t.driver.Config.ValidateGas() {
 			expectedGas, found := t.driver.GasMeter.ExpectedGasUnit()
 			if found {
-				assert.Equal(t.driver.T, expectedGas, receipts[i].GasUsed, "Message Number: %d Expected GasUsed: %s Actual GasUsed: %s", expectedGas, receipts[i].GasUsed.String())
+				assert.Equal(t.driver.T, expectedGas, receipts[i].GasUsed.Int64(), "Message Number: %d Expected GasUsed: %s Actual GasUsed: %s", expectedGas, receipts[i].GasUsed.String())
 			} else {
 				t.driver.T.Logf("WARNING: failed to find expected gas cost for message number: %d", i)
 			}
