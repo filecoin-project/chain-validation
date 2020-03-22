@@ -332,6 +332,7 @@ func (td *TestDriver) AssertBalance(addr address.Address, expected abi_spec.Toke
 	require.NoError(td.T, err)
 	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
 }
+
 func (td *TestDriver) AssertBalanceCallback(addr address.Address, thing func(actorBalance abi_spec.TokenAmount) bool) {
 	actr, err := td.State().Actor(addr)
 	require.NoError(td.T, err)
