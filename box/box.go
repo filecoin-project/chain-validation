@@ -1,6 +1,6 @@
 //go:generate go run gen.go
 
-// Source: https://levelup.gitconnected.com/how-i-embedded-resources-in-go-514b72f6ef0a
+// Based on code from https://github.com/wso2/product-apim-tooling/tree/6292e88350868ddaa17ec58501672f008639dd5a/import-export-cli on 2020-03-21 under the Apache License 2.0.
 
 package box
 
