@@ -254,7 +254,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 
 		Config: vconfig,
 
-		GasMeter: gasmeter.NewGasMeter(t, vconfig.RecordGas()),
+		GasMeter: gasmeter.NewGasMeter(t),
 	}
 }
 
@@ -278,7 +278,7 @@ func (td *TestDriver) Complete() {
 	// Uncomment the following line to persist the actual gas values used to file as the new set
 	// of expectations.
 	//
-	td.GasMeter.Record()
+	//td.GasMeter.Record()
 }
 
 func (td *TestDriver) ApplyMessage(msg *types.Message) types.MessageReceipt {

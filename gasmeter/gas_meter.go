@@ -30,18 +30,16 @@ type GasMeter struct {
 	tracker *list.List
 	T       testing.TB
 
-	record bool
 	// index in gasUnits of expected gas
 	gasIdx int
 	// slice of gas units used by the test
 	expectedGasUnits []int64
 }
 
-func NewGasMeter(t testing.TB, record bool) *GasMeter {
+func NewGasMeter(t testing.TB) *GasMeter {
 	return &GasMeter{
 		tracker:          list.New(),
 		T:                t,
-		record:           record,
 		gasIdx:           0,
 		expectedGasUnits: LoadGasForTest(t),
 	}
@@ -65,9 +63,6 @@ func (gm *GasMeter) ExpectedGasUnit() (int64, bool) {
 // write the contents of gm.tracker to a file using the format:
 // oldStateCID,msgCID,newStateCID,GasUnits
 func (gm *GasMeter) Record() {
-	if !gm.record {
-		return
-	}
 	file := getTestDataFilePath(gm.T)
 	f, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {

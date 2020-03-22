@@ -52,7 +52,6 @@ type Actor interface {
 
 type ValidationConfig interface {
 	ValidateGas() bool
-	RecordGas() bool
 	ValidateExitCode() bool
 	ValidateReturnValue() bool
 }
