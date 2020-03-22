@@ -16,6 +16,7 @@ func init() {
 	resources.Add("/TestChainValidationMessageSuiteTestMultiSigActorconstructortest", []byte{49, 56, 53, 49, 10})
 	resources.Add("/TestChainValidationMessageSuiteTestMultiSigActorproposeandapprove", []byte{50, 48, 51, 55, 10, 56, 57, 53, 10, 50, 50, 50, 10, 49, 54, 56, 10, 49, 48, 50, 55, 10})
 	resources.Add("/TestChainValidationMessageSuiteTestMultiSigActorproposeandcancel", []byte{50, 48, 51, 55, 10, 56, 57, 53, 10, 50, 50, 50, 10, 52, 51, 56, 10})
+	resources.Add("/TestChainValidationMessageSuiteTestNestedSendsokbasicsend", []byte{})
 	resources.Add("/TestChainValidationMessageSuiteTestPaychhappypathcollect", []byte{49, 57, 49, 56, 10, 51, 50, 48, 10, 49, 57, 49, 10, 50, 51, 54, 10})
 	resources.Add("/TestChainValidationMessageSuiteTestPaychhappypathconstructor", []byte{49, 57, 49, 56, 10})
 	resources.Add("/TestChainValidationMessageSuiteTestPaychhappypathupdate", []byte{49, 57, 49, 56, 10, 51, 49, 56, 10})
