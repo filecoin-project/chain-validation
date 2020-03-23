@@ -151,19 +151,19 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, abi_spec.NewTokenAmount(gasUsed)))
 	})
 
-	t.Run("transfer from known address to unknown account", func(t *testing.T) {
+	t.Run("ok transfer from known address to new account", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceInitialBalance)
-		unknown := td.Wallet().NewSECP256k1AccountAddress()
+		receiver := td.Wallet().NewSECP256k1AccountAddress()
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
 		gasUsed := td.ApplyOk(
-			td.MessageProducer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0)),
+			td.MessageProducer.Transfer(receiver, alice, chain.Value(transferAmnt), chain.Nonce(0)),
 		)
 		td.AssertBalance(alice, big_spec.Sub(big_spec.Sub(aliceInitialBalance, abi_spec.NewTokenAmount(gasUsed)), transferAmnt))
-		td.AssertBalance(unknown, transferAmnt)
+		td.AssertBalance(receiver, transferAmnt)
 	})
 
 	t.Run("fail to transfer from unknown account to known address", func(t *testing.T) {
@@ -177,19 +177,21 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
 			exitcode.SysErrActorNotFound)
-		td.Complete()
+		td.AssertBalance(alice, aliceInitialBalance)
 	})
 
 	t.Run("fail to transfer from unknown address to unknown address", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
 
-		unknown := td.Wallet().NewSECP256k1AccountAddress()
-		nobody := td.Wallet().NewSECP256k1AccountAddress()
+		sender := td.Wallet().NewSECP256k1AccountAddress()
+		receiver := td.Wallet().NewSECP256k1AccountAddress()
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
 		td.ApplyFailure(
-			td.MessageProducer.Transfer(nobody, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
+			td.MessageProducer.Transfer(receiver, sender, chain.Value(transferAmnt), chain.Nonce(0)),
 			exitcode.SysErrActorNotFound)
+		td.AssertNoActor(sender)
+		td.AssertNoActor(receiver)
 	})
 }
