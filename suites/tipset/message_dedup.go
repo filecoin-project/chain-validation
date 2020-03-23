@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
-	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	"github.com/filecoin-project/specs-actors/actors/crypto"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
@@ -32,9 +31,8 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 
 		blkBuilder.WithTicketCount(1).
 			// send value from sender to receiver
-			WithBLSMessageAndReceipt(
+			WithBLSMessageOk(
 				td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
-				types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(128)},
 			).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
@@ -50,9 +48,10 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 
 		blkBuilder.WithTicketCount(1).
 			// duplicate the message
-			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
-			WithBLSMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
-			WithMessageReceipt(types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: nil, GasUsed: abi_spec.NewTokenAmount(128)}).
+			WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
+			WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
+			// only should have a single result
+			WithResult(exitcode.Ok, nil).
 			ApplyAndValidate()
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
@@ -67,11 +66,10 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 
 		blkBuilder.WithTicketCount(1).
 			// send value from sender to receiver
-			WithSECPMessageAndReceipt(
+			WithSECPMessageOk(
 				signMessage(
 					td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
 					td.Wallet()),
-				types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: drivers.EmptyReturnValue, GasUsed: abi_spec.NewTokenAmount(128)},
 			).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
@@ -87,9 +85,9 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 
 		blkBuilder.WithTicketCount(1).
 			// send value from sender to receiver
-			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
-			WithSECPMessage(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
-			WithMessageReceipt(types.MessageReceipt{ExitCode: exitcode.Ok, ReturnValue: nil, GasUsed: abi_spec.NewTokenAmount(128)}).
+			WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
+			WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
+			WithResult(exitcode.Ok, nil).
 			ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))

@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/filecoin-project/chain-validation/chain"
-	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
 	"github.com/filecoin-project/chain-validation/suites/utils"
@@ -48,9 +47,9 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 				prevRewards := td.GetRewardSummary()
 
 				// Process a block with two messages, a simple send back and forth between accounts.
-				rcpts := blkBuilder.WithTicketCount(1).WithBLSMessage(
+				rcpts := blkBuilder.WithTicketCount(1).WithBLSMessageOk(
 					td.MessageProducer.Transfer(bob, alice, chain.Value(sendValue), chain.Nonce(callSeq)),
-				).WithBLSMessage(
+				).WithBLSMessageOk(
 					td.MessageProducer.Transfer(alice, bob, chain.Value(sendValue), chain.Nonce(callSeq)),
 				).Apply()
 				assert.Equal(t, exitcode.Ok, rcpts[0].ExitCode)
@@ -94,8 +93,8 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 		bb := blkBuilder.WithTicketCount(1)
 		for _, s := range badSenders {
-			bb.WithBLSMessageAndReceipt(td.MessageProducer.Transfer(receiver, s, chain.Value(sendValue)),
-				types.MessageReceipt{ExitCode: exitcode.SysErrActorNotFound, ReturnValue: drivers.EmptyReturnValue},
+			bb.WithBLSMessageAndCode(td.MessageProducer.Transfer(receiver, s, chain.Value(sendValue)),
+				exitcode.SysErrActorNotFound,
 			)
 		}
 

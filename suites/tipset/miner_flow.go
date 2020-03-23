@@ -12,7 +12,6 @@ import (
 	miner_spec "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
-	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -60,29 +59,27 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 	// Create a miner and add finds to the storage market actor for the miner and a client
 	bb.WithTicketCount(1).
 		// Step 1: Register the miner with the power actor
-		WithBLSMessageAndReceipt(
+		WithBLSMessageAndRet(
 			td.MessageProducer.PowerCreateMiner(
 				builtin_spec.StoragePowerActorAddr, minerOwner,
 				power_spec.CreateMinerParams{Owner: minerOwner, Worker: minerWorker, SectorSize: sectorSize, Peer: utils.RequireRandomPeerID(td.T)},
 				chain.Nonce(incOwnerCallSeq()), chain.Value(collateral),
 			),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: chain.MustSerialize(&createMinerRet), GasUsed: big_spec.Zero()},
+			chain.MustSerialize(&createMinerRet),
 		).
 		// Step 2.A: Add market funds for client
-		WithBLSMessageAndReceipt(
+		WithBLSMessageOk(
 			td.MessageProducer.MarketAddBalance(builtin_spec.StorageMarketActorAddr, minerWorker,
 				minerIDAddr,
 				chain.Nonce(incWorkerCallSeq()), chain.Value(collateral),
 			),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		// Step 2.B: Add market funds for miner
-		WithBLSMessageAndReceipt(
+		WithBLSMessageOk(
 			td.MessageProducer.MarketAddBalance(builtin_spec.StorageMarketActorAddr, minerOwner,
 				minerWorker,
 				chain.Nonce(incOwnerCallSeq()), chain.Value(collateral),
 			),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		ApplyAndValidate()
 
@@ -96,7 +93,7 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 	// Miner publishes deal to the storage market and precommits its sector
 	bb.WithTicketCount(1).
 		// Step 3: Publish presealed deals
-		WithBLSMessageAndReceipt(
+		WithBLSMessageAndRet(
 			td.MessageProducer.MarketPublishStorageDeals(builtin_spec.StorageMarketActorAddr, minerWorker,
 				market_spec.PublishStorageDealsParams{
 					Deals: []market_spec.ClientDealProposal{
@@ -105,10 +102,10 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 				},
 				chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero()),
 			),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: pubRet, GasUsed: big_spec.Zero()},
+			pubRet,
 		).
 		// Step 4: Pre Committing Sectors
-		WithBLSMessageAndReceipt(
+		WithBLSMessageOk(
 			td.MessageProducer.MinerPreCommitSector(minerIDAddr, minerWorker,
 				miner_spec.SectorPreCommitInfo{
 					RegisteredProof: sectorInfo.ProofType,
@@ -119,19 +116,17 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 					Expiration:      sectorInfo.Deal.EndEpoch,
 				},
 				chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		ApplyAndValidate()
 
 	// Miner prove commits its sector
 	td.ExeCtx.Epoch = dealStart
 	bb.WithTicketCount(1).
-		WithBLSMessageAndReceipt(
+		WithBLSMessageOk(
 			// Step 5: Prove the committed sector
 			td.MessageProducer.MinerProveCommitSector(minerIDAddr, minerWorker,
 				miner_spec.ProveCommitSectorParams{SectorNumber: sectorInfo.SectorID, Proof: nil},
 				chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		ApplyAndValidate()
 
@@ -176,11 +171,10 @@ func TestMinerMissPoStChallengeWindow(t *testing.T, factory state.Factories) {
 	td.ExeCtx.Epoch += power_spec.WindowedPostChallengeDuration + miner_spec.ProvingPeriod
 	bb.WithTicketCount(1).
 		// Step 6: send a single message that causes the cron actor to trigger
-		WithBLSMessageAndReceipt(
+		WithBLSMessageOk(
 			td.MessageProducer.Transfer(minerOwner, minerOwner,
 				chain.Nonce(incOwnerCallSeq()), chain.Value(big_spec.Zero()),
 			),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		ApplyAndValidate()
 
@@ -248,10 +242,9 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 	// move the epoch forward to be withing the proving period window.
 	td.ExeCtx.Epoch += power_spec.WindowedPostChallengeDuration + miner_spec.ProvingPeriod/2
 	bb.WithTicketCount(1).
-		WithBLSMessageAndReceipt(
+		WithBLSMessageOk(
 			td.MessageProducer.MinerSubmitWindowedPoSt(minerActorID, minerWorker, abi_spec.OnChainPoStVerifyInfo{Candidates: candidates, Proofs: proofs},
 				chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		ApplyAndValidate()
 
@@ -259,11 +252,10 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 	td.ExeCtx.Epoch += miner_spec.ProvingPeriod/2 + 1
 	bb.WithTicketCount(1).
 		// Step 6: send a single message that causes the cron actor to trigger
-		WithBLSMessageAndReceipt(
+		WithBLSMessageOk(
 			td.MessageProducer.Transfer(minerOwner, minerOwner,
 				chain.Nonce(incOwnerCallSeq()), chain.Value(big_spec.Zero()),
 			),
-			types.MessageReceipt{ExitCode: exitcode_spec.Ok, ReturnValue: nil, GasUsed: big_spec.Zero()},
 		).
 		ApplyAndValidate()
 
