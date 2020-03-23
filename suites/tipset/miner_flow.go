@@ -35,7 +35,7 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 	ownerActor, err := td.State().Actor(minerOwner)
 	require.NoError(td.T, err)
 	ownerCallSeq := ownerActor.CallSeqNum()
-	incOwnerCallSeq := func() int64 {
+	incOwnerCallSeq := func() uint64 {
 		// fell down the ugly stack and hit every frame on the way down
 		defer func() { ownerCallSeq += 1 }()
 		return ownerCallSeq
@@ -44,7 +44,7 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 	workerActor, err := td.State().Actor(minerWorker)
 	require.NoError(td.T, err)
 	workerCallSeq := workerActor.CallSeqNum()
-	incWorkerCallSeq := func() int64 {
+	incWorkerCallSeq := func() uint64 {
 		defer func() { workerCallSeq += 1 }()
 		return workerCallSeq
 	}
@@ -167,7 +167,7 @@ func TestMinerMissPoStChallengeWindow(t *testing.T, factory state.Factories) {
 	ownerActor, err := td.State().Actor(minerOwner)
 	require.NoError(td.T, err)
 	ownerCallSeq := ownerActor.CallSeqNum()
-	incOwnerCallSeq := func() int64 {
+	incOwnerCallSeq := func() uint64 {
 		defer func() { ownerCallSeq += 1 }()
 		return ownerCallSeq
 	}
@@ -223,7 +223,7 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 	workerActor, err := td.State().Actor(minerWorker)
 	require.NoError(td.T, err)
 	workerCallSeq := workerActor.CallSeqNum()
-	incWorkerCallSeq := func() int64 {
+	incWorkerCallSeq := func() uint64 {
 		defer func() { workerCallSeq += 1 }()
 		return workerCallSeq
 	}
@@ -231,7 +231,7 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 	ownerActor, err := td.State().Actor(minerOwner)
 	require.NoError(td.T, err)
 	ownerCallSeq := ownerActor.CallSeqNum()
-	incOwnerCallSeq := func() int64 {
+	incOwnerCallSeq := func() uint64 {
 		defer func() { ownerCallSeq += 1 }()
 		return ownerCallSeq
 	}

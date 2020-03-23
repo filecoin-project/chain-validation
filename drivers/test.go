@@ -280,8 +280,13 @@ func (td *TestDriver) Complete() {
 	//td.GasMeter.Record()
 }
 
-func (td *TestDriver) ApplyMessage(msg *types.Message) types.MessageReceipt {
-	// TODO for failure cases we should consider catching panics here else they appear in the test output and obfuscate successful tests.
+func (td *TestDriver) ApplyMessage(msg *types.Message) (recpt types.MessageReceipt) {
+	defer func() {
+		if r := recover(); r != nil {
+			recpt.ExitCode = exitcode.SysErrInternal
+			td.T.Fatalf("message application paniced: %v", r)
+		}
+	}()
 	receipt, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 	require.NoError(td.T, err)
 	return receipt
@@ -334,7 +339,15 @@ func (td *TestDriver) GetBalance(addr address.Address) abi_spec.TokenAmount {
 func (td *TestDriver) AssertBalance(addr address.Address, expected abi_spec.TokenAmount) {
 	actr, err := td.State().Actor(addr)
 	require.NoError(td.T, err)
-	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected balance: %v, actual balance: %v", expected, actr.Balance().String()))
+	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected actor %s balance: %s, actual balance: %s", addr, expected, actr.Balance()))
+}
+
+// Checks an actor's balance and callSeqNum.
+func (td *TestDriver) AssertActor(addr address.Address, balance abi_spec.TokenAmount, callSeqNum uint64) {
+	actr, err := td.State().Actor(addr)
+	require.NoError(td.T, err)
+	assert.Equal(td.T, balance, actr.Balance(), fmt.Sprintf("expected actor %s balance: %s, actual balance: %s", addr, balance, actr.Balance()))
+	assert.Equal(td.T, callSeqNum, actr.CallSeqNum(), fmt.Sprintf("expected actor %s callSeqNum: %d, actual : %d", addr, callSeqNum, actr.CallSeqNum()))
 }
 
 func (td *TestDriver) AssertBalanceCallback(addr address.Address, thing func(actorBalance abi_spec.TokenAmount) bool) {
@@ -408,7 +421,7 @@ func computeInitActorExecReturn(t testing.TB, from address.Address, originatorCa
 	}
 }
 
-func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce int64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, code exitcode.ExitCode, retval []byte) {
+func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce uint64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, code exitcode.ExitCode, retval []byte) {
 	/* Create the Multisig actor*/
 	td.applyMessageExpectCodeAndReturn(
 		td.MessageProducer.CreateMultisigActor(from, params.Signers, params.UnlockDuration, params.NumApprovalsThreshold, chain.Nonce(nonce), chain.Value(value)),

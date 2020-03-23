@@ -46,7 +46,7 @@ type KeyManager interface {
 type Actor interface {
 	Code() cid.Cid
 	Head() cid.Cid
-	CallSeqNum() int64
+	CallSeqNum() uint64
 	Balance() big.Int
 }
 
