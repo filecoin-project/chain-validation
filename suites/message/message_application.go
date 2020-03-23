@@ -112,4 +112,10 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			exitcode.ErrIllegalArgument)
 	})
+
+	// TODO more tests:
+	// - receiver ID/Actor address does not exist
+	// - invalid method for receiver
+	// - missing/mismatched params for receiver
+	// - various out-of-gas cases
 }
