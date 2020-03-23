@@ -80,9 +80,12 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		amtSent := abi.NewTokenAmount(1)
 		recpt := stage.send(newAddr, amtSent, builtin.MethodsAccount.PubkeyAddress, nil, 1)
 		assert.Equal(t, exitcode.Ok, recpt.ExitCode)
-		expected := bytes.Buffer{}
-		require.NoError(t, newAddr.MarshalCBOR(&expected))
-		assert.Equal(t, expected.Bytes(), recpt.ReturnValue)
+		// TODO: use an explicit Approve() and check the return value is the correct pubkey address
+		// when the multisig Approve() method plumbs through the inner exit code and value.
+		// https://github.com/filecoin-project/specs-actors/issues/113
+		//expected := bytes.Buffer{}
+		//require.NoError(t, newAddr.MarshalCBOR(&expected))
+		//assert.Equal(t, expected.Bytes(), recpt.ReturnValue)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
 		td.AssertBalance(stage.creator, big.Sub(balanceBefore, recpt.GasUsed))
@@ -110,6 +113,23 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		var st multisig.State
 		td.GetActorState(stage.msAddr, &st)
 		assert.Equal(t, []address.Address{stage.creator, anotherId}, st.Signers)
+	})
+
+	t.Run("ok non-CBOR params with transfer", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		stage := prepareStage(td, acctDefaultBalance, multisigBalance)
+
+		newAddr := td.Wallet().NewSECP256k1AccountAddress()
+		amtSent := abi.NewTokenAmount(1)
+		// So long as the parameters are not actually used by the method, a message can carry arbitrary bytes.
+		params := typegen.Deferred{Raw: []byte{1, 2, 3, 4}}
+		recpt := stage.send(newAddr, amtSent, builtin.MethodSend, &params, 1)
+		assert.Equal(t, exitcode.Ok, recpt.ExitCode)
+
+		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
+		td.AssertBalance(newAddr, amtSent)
 	})
 
 	//
@@ -211,23 +231,6 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		td.AssertBalance(stage.msAddr, multisigBalance)                        // No change.
 		td.AssertBalance(stage.creator, big.Sub(balanceBefore, recpt.GasUsed)) // Pay gas, don't receive funds.
-	})
-
-	t.Run("fail non-CBOR params", func(t *testing.T) {
-		td := builder.Build(t)
-		defer td.Complete()
-
-		stage := prepareStage(td, acctDefaultBalance, multisigBalance)
-
-		newAddr := td.Wallet().NewSECP256k1AccountAddress()
-		amtSent := abi.NewTokenAmount(1)
-		params := typegen.Deferred{Raw: []byte{1, 2, 3, 4}}
-		recpt := stage.send(newAddr, amtSent, builtin.MethodSend, &params, 1)
-		assert.Equal(t, exitcode.Ok, recpt.ExitCode)
-
-		td.AssertBalance(stage.msAddr, multisigBalance)
-		_, err := td.State().Actor(newAddr)
-		assert.Error(t, err)
 	})
 
 	// TODO more tests:
