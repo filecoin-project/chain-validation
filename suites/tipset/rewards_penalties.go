@@ -113,15 +113,16 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		gasPenalty := big.NewInt(342)
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward
-		reward := big.Sub(reward.BlockRewardTarget, gasPenalty)
+		rwd := big.Sub(reward.BlockRewardTarget, gasPenalty)
 		assert.Equal(t, big.Sub(prevRewards.Treasury, gasPenalty), newRewards.Treasury)
 		assert.Equal(t, gasPenalty, td.GetBalance(builtin.BurntFundsActorAddr))
-		assert.Equal(t, reward, newRewards.For(miner))
-		assert.Equal(t, reward, newRewards.RewardTotal)
+		assert.Equal(t, rwd, newRewards.For(miner))
+		assert.Equal(t, rwd, newRewards.RewardTotal)
 	})
 
 	// TODO more tests:
 	// - sender exists but isn't an account (miner penalty)
 	// - mismatched callseqnum (miner penalty)
 	// - sender cannot cover value + gas cost (miner penalty)
+	// - miner penalty followed by non-miner penalty with same nonce
 }

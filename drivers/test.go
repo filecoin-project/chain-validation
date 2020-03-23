@@ -332,7 +332,7 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 
 func (td *TestDriver) AssertNoActor(addr address.Address) {
 	_, err := td.State().Actor(addr)
-	require.Error(td.T, err, "expected no such actor %s", addr)
+	assert.Error(td.T, err, "expected no such actor %s", addr)
 }
 
 func (td *TestDriver) GetBalance(addr address.Address) abi_spec.TokenAmount {

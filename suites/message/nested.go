@@ -133,10 +133,10 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 	})
 
 	//
-	// The following few tests exercise invalid "syntax" of the inner message.
+	// TODO: Tests to exercise invalid "syntax" of the inner message.
 	// These would fail message syntax validation if the message were top-level.
 	//
-	// TODO more syntax tests. Some of these require handcrafting the proposal params serialization.
+	// Some of these require handcrafting the proposal params serialization.
 	// - malformed address: zero-length, one-length, too-short pubkeys, invalid UVarints, ...
 	// - negative method num
 	//
@@ -144,27 +144,6 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 	// it checks just before sending.
 	// We need a custom actor for staging whackier messages.
 
-	t.Run("fail to malformed addr", func(t *testing.T) {
-		td := builder.Build(t)
-		defer td.Complete()
-
-		stage := prepareStage(td, acctDefaultBalance, multisigBalance)
-
-		// Note: many other invalid address serializations are possible, but require working around the Address type
-		// to generate byte strings for the propose parameters directly.
-		newAddr := td.Wallet().NewSECP256k1AccountAddress()
-		newAddr.Bytes()[0] = address.Unknown // Exploit imperfect immutability of address to mutate its internals.
-		amtSent := abi.NewTokenAmount(1)
-		// Note: the exit code of the inner message is not available.
-		// Future changes to the multisig actor could return it from an explicit Approve().
-		// https://github.com/filecoin-project/specs-actors/issues/113
-		recpt := stage.send(newAddr, amtSent, builtin.MethodSend, nil, 1)
-		assert.Equal(t, exitcode.Ok, recpt.ExitCode)
-
-		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
-		_, err := td.State().Actor(newAddr)
-		assert.Error(t, err)
-	})
 
 	//
 	// The following tests exercise invalid semantics of the inner message
