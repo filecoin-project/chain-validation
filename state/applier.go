@@ -9,9 +9,12 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
+type MinerPenaltyFIL = abi.TokenAmount
+type GasRewardFIL = abi.TokenAmount
+
 // Applier applies abstract messages to states.
 type Applier interface {
-	ApplyMessage(context *types.ExecutionContext, state VMWrapper, msg *types.Message) (types.MessageReceipt, error)
+	ApplyMessage(context *types.ExecutionContext, state VMWrapper, msg *types.Message) (types.MessageReceipt, MinerPenaltyFIL, GasRewardFIL, error)
 	ApplyTipSetMessages(state VMWrapper, blocks []types.BlockMessagesInfo, epoch abi.ChainEpoch, rnd RandomnessSource) ([]types.MessageReceipt, error)
 }
 

@@ -18,7 +18,7 @@ func NewValidator(executor state.Applier) *Validator {
 }
 
 // ApplyMessages applies a message to a state
-func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.Message) (types.MessageReceipt, error) {
+func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.Message) (types.MessageReceipt, state.MinerPenaltyFIL, state.GasRewardFIL, error) {
 	return v.applier.ApplyMessage(context, state, message)
 }
 

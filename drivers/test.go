@@ -281,45 +281,55 @@ func (td *TestDriver) Complete() {
 	//td.GasMeter.Record()
 }
 
-func (td *TestDriver) ApplyMessage(msg *types.Message) (recpt types.MessageReceipt) {
-	defer func() {
-		if r := recover(); r != nil {
-			recpt.ExitCode = exitcode.SysErrInternal
-			td.T.Fatalf("message application paniced: %v", r)
-		}
-	}()
-	receipt, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
-	require.NoError(td.T, err)
-	return receipt
+type ApplyResult struct {
+	Receipt types.MessageReceipt
+	Penalty state.MinerPenaltyFIL
+	Reward  state.GasRewardFIL
 }
 
-func (td *TestDriver) ApplyOk(msg *types.Message) int64 {
+func (td *TestDriver) ApplyMessage(msg *types.Message) (result ApplyResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			result.Receipt.ExitCode = exitcode.SysErrInternal
+			td.T.Fatalf("message application panicked: %v", r)
+		}
+	}()
+	receipt, minerPenalty, gasReward, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
+	require.NoError(td.T, err)
+	return ApplyResult{
+		Receipt: receipt,
+		Penalty: minerPenalty,
+		Reward:  gasReward,
+	}
+}
+
+func (td *TestDriver) ApplyOk(msg *types.Message) ApplyResult {
 	return td.ApplyExpect(msg, EmptyReturnValue)
 }
 
-func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) int64 {
+func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) ApplyResult {
 	return td.applyMessageExpectCodeAndReturn(msg, exitcode.Ok, retval)
 }
 
-func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) int64 {
+func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) ApplyResult {
 	return td.applyMessageExpectCodeAndReturn(msg, code, EmptyReturnValue)
 }
 
-func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) int64 {
-	receipt := td.ApplyMessage(msg)
+func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) ApplyResult {
+	result := td.ApplyMessage(msg)
 
-	td.GasMeter.Track(receipt)
+	td.GasMeter.Track(result.Receipt)
 
 	if td.Config.ValidateExitCode() {
-		assert.Equal(td.T, code, receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), receipt.ExitCode.Error())
+		assert.Equal(td.T, code, result.Receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), result.Receipt.ExitCode.Error())
 	}
 	if td.Config.ValidateReturnValue() {
-		assert.Equal(td.T, retval, receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, receipt.ReturnValue)
+		assert.Equal(td.T, retval, result.Receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, result.Receipt.ReturnValue)
 	}
 	if td.Config.ValidateGas() {
 		expectedGasUsed, ok := td.GasMeter.NextExpectedGas()
 		if ok {
-			assert.Equal(td.T, expectedGasUsed, receipt.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, receipt.GasUsed.Int64())
+			assert.Equal(td.T, expectedGasUsed, result.Receipt.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, result.Receipt.GasUsed.Int64())
 		} else {
 			td.T.Logf("WARNING: failed to find expected gas cost for message: %+v", msg)
 		}
@@ -327,7 +337,7 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 
 	// TODO in the very near future we will be validating the stateroot here, keep in back of head.
 
-	return receipt.GasUsed.Int64()
+	return result
 }
 
 func (td *TestDriver) AssertNoActor(addr address.Address) {

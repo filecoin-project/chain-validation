@@ -127,17 +127,17 @@ func TestPaych(t *testing.T, factory state.Factories) {
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())))
 
 		// settle the payment channel so it may be collected
-		settlePayChGasCost := td.ApplyOk(
+		settleResult := td.ApplyOk(
 			td.MessageProducer.PaychSettle(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Value(big_spec.Zero()), chain.Nonce(0)))
 
 		// advance the epoch so the funds may be redeemed.
 		td.ExeCtx.Epoch++
 
-		collectPaychGasCost := td.ApplyOk(
+		collectResult := td.ApplyOk(
 			td.MessageProducer.PaychCollect(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Nonce(1), chain.Value(big_spec.Zero())))
 
 		// receiver_balance = initial_balance + paych_send - settle_paych_msg_gas - collect_paych_msg_gas
-		td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), abi_spec.NewTokenAmount(settlePayChGasCost)), abi_spec.NewTokenAmount(collectPaychGasCost)))
+		td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), settleResult.Receipt.GasUsed), collectResult.Receipt.GasUsed))
 		td.AssertBalance(paychAddr, big_spec.Zero())
 		var pcState paych_spec.State
 		td.GetActorState(paychAddr, &pcState)

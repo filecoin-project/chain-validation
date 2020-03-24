@@ -114,14 +114,14 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			require.NoError(t, err)
 			require.Equal(t, tc.senderBal.String(), sendAct.Balance().String())
 
-			gasUsed := td.ApplyFailure(
+			result := td.ApplyFailure(
 				td.MessageProducer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0)),
 				tc.code,
 			)
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
 			// assert the actor balances changed as expected, the receiver balance should not change if transfer fails
 			if tc.code.IsSuccess() {
-				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), big_spec.NewInt(gasUsed)))
+				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), result.Receipt.GasUsed))
 				td.AssertBalance(tc.receiver, tc.transferAmnt)
 			} else {
 				td.AssertBalance(tc.sender, tc.senderBal)
@@ -145,10 +145,10 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceInitialBalance)
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		gasUsed := td.ApplyOk(
+		result := td.ApplyOk(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)))
 		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
-		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, abi_spec.NewTokenAmount(gasUsed)))
+		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed))
 	})
 
 	t.Run("ok transfer from known address to new account", func(t *testing.T) {
@@ -159,10 +159,10 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		receiver := td.Wallet().NewSECP256k1AccountAddress()
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		gasUsed := td.ApplyOk(
+		result := td.ApplyOk(
 			td.MessageProducer.Transfer(receiver, alice, chain.Value(transferAmnt), chain.Nonce(0)),
 		)
-		td.AssertBalance(alice, big_spec.Sub(big_spec.Sub(aliceInitialBalance, abi_spec.NewTokenAmount(gasUsed)), transferAmnt))
+		td.AssertBalance(alice, big_spec.Sub(big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed), transferAmnt))
 		td.AssertBalance(receiver, transferAmnt)
 	})
 
