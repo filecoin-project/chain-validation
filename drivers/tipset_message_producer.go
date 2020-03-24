@@ -113,12 +113,12 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() {
 			assert.Equal(t.driver.T, t.expectedResults[i].ExitCode, receipts[i].ExitCode, "Message Number: %d Expected ExitCode: %s Actual ExitCode: %s", i, t.expectedResults[i].ExitCode.Error(), receipts[i].ExitCode.Error())
 		}
 		if t.driver.Config.ValidateReturnValue() {
-			assert.Equal(t.driver.T, t.expectedResults[i].ReturnVal, receipts[i].ReturnValue, "Message Number: %d Expected ReturnValue: %v Actual ReturnValue: %v", t.expectedResults[i].ReturnVal, receipts[i].ReturnValue)
+			assert.Equal(t.driver.T, t.expectedResults[i].ReturnVal, receipts[i].ReturnValue, "Message Number: %d Expected ReturnValue: %v Actual ReturnValue: %v", i, t.expectedResults[i].ReturnVal, receipts[i].ReturnValue)
 		}
 		if t.driver.Config.ValidateGas() {
 			expectedGas, found := t.driver.GasMeter.NextExpectedGas()
 			if found {
-				assert.Equal(t.driver.T, expectedGas, receipts[i].GasUsed.Int64(), "Message Number: %d Expected GasUsed: %s Actual GasUsed: %s", expectedGas, receipts[i].GasUsed.String())
+				assert.Equal(t.driver.T, expectedGas, receipts[i].GasUsed.Int64(), "Message Number: %d Expected GasUsed: %s Actual GasUsed: %s", i, expectedGas, receipts[i].GasUsed.String())
 			} else {
 				t.driver.T.Logf("WARNING: failed to find expected gas cost for message number: %d", i)
 			}
