@@ -49,7 +49,7 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 	}
 
 	sectorBuilder := drivers.NewMockSectorBuilder()
-	bb := drivers.NewTipSetMessageBuilder(td)
+	tipB := drivers.NewTipSetMessageBuilder(td)
 
 	sectorSize, err := sectorType.SectorSize()
 	require.NoError(td.T, err)
@@ -57,31 +57,32 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 	createMinerRet := td.ComputeInitActorExecReturn(minerOwner, 0, 0, minerIDAddr)
 
 	// Create a miner and add finds to the storage market actor for the miner and a client
-	bb.WithTicketCount(1).
-		// Step 1: Register the miner with the power actor
-		WithBLSMessageAndRet(
-			td.MessageProducer.PowerCreateMiner(
-				builtin_spec.StoragePowerActorAddr, minerOwner,
-				power_spec.CreateMinerParams{Owner: minerOwner, Worker: minerWorker, SectorSize: sectorSize, Peer: utils.RequireRandomPeerID(td.T)},
-				chain.Nonce(incOwnerCallSeq()), chain.Value(collateral),
+	tipB.WithBlockBuilder(
+		drivers.NewBlockBuilder(td.ExeCtx.Miner).WithTicketCount(1).
+			// Step 1: Register the miner with the power actor
+			WithBLSMessageAndRet(
+				td.MessageProducer.PowerCreateMiner(
+					builtin_spec.StoragePowerActorAddr, minerOwner,
+					power_spec.CreateMinerParams{Owner: minerOwner, Worker: minerWorker, SectorSize: sectorSize, Peer: utils.RequireRandomPeerID(td.T)},
+					chain.Nonce(incOwnerCallSeq()), chain.Value(collateral),
+				),
+				chain.MustSerialize(&createMinerRet),
+			).
+			// Step 2.A: Add market funds for client
+			WithBLSMessageOk(
+				td.MessageProducer.MarketAddBalance(builtin_spec.StorageMarketActorAddr, minerWorker,
+					minerIDAddr,
+					chain.Nonce(incWorkerCallSeq()), chain.Value(collateral),
+				),
+			).
+			// Step 2.B: Add market funds for miner
+			WithBLSMessageOk(
+				td.MessageProducer.MarketAddBalance(builtin_spec.StorageMarketActorAddr, minerOwner,
+					minerWorker,
+					chain.Nonce(incOwnerCallSeq()), chain.Value(collateral),
+				),
 			),
-			chain.MustSerialize(&createMinerRet),
-		).
-		// Step 2.A: Add market funds for client
-		WithBLSMessageOk(
-			td.MessageProducer.MarketAddBalance(builtin_spec.StorageMarketActorAddr, minerWorker,
-				minerIDAddr,
-				chain.Nonce(incWorkerCallSeq()), chain.Value(collateral),
-			),
-		).
-		// Step 2.B: Add market funds for miner
-		WithBLSMessageOk(
-			td.MessageProducer.MarketAddBalance(builtin_spec.StorageMarketActorAddr, minerOwner,
-				minerWorker,
-				chain.Nonce(incOwnerCallSeq()), chain.Value(collateral),
-			),
-		).
-		ApplyAndValidate()
+	).ApplyAndValidate()
 
 	// The miner preseals a sector
 	sectorInfo := sectorBuilder.NewPreSealedSector(minerIDAddr, minerWorker, sectorType, sectorSize, dealStart, dealEnd)
@@ -91,44 +92,46 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 
 	td.ExeCtx.Epoch++
 	// Miner publishes deal to the storage market and precommits its sector
-	bb.WithTicketCount(1).
-		// Step 3: Publish presealed deals
-		WithBLSMessageAndRet(
-			td.MessageProducer.MarketPublishStorageDeals(builtin_spec.StorageMarketActorAddr, minerWorker,
-				market_spec.PublishStorageDealsParams{
-					Deals: []market_spec.ClientDealProposal{
-						{Proposal: sectorInfo.Deal, ClientSignature: crypto_spec.Signature{Type: crypto_spec.SigTypeBLS, Data: []byte("doesnt matter")}},
+	tipB.WithBlockBuilder(
+		drivers.NewBlockBuilder(td.ExeCtx.Miner).WithTicketCount(1).
+			// Step 3: Publish presealed deals
+			WithBLSMessageAndRet(
+				td.MessageProducer.MarketPublishStorageDeals(builtin_spec.StorageMarketActorAddr, minerWorker,
+					market_spec.PublishStorageDealsParams{
+						Deals: []market_spec.ClientDealProposal{
+							{Proposal: sectorInfo.Deal, ClientSignature: crypto_spec.Signature{Type: crypto_spec.SigTypeBLS, Data: []byte("doesnt matter")}},
+						},
 					},
-				},
-				chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero()),
+					chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero()),
+				),
+				pubRet,
+			).
+			// Step 4: Pre Committing Sectors
+			WithBLSMessageOk(
+				td.MessageProducer.MinerPreCommitSector(minerIDAddr, minerWorker,
+					miner_spec.SectorPreCommitInfo{
+						RegisteredProof: sectorInfo.ProofType,
+						SectorNumber:    sectorInfo.SectorID,
+						SealedCID:       sectorInfo.CommR,
+						SealRandEpoch:   0,
+						DealIDs:         dealIDs,
+						Expiration:      sectorInfo.Deal.EndEpoch,
+					},
+					chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
 			),
-			pubRet,
-		).
-		// Step 4: Pre Committing Sectors
-		WithBLSMessageOk(
-			td.MessageProducer.MinerPreCommitSector(minerIDAddr, minerWorker,
-				miner_spec.SectorPreCommitInfo{
-					RegisteredProof: sectorInfo.ProofType,
-					SectorNumber:    sectorInfo.SectorID,
-					SealedCID:       sectorInfo.CommR,
-					SealRandEpoch:   0,
-					DealIDs:         dealIDs,
-					Expiration:      sectorInfo.Deal.EndEpoch,
-				},
-				chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
-		).
-		ApplyAndValidate()
+	).ApplyAndValidate()
 
 	// Miner prove commits its sector
 	td.ExeCtx.Epoch = dealStart
-	bb.WithTicketCount(1).
-		WithBLSMessageOk(
-			// Step 5: Prove the committed sector
-			td.MessageProducer.MinerProveCommitSector(minerIDAddr, minerWorker,
-				miner_spec.ProveCommitSectorParams{SectorNumber: sectorInfo.SectorID, Proof: nil},
-				chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
-		).
-		ApplyAndValidate()
+	tipB.WithBlockBuilder(
+		drivers.NewBlockBuilder(td.ExeCtx.Miner).WithTicketCount(1).
+			WithBLSMessageOk(
+				// Step 5: Prove the committed sector
+				td.MessageProducer.MinerProveCommitSector(minerIDAddr, minerWorker,
+					miner_spec.ProveCommitSectorParams{SectorNumber: sectorInfo.SectorID, Proof: nil},
+					chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
+			),
+	).ApplyAndValidate()
 
 	return sectorInfo
 }
@@ -141,7 +144,7 @@ func TestMinerMissPoStChallengeWindow(t *testing.T, factory state.Factories) {
 		Build(t)
 	defer td.Complete()
 
-	bb := drivers.NewTipSetMessageBuilder(td)
+	tipB := drivers.NewTipSetMessageBuilder(td)
 
 	// The owner address is the address that created the miner, paid the collateral, and has block rewards paid out to it.
 	minerOwner, _ := td.NewAccountActor(address.SECP256K1, abi_spec.NewTokenAmount(1_000_000_000))
@@ -169,14 +172,15 @@ func TestMinerMissPoStChallengeWindow(t *testing.T, factory state.Factories) {
 
 	// Epoch advances to the end of the proving window. Send a sing message to trigger the cron actor send
 	td.ExeCtx.Epoch += power_spec.WindowedPostChallengeDuration + miner_spec.ProvingPeriod
-	bb.WithTicketCount(1).
-		// Step 6: send a single message that causes the cron actor to trigger
-		WithBLSMessageOk(
-			td.MessageProducer.Transfer(minerOwner, minerOwner,
-				chain.Nonce(incOwnerCallSeq()), chain.Value(big_spec.Zero()),
+	tipB.WithBlockBuilder(
+		drivers.NewBlockBuilder(td.ExeCtx.Miner).WithTicketCount(1).
+			// Step 6: send a single message that causes the cron actor to trigger
+			WithBLSMessageOk(
+				td.MessageProducer.Transfer(minerOwner, minerOwner,
+					chain.Nonce(incOwnerCallSeq()), chain.Value(big_spec.Zero()),
+				),
 			),
-		).
-		ApplyAndValidate()
+	).ApplyAndValidate()
 
 	// after the application of the message and moving the epoch past the proving period the miner has had a fault
 	var minerSt miner_spec.State
@@ -196,7 +200,7 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 		Build(t)
 	defer td.Complete()
 
-	bb := drivers.NewTipSetMessageBuilder(td)
+	tipB := drivers.NewTipSetMessageBuilder(td)
 
 	// The owner address is the address that created the miner, paid the collateral, and has block rewards paid out to it.
 	minerOwner, _ := td.NewAccountActor(address.SECP256K1, abi_spec.NewTokenAmount(1_000_000_000))
@@ -241,23 +245,26 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 
 	// move the epoch forward to be withing the proving period window.
 	td.ExeCtx.Epoch += power_spec.WindowedPostChallengeDuration + miner_spec.ProvingPeriod/2
-	bb.WithTicketCount(1).
-		WithBLSMessageOk(
-			td.MessageProducer.MinerSubmitWindowedPoSt(minerActorID, minerWorker, abi_spec.OnChainPoStVerifyInfo{Candidates: candidates, Proofs: proofs},
-				chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
-		).
-		ApplyAndValidate()
+	tipB.WithBlockBuilder(
+		drivers.NewBlockBuilder(td.ExeCtx.Miner).
+			WithTicketCount(1).
+			WithBLSMessageOk(
+				td.MessageProducer.MinerSubmitWindowedPoSt(minerActorID, minerWorker, abi_spec.OnChainPoStVerifyInfo{Candidates: candidates, Proofs: proofs},
+					chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
+			),
+	).ApplyAndValidate()
 
 	// move the epoch outside of the proving window and send a message to trigger the cron actor
 	td.ExeCtx.Epoch += miner_spec.ProvingPeriod/2 + 1
-	bb.WithTicketCount(1).
-		// Step 6: send a single message that causes the cron actor to trigger
-		WithBLSMessageOk(
-			td.MessageProducer.Transfer(minerOwner, minerOwner,
-				chain.Nonce(incOwnerCallSeq()), chain.Value(big_spec.Zero()),
+	tipB.WithBlockBuilder(
+		drivers.NewBlockBuilder(td.ExeCtx.Miner).WithTicketCount(1).
+			// Step 6: send a single message that causes the cron actor to trigger
+			WithBLSMessageOk(
+				td.MessageProducer.Transfer(minerOwner, minerOwner,
+					chain.Nonce(incOwnerCallSeq()), chain.Value(big_spec.Zero()),
+				),
 			),
-		).
-		ApplyAndValidate()
+	).ApplyAndValidate()
 
 	// after the application of the message and moving the epoch past the proving period the miner has not had a fault
 	var minerSt miner_spec.State

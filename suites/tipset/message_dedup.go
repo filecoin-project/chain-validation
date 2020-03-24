@@ -7,7 +7,6 @@ import (
 	"github.com/filecoin-project/go-address"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	"github.com/filecoin-project/specs-actors/actors/crypto"
-	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -24,16 +23,19 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 	t.Run("apply a single BLS message", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
-		blkBuilder := drivers.NewTipSetMessageBuilder(td)
+		tipB := drivers.NewTipSetMessageBuilder(td)
+		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
-		blkBuilder.WithTicketCount(1).
-			// send value from sender to receiver
-			WithBLSMessageOk(
-				td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
-			).ApplyAndValidate()
+		tipB.WithBlockBuilder(
+			blkB.WithTicketCount(1).
+				// send value from sender to receiver
+				WithBLSMessageOk(
+					td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
+				),
+		).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
@@ -41,36 +43,40 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 	t.Run("apply a duplicated BLS message", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
-		blkBuilder := drivers.NewTipSetMessageBuilder(td)
+		tipB := drivers.NewTipSetMessageBuilder(td)
+		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
-		blkBuilder.WithTicketCount(1).
-			// duplicate the message
-			WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
-			WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
-			// only should have a single result
-			WithResult(exitcode.Ok, drivers.EmptyReturnValue).
-			ApplyAndValidate()
+		tipB.WithBlockBuilder(
+			blkB.WithTicketCount(1).
+				// duplicate the message
+				WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
+				// only should have a single result
+				WithBLSMessageDropped(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))),
+		).ApplyAndValidate()
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
 
 	t.Run("apply a single SECP message", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
-		blkBuilder := drivers.NewTipSetMessageBuilder(td)
+		tipB := drivers.NewTipSetMessageBuilder(td)
+		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
-		blkBuilder.WithTicketCount(1).
-			// send value from sender to receiver
-			WithSECPMessageOk(
-				signMessage(
-					td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
-					td.Wallet()),
-			).ApplyAndValidate()
+		tipB.WithBlockBuilder(
+			blkB.WithTicketCount(1).
+				// send value from sender to receiver
+				WithSECPMessageOk(
+					signMessage(
+						td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
+						td.Wallet()),
+				),
+		).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
@@ -78,17 +84,18 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 	t.Run("apply duplicate SECP message", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
-		blkBuilder := drivers.NewTipSetMessageBuilder(td)
+		tipB := drivers.NewTipSetMessageBuilder(td)
+		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
-		blkBuilder.WithTicketCount(1).
-			// send value from sender to receiver
-			WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
-			WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
-			WithResult(exitcode.Ok, drivers.EmptyReturnValue).
-			ApplyAndValidate()
+		tipB.WithBlockBuilder(
+			blkB.WithTicketCount(1).
+				// send value from sender to receiver
+				WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
+				WithSECPMessageDropped(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())),
+		).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
