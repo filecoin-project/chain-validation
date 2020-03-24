@@ -23,7 +23,7 @@ type trackerElement struct {
 }
 
 func (te *trackerElement) fileKey() string {
-	return fmt.Sprintf("%d", te.receipt.GasUsed.Int64())
+	return fmt.Sprintf("%d", te.receipt.GasUsed)
 }
 
 type GasMeter struct {
@@ -51,13 +51,13 @@ func (gm *GasMeter) Track(receipt types.MessageReceipt) {
 	})
 }
 
-func (gm *GasMeter) NextExpectedGas() (int64, bool) {
+func (gm *GasMeter) NextExpectedGas() (types.GasUnits, bool) {
 	defer func() { gm.gasIdx += 1 }()
 	if gm.gasIdx > len(gm.expectedGasUnits)-1 {
 		// didn't find any gas
 		return 0, false
 	}
-	return gm.expectedGasUnits[gm.gasIdx], true
+	return types.GasUnits(gm.expectedGasUnits[gm.gasIdx]), true
 }
 
 // write the contents of gm.tracker to a file using the format:

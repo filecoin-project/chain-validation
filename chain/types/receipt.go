@@ -10,6 +10,11 @@ type MessageReceipt struct {
 	ExitCode    exitcode.ExitCode
 	ReturnValue []byte
 
-	// TODO make this an int64
-	GasUsed big.Int
+	GasUsed GasUnits
+}
+
+type GasUnits int64
+
+func (gu GasUnits) Big() big.Int {
+	return big.NewInt(int64(gu))
 }

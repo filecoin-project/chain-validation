@@ -12,14 +12,25 @@ type Validator struct {
 	applier state.Applier
 }
 
+type ApplyResult struct {
+	Receipt types.MessageReceipt
+	Penalty abi.TokenAmount
+	Reward  abi.TokenAmount
+}
+
 // NewValidator builds a new validator.
 func NewValidator(executor state.Applier) *Validator {
 	return &Validator{executor}
 }
 
 // ApplyMessages applies a message to a state
-func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.Message) (types.MessageReceipt, error) {
-	return v.applier.ApplyMessage(context, state, message)
+func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.Message) (ApplyResult, error) {
+	receipt, penalty, reward, err := v.applier.ApplyMessage(context, state, message)
+	return ApplyResult{
+		Receipt: receipt,
+		Penalty: penalty,
+		Reward:  reward,
+	}, err
 }
 
 func (v *Validator) ApplyTipSetMessages(epoch abi.ChainEpoch, state state.VMWrapper, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) ([]types.MessageReceipt, error) {
