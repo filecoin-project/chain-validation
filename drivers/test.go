@@ -294,7 +294,7 @@ func (td *TestDriver) ApplyMessage(msg *types.Message) (recpt types.MessageRecei
 }
 
 func (td *TestDriver) ApplyOk(msg *types.Message) int64 {
-	return td.ApplyExpect(msg, []byte{})
+	return td.ApplyExpect(msg, EmptyReturnValue)
 }
 
 func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) int64 {
@@ -302,7 +302,7 @@ func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) int64 {
 }
 
 func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) int64 {
-	return td.applyMessageExpectCodeAndReturn(msg, code, []byte{})
+	return td.applyMessageExpectCodeAndReturn(msg, code, EmptyReturnValue)
 }
 
 func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) int64 {
