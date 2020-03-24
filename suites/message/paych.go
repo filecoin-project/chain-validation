@@ -137,7 +137,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 			td.MessageProducer.PaychCollect(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Nonce(1), chain.Value(big_spec.Zero())))
 
 		// receiver_balance = initial_balance + paych_send - settle_paych_msg_gas - collect_paych_msg_gas
-		td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), settleResult.Receipt.GasUsed), collectResult.Receipt.GasUsed))
+		td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), settleResult.Receipt.GasUsed.AsBigInt()), collectResult.Receipt.GasUsed.AsBigInt()))
 		td.AssertBalance(paychAddr, big_spec.Zero())
 		var pcState paych_spec.State
 		td.GetActorState(paychAddr, &pcState)

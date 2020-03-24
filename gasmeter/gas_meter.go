@@ -23,7 +23,7 @@ type trackerElement struct {
 }
 
 func (te *trackerElement) fileKey() string {
-	return fmt.Sprintf("%d", te.receipt.GasUsed.Int64())
+	return fmt.Sprintf("%d", te.receipt.GasUsed)
 }
 
 type GasMeter struct {

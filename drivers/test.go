@@ -329,7 +329,7 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 	if td.Config.ValidateGas() {
 		expectedGasUsed, ok := td.GasMeter.NextExpectedGas()
 		if ok {
-			assert.Equal(td.T, expectedGasUsed, result.Receipt.GasUsed.Int64(), "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, result.Receipt.GasUsed.Int64())
+			assert.Equal(td.T, expectedGasUsed, result.Receipt.GasUsed, "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, result.Receipt.GasUsed)
 		} else {
 			td.T.Logf("WARNING: failed to find expected gas cost for message: %+v", msg)
 		}

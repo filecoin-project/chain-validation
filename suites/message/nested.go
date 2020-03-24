@@ -46,7 +46,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		result := stage.send(stage.creator, amtSent, builtin.MethodSend, nil, 1)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
-		td.AssertActor(stage.creator, big.Sub(big.Add(balanceBefore, amtSent), result.Receipt.GasUsed), 2)
+		td.AssertActor(stage.creator, big.Sub(big.Add(balanceBefore, amtSent), result.Receipt.GasUsed.AsBigInt()), 2)
 	})
 
 	t.Run("ok to new actor", func(t *testing.T) {
@@ -63,7 +63,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
-		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed))
+		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.AsBigInt()))
 		td.AssertBalance(newAddr, amtSent)
 	})
 
@@ -87,7 +87,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		//assert.Equal(t, expected.Bytes(), result.Receipt.ReturnValue)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
-		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed))
+		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.AsBigInt()))
 		td.AssertBalance(newAddr, amtSent)
 	})
 
@@ -108,7 +108,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance)
-		assert.Equal(t, big.Sub(balanceBefore, result.Receipt.GasUsed), td.GetBalance(stage.creator))
+		assert.Equal(t, big.Sub(balanceBefore, result.Receipt.GasUsed.AsBigInt()), td.GetBalance(stage.creator))
 		var st multisig.State
 		td.GetActorState(stage.msAddr, &st)
 		assert.Equal(t, []address.Address{stage.creator, anotherId}, st.Signers)
@@ -206,8 +206,8 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		result := stage.send(stage.creator, amtSent, abi.MethodNum(99), nil, 1)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
-		td.AssertBalance(stage.msAddr, multisigBalance)                                 // No change.
-		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed)) // Pay gas, don't receive funds.
+		td.AssertBalance(stage.msAddr, multisigBalance)                                            // No change.
+		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.AsBigInt())) // Pay gas, don't receive funds.
 	})
 
 	// TODO more tests:
