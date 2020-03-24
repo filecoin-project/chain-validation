@@ -32,7 +32,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		defer td.Complete()
 
-		blkBuilder := drivers.NewTipSetMessageBuilder(td)
+		tipB := drivers.NewTipSetMessageBuilder(td)
 		miner := td.ExeCtx.Miner
 
 		alicePk, aliceId := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
@@ -47,14 +47,19 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 				prevRewards := td.GetRewardSummary()
 
 				// Process a block with two messages, a simple send back and forth between accounts.
-				rcpts := blkBuilder.WithTicketCount(1).WithBLSMessageOk(
-					td.MessageProducer.Transfer(bob, alice, chain.Value(sendValue), chain.Nonce(callSeq)),
-				).WithBLSMessageOk(
-					td.MessageProducer.Transfer(alice, bob, chain.Value(sendValue), chain.Nonce(callSeq)),
+				rcpts := tipB.WithBlockBuilder(
+					drivers.NewBlockBuilder(td.ExeCtx.Miner).
+						WithTicketCount(1).
+						WithBLSMessageOk(
+							td.MessageProducer.Transfer(bob, alice, chain.Value(sendValue), chain.Nonce(callSeq)),
+						).
+						WithBLSMessageOk(
+							td.MessageProducer.Transfer(alice, bob, chain.Value(sendValue), chain.Nonce(callSeq)),
+						),
 				).Apply()
 				assert.Equal(t, exitcode.Ok, rcpts[0].ExitCode)
 				assert.Equal(t, exitcode.Ok, rcpts[1].ExitCode)
-				blkBuilder.Clear()
+				tipB.Clear()
 
 				// Each account has paid gas fees.
 				td.AssertBalance(aliceId, big.Sub(aBal, rcpts[0].GasUsed))
@@ -80,7 +85,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 	t.Run("penalize sender does't exist", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
-		blkBuilder := drivers.NewTipSetMessageBuilder(td)
+		blkBuilder := drivers.NewBlockBuilder(td.ExeCtx.Miner)
 		miner := td.ExeCtx.Miner
 
 		_, receiver := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
@@ -99,7 +104,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		}
 
 		prevRewards := td.GetRewardSummary()
-		bb.ApplyAndValidate()
+		drivers.NewTipSetMessageBuilder(td).WithBlockBuilder(bb).ApplyAndValidate()
 
 		// Nothing received, no actors created.
 		td.AssertBalance(receiver, acctDefaultBalance)
