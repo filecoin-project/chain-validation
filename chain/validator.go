@@ -14,8 +14,8 @@ type Validator struct {
 
 type ApplyResult struct {
 	Receipt types.MessageReceipt
-	Penalty state.MinerPenaltyFIL
-	Reward  state.GasRewardFIL
+	Penalty abi.TokenAmount
+	Reward  abi.TokenAmount
 }
 
 // NewValidator builds a new validator.
