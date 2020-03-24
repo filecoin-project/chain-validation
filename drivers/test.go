@@ -281,41 +281,31 @@ func (td *TestDriver) Complete() {
 	//td.GasMeter.Record()
 }
 
-type ApplyResult struct {
-	Receipt types.MessageReceipt
-	Penalty state.MinerPenaltyFIL
-	Reward  state.GasRewardFIL
-}
-
-func (td *TestDriver) ApplyMessage(msg *types.Message) (result ApplyResult) {
+func (td *TestDriver) ApplyMessage(msg *types.Message) (result chain.ApplyResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			result.Receipt.ExitCode = exitcode.SysErrInternal
 			td.T.Fatalf("message application panicked: %v", r)
 		}
 	}()
-	receipt, minerPenalty, gasReward, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
+	result, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 	require.NoError(td.T, err)
-	return ApplyResult{
-		Receipt: receipt,
-		Penalty: minerPenalty,
-		Reward:  gasReward,
-	}
+	return result
 }
 
-func (td *TestDriver) ApplyOk(msg *types.Message) ApplyResult {
+func (td *TestDriver) ApplyOk(msg *types.Message) chain.ApplyResult {
 	return td.ApplyExpect(msg, EmptyReturnValue)
 }
 
-func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) ApplyResult {
+func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) chain.ApplyResult {
 	return td.applyMessageExpectCodeAndReturn(msg, exitcode.Ok, retval)
 }
 
-func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) ApplyResult {
+func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) chain.ApplyResult {
 	return td.applyMessageExpectCodeAndReturn(msg, code, EmptyReturnValue)
 }
 
-func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) ApplyResult {
+func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyResult {
 	result := td.ApplyMessage(msg)
 
 	td.GasMeter.Track(result.Receipt)
