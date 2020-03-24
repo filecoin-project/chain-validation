@@ -51,7 +51,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 			WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 			WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 			// only should have a single result
-			WithResult(exitcode.Ok, nil).
+			WithResult(exitcode.Ok, drivers.EmptyReturnValue).
 			ApplyAndValidate()
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
@@ -87,7 +87,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 			// send value from sender to receiver
 			WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
 			WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
-			WithResult(exitcode.Ok, nil).
+			WithResult(exitcode.Ok, drivers.EmptyReturnValue).
 			ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))

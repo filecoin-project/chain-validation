@@ -42,19 +42,19 @@ func (t *TipSetMessageBuilder) addResult(code exitcode.ExitCode, retval []byte) 
 
 func (t *TipSetMessageBuilder) WithSECPMessageOk(secpMsg *types.SignedMessage) *TipSetMessageBuilder {
 	t.secpMsgs = append(t.secpMsgs, secpMsg)
-	t.addResult(exitcode.Ok, nil)
+	t.addResult(exitcode.Ok, EmptyReturnValue)
 	return t
 }
 
 func (t *TipSetMessageBuilder) WithBLSMessageOk(blsMsg *types.Message) *TipSetMessageBuilder {
 	t.blsMsgs = append(t.blsMsgs, blsMsg)
-	t.addResult(exitcode.Ok, nil)
+	t.addResult(exitcode.Ok, EmptyReturnValue)
 	return t
 }
 
 func (t *TipSetMessageBuilder) WithBLSMessageAndCode(bm *types.Message, code exitcode.ExitCode) *TipSetMessageBuilder {
 	t.blsMsgs = append(t.blsMsgs, bm)
-	t.addResult(code, nil)
+	t.addResult(code, EmptyReturnValue)
 	return t
 }
 
@@ -66,7 +66,7 @@ func (t *TipSetMessageBuilder) WithBLSMessageAndRet(bm *types.Message, retval []
 
 func (t *TipSetMessageBuilder) WithSECPMessageAndCode(sm *types.SignedMessage, code exitcode.ExitCode) *TipSetMessageBuilder {
 	t.secpMsgs = append(t.secpMsgs, sm)
-	t.addResult(code, nil)
+	t.addResult(code, EmptyReturnValue)
 	return t
 }
 
