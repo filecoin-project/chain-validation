@@ -15,6 +15,6 @@ type MessageReceipt struct {
 
 type GasUnits int64
 
-func (gu GasUnits) AsBigInt() big.Int {
+func (gu GasUnits) Big() big.Int {
 	return big.NewInt(int64(gu))
 }

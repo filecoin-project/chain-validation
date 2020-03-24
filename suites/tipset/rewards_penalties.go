@@ -62,9 +62,9 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 				tipB.Clear()
 
 				// Each account has paid gas fees.
-				td.AssertBalance(aliceId, big.Sub(aBal, rcpts[0].GasUsed.AsBigInt()))
-				td.AssertBalance(bobId, big.Sub(bBal, rcpts[1].GasUsed.AsBigInt()))
-				gasSum := big.Add(rcpts[0].GasUsed.AsBigInt(), rcpts[1].GasUsed.AsBigInt()) // Exploit gas price = 1
+				td.AssertBalance(aliceId, big.Sub(aBal, rcpts[0].GasUsed.Big()))
+				td.AssertBalance(bobId, big.Sub(bBal, rcpts[1].GasUsed.Big()))
+				gasSum := big.Add(rcpts[0].GasUsed.Big(), rcpts[1].GasUsed.Big()) // Exploit gas price = 1
 
 				// Validate rewards.
 				// No reward is paid to the miner directly. The funds for block reward were already held by the

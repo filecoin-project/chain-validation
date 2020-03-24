@@ -121,7 +121,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
 			// assert the actor balances changed as expected, the receiver balance should not change if transfer fails
 			if tc.code.IsSuccess() {
-				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), result.Receipt.GasUsed.AsBigInt()))
+				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), result.Receipt.GasUsed.Big()))
 				td.AssertBalance(tc.receiver, tc.transferAmnt)
 			} else {
 				td.AssertBalance(tc.sender, tc.senderBal)
@@ -148,7 +148,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		result := td.ApplyOk(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)))
 		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
-		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.AsBigInt()))
+		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()))
 	})
 
 	t.Run("ok transfer from known address to new account", func(t *testing.T) {
@@ -162,7 +162,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 		result := td.ApplyOk(
 			td.MessageProducer.Transfer(receiver, alice, chain.Value(transferAmnt), chain.Nonce(0)),
 		)
-		td.AssertBalance(alice, big_spec.Sub(big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.AsBigInt()), transferAmnt))
+		td.AssertBalance(alice, big_spec.Sub(big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()), transferAmnt))
 		td.AssertBalance(receiver, transferAmnt)
 	})
 
