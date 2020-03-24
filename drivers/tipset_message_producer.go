@@ -112,9 +112,19 @@ func (bb *BlockBuilder) WithSECPMessageOk(secpMsg *types.SignedMessage) *BlockBu
 	return bb
 }
 
+func (bb *BlockBuilder) WithSECPMessageDropped(secpMsg *types.SignedMessage) *BlockBuilder {
+	bb.secpMsgs = append(bb.secpMsgs, secpMsg)
+	return bb
+}
+
 func (bb *BlockBuilder) WithBLSMessageOk(blsMsg *types.Message) *BlockBuilder {
 	bb.blsMsgs = append(bb.blsMsgs, blsMsg)
 	bb.addResult(exitcode.Ok, EmptyReturnValue)
+	return bb
+}
+
+func (bb *BlockBuilder) WithBLSMessageDropped(blsMsg *types.Message) *BlockBuilder {
+	bb.blsMsgs = append(bb.blsMsgs, blsMsg)
 	return bb
 }
 
@@ -139,11 +149,6 @@ func (bb *BlockBuilder) WithSECPMessageAndCode(sm *types.SignedMessage, code exi
 func (bb *BlockBuilder) WithSECPMessageAndRet(sm *types.SignedMessage, retval []byte) *BlockBuilder {
 	bb.secpMsgs = append(bb.secpMsgs, sm)
 	bb.addResult(exitcode.Ok, retval)
-	return bb
-}
-
-func (bb *BlockBuilder) WithResult(code exitcode.ExitCode, retval []byte) *BlockBuilder {
-	bb.addResult(code, retval)
 	return bb
 }
 

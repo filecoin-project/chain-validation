@@ -7,7 +7,6 @@ import (
 	"github.com/filecoin-project/go-address"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	"github.com/filecoin-project/specs-actors/actors/crypto"
-	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -54,9 +53,8 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 			blkB.WithTicketCount(1).
 				// duplicate the message
 				WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
-				WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 				// only should have a single result
-				WithResult(exitcode.Ok, drivers.EmptyReturnValue),
+				WithBLSMessageDropped(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))),
 		).ApplyAndValidate()
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
@@ -96,8 +94,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 			blkB.WithTicketCount(1).
 				// send value from sender to receiver
 				WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
-				WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
-				WithResult(exitcode.Ok, drivers.EmptyReturnValue),
+				WithSECPMessageDropped(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())),
 		).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
