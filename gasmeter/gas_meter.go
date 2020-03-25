@@ -1,15 +1,11 @@
 package gasmeter
 
 import (
-	"bufio"
-	"bytes"
 	"container/list"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/filecoin-project/chain-validation/box"
@@ -87,24 +83,11 @@ func LoadGasForTest(t testing.TB) []int64 {
 	fileName := filenameFromTest(t)
 	f, found := box.Get(fileName)
 	if !found {
-		t.Logf("can't find file: %s", fileName)
+		t.Logf("WARNING (does NOT indicate test failure): can't find file: %s", fileName)
 		// return an empty slice here since `NextExpectedGas` performs bounds checking
 		return []int64{}
 	}
-
-	var gasUnits []int64
-	scanner := bufio.NewScanner(bytes.NewReader(f))
-	for scanner.Scan() {
-		gas, err := gasFromTestFileLine(scanner.Text())
-		if err != nil {
-			t.Fatal(err)
-		}
-		gasUnits = append(gasUnits, gas)
-	}
-	if err := scanner.Err(); err != nil {
-		t.Fatal(err)
-	}
-	return gasUnits
+	return f
 }
 
 func getTestDataFilePath(t testing.TB) string {
@@ -113,27 +96,6 @@ func getTestDataFilePath(t testing.TB) string {
 		t.Fatalf("failed to find validation data path, make sure %s is set", ValidationDataEnvVar)
 	}
 	return filepath.Join(dataPath, filenameFromTest(t))
-}
-
-// given a line of the form:
-// GasUnit
-// GasUnit
-// ...
-// return gasUnits as an int64
-func gasFromTestFileLine(l string) (int64, error) {
-	tokens := strings.Split(l, ",")
-	// expect tokens to always be length 1
-	if len(tokens) != 1 {
-		return -1, fmt.Errorf("invalid gas line, expected 1 tokens, got %d: %s", len(tokens), tokens)
-	}
-
-	gasUnits := tokens[0]
-
-	g, err := strconv.ParseInt(gasUnits, 10, 64)
-	if err != nil {
-		return -1, err
-	}
-	return g, nil
 }
 
 // return a string containing only letters and number.
