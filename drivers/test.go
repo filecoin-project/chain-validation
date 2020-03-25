@@ -312,26 +312,9 @@ func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) c
 
 func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyResult {
 	result := td.ApplyMessage(msg)
-
-	td.GasMeter.Track(result.Receipt)
-
-	if td.Config.ValidateExitCode() {
-		assert.Equal(td.T, code, result.Receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), result.Receipt.ExitCode.Error())
+	if !td.validateAndTrackResult(result, code, retval) {
+		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
 	}
-	if td.Config.ValidateReturnValue() {
-		assert.Equal(td.T, retval, result.Receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, result.Receipt.ReturnValue)
-	}
-	if td.Config.ValidateGas() {
-		expectedGasUsed, ok := td.GasMeter.NextExpectedGas()
-		if ok {
-			assert.Equal(td.T, expectedGasUsed, result.Receipt.GasUsed, "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, result.Receipt.GasUsed)
-		} else {
-			td.T.Logf("WARNING: failed to find expected gas cost for message: %+v", msg)
-		}
-	}
-
-	// TODO in the very near future we will be validating the stateroot here, keep in back of head.
-
 	return result
 }
 
@@ -375,9 +358,16 @@ func (td *TestDriver) ApplySignedFailure(msg *types.Message, code exitcode.ExitC
 
 func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyResult {
 	result := td.ApplyMessageSigned(msg)
+	if !td.validateAndTrackResult(result, code, retval) {
+		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
+	}
+	return result
+}
+
+func (td *TestDriver) validateAndTrackResult(result chain.ApplyResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
+	foundGas = true
 
 	td.GasMeter.Track(result.Receipt)
-
 	if td.Config.ValidateExitCode() {
 		assert.Equal(td.T, code, result.Receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), result.Receipt.ExitCode.Error())
 	}
@@ -389,13 +379,11 @@ func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, 
 		if ok {
 			assert.Equal(td.T, expectedGasUsed, result.Receipt.GasUsed, "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, result.Receipt.GasUsed)
 		} else {
-			td.T.Logf("WARNING: failed to find expected gas cost for message: %+v", msg)
+			foundGas = false
 		}
 	}
-
 	// TODO in the very near future we will be validating the stateroot here, keep in back of head.
-
-	return result
+	return
 }
 
 func (td *TestDriver) AssertNoActor(addr address.Address) {

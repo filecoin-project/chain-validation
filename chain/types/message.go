@@ -35,6 +35,9 @@ type Message struct {
 	Params []byte
 }
 
+// Below Marshalers were taken from lotus
+// https://github.com/filecoin-project/lotus/blob/95790c69e1aa568506dd39b7eeb921f7c7d6f184/chain/types/cbor_gen.go#L636-L882
+
 func (t *Message) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
