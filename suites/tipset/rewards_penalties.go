@@ -56,9 +56,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 						WithBLSMessageOk(
 							td.MessageProducer.Transfer(alice, bob, chain.Value(sendValue), chain.Nonce(callSeq)),
 						),
-				).Apply()
-				assert.Equal(t, exitcode.Ok, rcpts[0].ExitCode)
-				assert.Equal(t, exitcode.Ok, rcpts[1].ExitCode)
+				).ApplyAndValidate()
 				tipB.Clear()
 
 				// Each account has paid gas fees.
@@ -99,8 +97,8 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		bb := blkBuilder.WithTicketCount(1)
 		for _, s := range badSenders {
 			bb.WithBLSMessageAndCode(td.MessageProducer.Transfer(receiver, s, chain.Value(sendValue)),
-				exitcode.SysErrActorNotFound,
-			)
+				// Note: expecting this exit code to change to SysErrSenderInvalid.
+				exitcode.SysErrActorNotFound)
 		}
 
 		prevRewards := td.GetRewardSummary()
@@ -117,16 +115,111 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		gasPenalty := big.NewInt(342)
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward
-		rwd := big.Sub(reward.BlockRewardTarget, gasPenalty)
-		assert.Equal(t, big.Sub(prevRewards.Treasury, gasPenalty), newRewards.Treasury)
-		assert.Equal(t, gasPenalty, td.GetBalance(builtin.BurntFundsActorAddr))
-		assert.Equal(t, rwd, newRewards.For(miner))
-		assert.Equal(t, rwd, newRewards.RewardTotal)
+		validateRewards(t, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
+	})
+
+	t.Run("penalize sender non account", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		miner := td.ExeCtx.Miner
+		tb := drivers.NewTipSetMessageBuilder(td)
+		bb := drivers.NewBlockBuilder(miner).WithTicketCount(1)
+
+		_, receiver := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
+		// Various non-account actors that can't be top-level senders.
+		senders := []addr.Address{
+			builtin.SystemActorAddr,
+			builtin.InitActorAddr,
+			builtin.CronActorAddr,
+			miner,
+		}
+
+		for _, sender := range senders {
+			bb.WithBLSMessageAndCode(td.MessageProducer.Transfer(receiver, sender, chain.Value(sendValue)),
+				// Note: expecting this exit code to change to SysErrSenderInvalid.
+				exitcode.SysErrForbidden)
+		}
+		prevRewards := td.GetRewardSummary()
+		tb.WithBlockBuilder(bb).ApplyAndValidate()
+		td.AssertBalance(receiver, acctDefaultBalance)
+
+		newRewards := td.GetRewardSummary()
+		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
+		gasPenalty := big.NewInt(168)
+
+		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward.
+		validateRewards(t, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
+	})
+
+	t.Run("penalize wrong callseqnum", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		miner := td.ExeCtx.Miner
+		tb := drivers.NewTipSetMessageBuilder(td)
+		bb := drivers.NewBlockBuilder(td.ExeCtx.Miner).WithTicketCount(1)
+
+		_, aliceId := td.NewAccountActor(drivers.BLS, acctDefaultBalance)
+
+		bb.WithBLSMessageAndCode(
+			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, aliceId, chain.Nonce(1)),
+			// Expected to change to SysErrSenderStateInvalid
+			exitcode.SysErrInvalidCallSeqNum,
+		)
+
+		prevRewards := td.GetRewardSummary()
+		tb.WithBlockBuilder(bb).ApplyAndValidate()
+
+		newRewards := td.GetRewardSummary()
+		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
+		gasPenalty := big.NewInt(38)
+		validateRewards(t, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
+	})
+
+	t.Run("penalize sender insufficient balance", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		miner := td.ExeCtx.Miner
+		tb := drivers.NewTipSetMessageBuilder(td)
+		bb := drivers.NewBlockBuilder(td.ExeCtx.Miner).WithTicketCount(1)
+
+		halfBalance := abi.NewTokenAmount(10_000_000)
+		_, aliceId := td.NewAccountActor(drivers.BLS, big.Add(halfBalance, halfBalance))
+
+		// Attempt to whole balance, in two parts.
+		// The second message should fail (insufficient balance to pay fees).
+		bb.WithBLSMessageOk(
+			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, aliceId, chain.Value(halfBalance)),
+		).WithBLSMessageAndCode(
+			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, aliceId, chain.Value(halfBalance), chain.Nonce(1)),
+			exitcode.SysErrInsufficientFunds,
+		)
+
+		prevRewards := td.GetRewardSummary()
+		receipts := tb.WithBlockBuilder(bb).ApplyAndValidate()
+		assert.Equal(t, exitcode.Ok, receipts[0].ExitCode)
+		assert.Equal(t, exitcode.SysErrInsufficientFunds, receipts[1].ExitCode)
+
+		newRewards := td.GetRewardSummary()
+		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
+		gasPenalty := big.NewInt(46)
+		validateRewards(t, prevRewards, newRewards, miner, receipts[0].GasUsed.Big(), gasPenalty)
+		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(halfBalance, gasPenalty))
 	})
 
 	// TODO more tests:
-	// - sender exists but isn't an account (miner penalty)
-	// - mismatched callseqnum (miner penalty)
-	// - sender cannot cover value + gas cost (miner penalty)
-	// - miner penalty followed by non-miner penalty with same nonce
+	// - miner penalty causes subsequent otherwise-valid message to have wrong nonce (another miner penalty)
+	// - miner penalty followed by non-miner penalty with same nonce (in different block)
+}
+
+func validateRewards(t testing.TB, prevRewards *drivers.RewardSummary, newRewards *drivers.RewardSummary, miner addr.Address, gasReward big.Int, gasPenalty big.Int) {
+	rwd := big.Add(big.Sub(reward.BlockRewardTarget, gasPenalty), gasReward)
+	assert.Equal(t, big.Add(big.Sub(prevRewards.Treasury, gasPenalty), gasReward), newRewards.Treasury)
+	assert.Equal(t, big.Add(prevRewards.For(miner), rwd), newRewards.For(miner))
+	assert.Equal(t, big.Add(prevRewards.RewardTotal, rwd), newRewards.RewardTotal)
 }

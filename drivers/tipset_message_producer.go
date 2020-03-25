@@ -38,7 +38,7 @@ func (t *TipSetMessageBuilder) Apply() []types.MessageReceipt {
 	return receipts
 }
 
-func (t *TipSetMessageBuilder) ApplyAndValidate() {
+func (t *TipSetMessageBuilder) ApplyAndValidate() []types.MessageReceipt {
 	receipts := t.Apply()
 
 	var results []Result
@@ -68,6 +68,7 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() {
 		}
 	}
 	t.Clear()
+	return receipts
 }
 
 func (t *TipSetMessageBuilder) Clear() {
