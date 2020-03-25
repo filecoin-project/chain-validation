@@ -1,9 +1,10 @@
 # Usage
 
-The gasmeter package is used to record and validate an implementations gas usage.
+The gasmeter is a tool used to record gas usage of an implementation when running chain-validation tests.
 
-When recording, gasmeter will produce a file for each test that is ran. The file will be named after the test it is
-generate for with all character but alpha numeric striped. The file will contain gas data in the form:
+## Record
+When set to record the gasmeter will produce a file containing gas values for each test run during chain-validation. The file will look similar to:
+
 ```text
 GasUnitsUsed
 GasUnitsUsed
@@ -11,19 +12,15 @@ GasUnitsUsed
 ...
 ...
 ```
+Each `GasUnitsUsed` line corresponds to an ApplyMessage call. If a test applies 4 messages its gas file is expected to have 4 lines, 5 messages 5 lines, etc.
 
-When validating, gasmeter will search for the gas vale corresponding to the test it is running (ignoring non alpha numerica character)
-in box/box.go. The order the messages are applied in correspond to the line number in the file. For example, the first
-call to apply message in a test will validate against the first line in the file, second call to apply message to 
-second line in file, and so on.
-The same pattern is used for TipSet application.
+### How To Record
+1. Set the environment variable `CHAIN_VALIDATION_DATA` to the location of the chain-validation gas resources directory. For most users this will be: `$GOPATH/chain-validation/box/resources`.
+2. Uncomment this [line](https://github.com/filecoin-project/chain-validation/blob/1f44d3090c52a1c443a2ca85c5747f3417197008/drivers/test.go#L281) to enable the gasmeters `Record()` method. This will cause the gasmeter to produce a gas file for each test as the location `CHAIN_VALIDATION_DATA`.
+3. Run tests you wish to record gas for, and verify files with names corresponding to the tests exist in `CHAIN_VALIDATION_DATA`
+4. Run `make gen-gas` to generate `box/blob.go` -- blob.go contains gas data as a go file and is used to populate the [resource box storage](https://github.com/filecoin-project/chain-validation/blob/f6bc23143d179bcccc9c30bfd00242a3c3398432/box/box.go#L8). Since chain-validation is a library imported by implementations storing this data in a go file is necessary.
 
-## How To Record
-1. Set the environment variable `CHAIN_VALIDATION_DATA` to the location of the chain-validation gas resources file. For 
-most users this will be: `$GOPATH/chain-validation/box/resources`.
-2. Set `RecordGas` in the implementations `ValidationConfig` to `true`.
-3. Run tests you wish to record gas for, and verify files with names corresponding to the tests previously ran exist in
-`$GOPATH/chain-validation/box/resources`
-4. Run `make gen-gas` to generate `box/blob.go`.
+## Validation
 
-
+When set to validate the gasmeter will [look up the gas values](https://github.com/filecoin-project/chain-validation/blob/f6bc23143d179bcccc9c30bfd00242a3c3398432/box/box.go#L40) for each test. If gas values cannot be found a warning log is displayed in the test output.
+When new tests are added the Record process described above will need to be followed to generate gas values for them.
