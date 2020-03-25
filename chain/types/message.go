@@ -21,18 +21,18 @@ type Message struct {
 	// Address of the sending actor.
 	From address.Address
 	// Expected CallSeqNum of the sending actor (only for top-level messages).
-	CallSeqNum int64
+	CallSeqNum uint64
 
 	// Amount of value to transfer from sender's to receiver's balance.
 	Value big.Int
+
+	GasPrice big.Int
+	GasLimit int64
 
 	// Optional method to invoke on receiver, zero for a plain value send.
 	Method abi.MethodNum
 	/// Serialized parameters to the method (if method is non-zero).
 	Params []byte
-
-	GasPrice big.Int
-	GasLimit int64
 }
 
 func (t *Message) MarshalCBOR(w io.Writer) error {
@@ -56,7 +56,7 @@ func (t *Message) MarshalCBOR(w io.Writer) error {
 
 	// t.Nonce (uint64) (uint64)
 
-	if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajNegativeInt, uint64(t.CallSeqNum))); err != nil {
+	if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajUnsignedInt, uint64(t.CallSeqNum))); err != nil {
 		return err
 	}
 
@@ -70,14 +70,20 @@ func (t *Message) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.GasLimit (big.Int) (struct)
-	if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajNegativeInt, uint64(t.GasLimit))); err != nil {
-		return err
+	// t.GasLimit (int64) (int64)
+	if t.GasLimit >= 0 {
+		if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajUnsignedInt, uint64(t.GasLimit))); err != nil {
+			return err
+		}
+	} else {
+		if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajNegativeInt, uint64(-t.GasLimit)-1)); err != nil {
+			return err
+		}
 	}
 
 	// t.Method (abi.MethodNum) (uint64)
 
-	if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajNegativeInt, uint64(t.Method))); err != nil {
+	if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajUnsignedInt, uint64(t.Method))); err != nil {
 		return err
 	}
 
@@ -115,7 +121,7 @@ func (t *Message) UnmarshalCBOR(r io.Reader) error {
 	{
 
 		if err := t.To.UnmarshalCBOR(br); err != nil {
-			return err
+			return fmt.Errorf("unmarshaling t.To: %w", err)
 		}
 
 	}
@@ -124,7 +130,7 @@ func (t *Message) UnmarshalCBOR(r io.Reader) error {
 	{
 
 		if err := t.From.UnmarshalCBOR(br); err != nil {
-			return err
+			return fmt.Errorf("unmarshaling t.From: %w", err)
 		}
 
 	}
@@ -136,10 +142,10 @@ func (t *Message) UnmarshalCBOR(r io.Reader) error {
 		if err != nil {
 			return err
 		}
-		if maj != cbg.MajNegativeInt {
+		if maj != cbg.MajUnsignedInt {
 			return fmt.Errorf("wrong type for uint64 field")
 		}
-		t.CallSeqNum = int64(extra)
+		t.CallSeqNum = uint64(extra)
 
 	}
 	// t.Value (big.Int) (struct)
@@ -147,7 +153,7 @@ func (t *Message) UnmarshalCBOR(r io.Reader) error {
 	{
 
 		if err := t.Value.UnmarshalCBOR(br); err != nil {
-			return err
+			return fmt.Errorf("unmarshaling t.Value: %w", err)
 		}
 
 	}
@@ -156,23 +162,34 @@ func (t *Message) UnmarshalCBOR(r io.Reader) error {
 	{
 
 		if err := t.GasPrice.UnmarshalCBOR(br); err != nil {
-			return err
+			return fmt.Errorf("unmarshaling t.GasPrice: %w", err)
 		}
 
 	}
-	// t.GasLimit (big.Int) (struct)
-
+	// t.GasLimit (int64) (int64)
 	{
-
-		maj, extra, err = cbg.CborReadHeader(br)
+		maj, extra, err := cbg.CborReadHeader(br)
+		var extraI int64
 		if err != nil {
 			return err
 		}
-		if maj != cbg.MajNegativeInt {
-			return fmt.Errorf("wrong type for uint64 field")
+		switch maj {
+		case cbg.MajUnsignedInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 positive overflow")
+			}
+		case cbg.MajNegativeInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 negative oveflow")
+			}
+			extraI = -1 - extraI
+		default:
+			return fmt.Errorf("wrong type for int64 field: %d", maj)
 		}
-		t.GasLimit = int64(extra)
 
+		t.GasLimit = int64(extraI)
 	}
 	// t.Method (abi.MethodNum) (uint64)
 
@@ -241,8 +258,8 @@ type SignedMessage struct {
 	Signature crypto.Signature
 }
 
-func (sm *SignedMessage) MarshalCBOR(w io.Writer) error {
-	if sm == nil {
+func (t *SignedMessage) MarshalCBOR(w io.Writer) error {
+	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
 	}
@@ -250,19 +267,19 @@ func (sm *SignedMessage) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// sm.Message (types.Message) (struct)
-	if err := sm.Message.MarshalCBOR(w); err != nil {
+	// t.Message (types.Message) (struct)
+	if err := t.Message.MarshalCBOR(w); err != nil {
 		return err
 	}
 
-	// sm.Signature (crypto.Signature) (struct)
-	if err := sm.Signature.MarshalCBOR(w); err != nil {
+	// t.Signature (crypto.Signature) (struct)
+	if err := t.Signature.MarshalCBOR(w); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (sm *SignedMessage) UnmarshalCBOR(r io.Reader) error {
+func (t *SignedMessage) UnmarshalCBOR(r io.Reader) error {
 	br := cbg.GetPeeker(r)
 
 	maj, extra, err := cbg.CborReadHeader(br)
@@ -277,21 +294,21 @@ func (sm *SignedMessage) UnmarshalCBOR(r io.Reader) error {
 		return fmt.Errorf("cbor input had wrong number of fields")
 	}
 
-	// sm.Message (types.Message) (struct)
+	// t.Message (types.Message) (struct)
 
 	{
 
-		if err := sm.Message.UnmarshalCBOR(br); err != nil {
-			return err
+		if err := t.Message.UnmarshalCBOR(br); err != nil {
+			return fmt.Errorf("unmarshaling t.Message: %w", err)
 		}
 
 	}
-	// sm.Signature (crypto.Signature) (struct)
+	// t.Signature (crypto.Signature) (struct)
 
 	{
 
-		if err := sm.Signature.UnmarshalCBOR(br); err != nil {
-			return err
+		if err := t.Signature.UnmarshalCBOR(br); err != nil {
+			return fmt.Errorf("unmarshaling t.Signature: %w", err)
 		}
 
 	}
