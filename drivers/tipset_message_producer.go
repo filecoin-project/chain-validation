@@ -93,7 +93,7 @@ type Result struct {
 func NewBlockBuilder(miner address.Address) *BlockBuilder {
 	return &BlockBuilder{
 		miner:           miner,
-		ticketCount:     0,
+		ticketCount:     1,
 		secpMsgs:        nil,
 		blsMsgs:         nil,
 		expectedResults: nil,

@@ -30,11 +30,10 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		tipB.WithBlockBuilder(
-			blkB.WithTicketCount(1).
-				// send value from sender to receiver
-				WithBLSMessageOk(
-					td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
-				),
+			// send value from sender to receiver
+			blkB.WithBLSMessageOk(
+				td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
+			),
 		).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
@@ -50,9 +49,8 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		tipB.WithBlockBuilder(
-			blkB.WithTicketCount(1).
-				// duplicate the message
-				WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
+			// duplicate the message
+			blkB.WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 				// only should have a single result
 				WithBLSMessageDropped(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))),
 		).ApplyAndValidate()
@@ -69,13 +67,12 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		tipB.WithBlockBuilder(
-			blkB.WithTicketCount(1).
-				// send value from sender to receiver
-				WithSECPMessageOk(
-					signMessage(
-						td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
-						td.Wallet()),
-				),
+			// send value from sender to receiver
+			blkB.WithSECPMessageOk(
+				signMessage(
+					td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
+					td.Wallet()),
+			),
 		).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
@@ -91,9 +88,8 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		tipB.WithBlockBuilder(
-			blkB.WithTicketCount(1).
-				// send value from sender to receiver
-				WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
+			// send value from sender to receiver
+			blkB.WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
 				WithSECPMessageDropped(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())),
 		).ApplyAndValidate()
 
