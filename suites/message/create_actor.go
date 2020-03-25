@@ -61,7 +61,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			utils.NewSECP256K1Addr(t, "publickeybar"),
 			abi_spec.NewTokenAmount(10_000),
 
-			exitcode_spec.SysErrInsufficientFunds,
+			exitcode_spec.SysErrSenderStateInvalid,
 		},
 		{
 			"fail create BLS account actor insufficient balance",
@@ -71,7 +71,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 			utils.NewBLSAddr(t, 1),
 			abi_spec.NewTokenAmount(10_000),
 
-			exitcode_spec.SysErrInsufficientFunds,
+			exitcode_spec.SysErrSenderStateInvalid,
 		},
 		// TODO add edge case tests that have insufficient balance after gas fees
 	}

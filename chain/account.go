@@ -12,7 +12,7 @@ func (mp *MessageProducer) AccountConstructor(to, from address.Address, params a
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsAccount.Constructor, ser, opts...)
 }
-func (mp *MessageProducer) AccountPubkeyAddress(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) AccountPubkeyAddress(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsAccount.PubkeyAddress, ser, opts...)
 }

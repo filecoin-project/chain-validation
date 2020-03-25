@@ -9,8 +9,8 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
-func (mp *MessageProducer) PowerConstructor(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) PowerConstructor(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsPower.Constructor, ser, opts...)
 }
 func (mp *MessageProducer) PowerAddBalance(to, from address.Address, params power.AddBalanceParams, opts ...MsgOpt) *types.Message {
@@ -49,8 +49,8 @@ func (mp *MessageProducer) PowerOnSectorModifyWeightDesc(to, from address.Addres
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsPower.OnSectorModifyWeightDesc, ser, opts...)
 }
-func (mp *MessageProducer) PowerOnMinerWindowedPoStSuccess(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) PowerOnMinerWindowedPoStSuccess(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsPower.OnMinerWindowedPoStSuccess, ser, opts...)
 }
 func (mp *MessageProducer) PowerOnMinerWindowedPoStFailure(to, from address.Address, params power.OnMinerWindowedPoStFailureParams, opts ...MsgOpt) *types.Message {
@@ -65,7 +65,7 @@ func (mp *MessageProducer) PowerReportConsensusFault(to, from address.Address, p
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsPower.ReportConsensusFault, ser, opts...)
 }
-func (mp *MessageProducer) PowerOnEpochTickEnd(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) PowerOnEpochTickEnd(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsPower.OnEpochTickEnd, ser, opts...)
 }

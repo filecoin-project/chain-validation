@@ -80,7 +80,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			receiver:    bob,
 			receiverBal: big_spec.Zero(),
 
-			code: exitcode.SysErrInsufficientFunds,
+			code: exitcode.SysErrSenderStateInvalid,
 		},
 		{
 			desc: "fail to transfer more funds than sender has when sender balance == zero",
@@ -93,7 +93,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 			receiver:    bob,
 			receiverBal: big_spec.Zero(),
 
-			code: exitcode.SysErrInsufficientFunds,
+			code: exitcode.SysErrSenderStateInvalid,
 		},
 	}
 
@@ -176,7 +176,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
-			exitcode.SysErrActorNotFound)
+			exitcode.SysErrSenderInvalid)
 		td.AssertBalance(alice, aliceInitialBalance)
 	})
 
@@ -190,7 +190,7 @@ func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		td.ApplyFailure(
 			td.MessageProducer.Transfer(receiver, sender, chain.Value(transferAmnt), chain.Nonce(0)),
-			exitcode.SysErrActorNotFound)
+			exitcode.SysErrSenderInvalid)
 		td.AssertNoActor(sender)
 		td.AssertNoActor(receiver)
 	})

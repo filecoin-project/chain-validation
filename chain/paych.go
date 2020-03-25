@@ -17,11 +17,11 @@ func (mp *MessageProducer) PaychUpdateChannelState(to, from address.Address, par
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsPaych.UpdateChannelState, ser, opts...)
 }
-func (mp *MessageProducer) PaychSettle(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) PaychSettle(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsPaych.Settle, ser, opts...)
 }
-func (mp *MessageProducer) PaychCollect(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) PaychCollect(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsPaych.Collect, ser, opts...)
 }

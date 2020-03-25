@@ -8,7 +8,6 @@ import (
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	paych_spec "github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
-	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/filecoin-project/chain-validation/chain"
@@ -128,13 +127,13 @@ func TestPaych(t *testing.T, factory state.Factories) {
 
 		// settle the payment channel so it may be collected
 		settleResult := td.ApplyOk(
-			td.MessageProducer.PaychSettle(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Value(big_spec.Zero()), chain.Nonce(0)))
+			td.MessageProducer.PaychSettle(paychAddr, receiver, nil, chain.Value(big_spec.Zero()), chain.Nonce(0)))
 
 		// advance the epoch so the funds may be redeemed.
 		td.ExeCtx.Epoch++
 
 		collectResult := td.ApplyOk(
-			td.MessageProducer.PaychCollect(paychAddr, receiver, adt_spec.EmptyValue{}, chain.Nonce(1), chain.Value(big_spec.Zero())))
+			td.MessageProducer.PaychCollect(paychAddr, receiver, nil, chain.Nonce(1), chain.Value(big_spec.Zero())))
 
 		// receiver_balance = initial_balance + paych_send - settle_paych_msg_gas - collect_paych_msg_gas
 		td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), settleResult.Receipt.GasUsed.Big()), collectResult.Receipt.GasUsed.Big()))
