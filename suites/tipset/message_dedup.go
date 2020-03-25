@@ -6,10 +6,8 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
-	"github.com/filecoin-project/specs-actors/actors/crypto"
 
 	"github.com/filecoin-project/chain-validation/chain"
-	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
 )
@@ -24,7 +22,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		defer td.Complete()
 		tipB := drivers.NewTipSetMessageBuilder(td)
-		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner)
+		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner, td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
@@ -43,7 +41,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		defer td.Complete()
 		tipB := drivers.NewTipSetMessageBuilder(td)
-		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner)
+		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner, td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
@@ -61,7 +59,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		defer td.Complete()
 		tipB := drivers.NewTipSetMessageBuilder(td)
-		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner)
+		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner, td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
@@ -69,9 +67,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		tipB.WithBlockBuilder(
 			// send value from sender to receiver
 			blkB.WithSECPMessageOk(
-				signMessage(
-					td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
-					td.Wallet()),
+				td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
 			),
 		).ApplyAndValidate()
 
@@ -82,26 +78,18 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		defer td.Complete()
 		tipB := drivers.NewTipSetMessageBuilder(td)
-		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner)
+		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner, td)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		tipB.WithBlockBuilder(
 			// send value from sender to receiver
-			blkB.WithSECPMessageOk(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())).
-				WithSECPMessageDropped(signMessage(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))), td.Wallet())),
+			blkB.WithSECPMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
+				WithSECPMessageDropped(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))),
 		).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
 
-}
-
-// TODO produce a valid signature
-func signMessage(msg *types.Message, km state.KeyManager) *types.SignedMessage {
-	return &types.SignedMessage{
-		Message:   *msg,
-		Signature: crypto.Signature{},
-	}
 }
