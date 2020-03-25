@@ -8,8 +8,20 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
+	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
+	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
+	cron_spec "github.com/filecoin-project/specs-actors/actors/builtin/cron"
+	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	market_spec "github.com/filecoin-project/specs-actors/actors/builtin/market"
+	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
+	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
+	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
+	"github.com/filecoin-project/specs-actors/actors/builtin/system"
+	runtime_spec "github.com/filecoin-project/specs-actors/actors/runtime"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
+	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	datastore "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
@@ -17,18 +29,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	cbg "github.com/whyrusleeping/cbor-gen"
-
-	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
-	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
-	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
-	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
-	cron_spec "github.com/filecoin-project/specs-actors/actors/builtin/cron"
-	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
-	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
-	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
-	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
-	runtime_spec "github.com/filecoin-project/specs-actors/actors/runtime"
-	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -118,7 +118,7 @@ func init() {
 		Addr:    builtin_spec.SystemActorAddr,
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.SystemActorCodeID,
-		State:   &adt_spec.EmptyValue{},
+		State:   &system.State{},
 	}
 
 	DefaultCronActorState = ActorState{

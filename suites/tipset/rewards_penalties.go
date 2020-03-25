@@ -97,8 +97,8 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		bb := blkBuilder.WithTicketCount(1)
 		for _, s := range badSenders {
 			bb.WithBLSMessageAndCode(td.MessageProducer.Transfer(receiver, s, chain.Value(sendValue)),
-				// Note: expecting this exit code to change to SysErrSenderInvalid.
-				exitcode.SysErrActorNotFound)
+				exitcode.SysErrSenderInvalid,
+			)
 		}
 
 		prevRewards := td.GetRewardSummary()
@@ -138,8 +138,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 		for _, sender := range senders {
 			bb.WithBLSMessageAndCode(td.MessageProducer.Transfer(receiver, sender, chain.Value(sendValue)),
-				// Note: expecting this exit code to change to SysErrSenderInvalid.
-				exitcode.SysErrForbidden)
+				exitcode.SysErrSenderInvalid)
 		}
 		prevRewards := td.GetRewardSummary()
 		tb.WithBlockBuilder(bb).ApplyAndValidate()
@@ -166,8 +165,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 		bb.WithBLSMessageAndCode(
 			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, aliceId, chain.Nonce(1)),
-			// Expected to change to SysErrSenderStateInvalid
-			exitcode.SysErrInvalidCallSeqNum,
+			exitcode.SysErrSenderStateInvalid,
 		)
 
 		prevRewards := td.GetRewardSummary()
@@ -197,13 +195,11 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, aliceId, chain.Value(halfBalance)),
 		).WithBLSMessageAndCode(
 			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, aliceId, chain.Value(halfBalance), chain.Nonce(1)),
-			exitcode.SysErrInsufficientFunds,
+			exitcode.SysErrSenderStateInvalid,
 		)
 
 		prevRewards := td.GetRewardSummary()
 		receipts := tb.WithBlockBuilder(bb).ApplyAndValidate()
-		assert.Equal(t, exitcode.Ok, receipts[0].ExitCode)
-		assert.Equal(t, exitcode.SysErrInsufficientFunds, receipts[1].ExitCode)
 
 		newRewards := td.GetRewardSummary()
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.

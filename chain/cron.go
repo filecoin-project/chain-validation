@@ -13,7 +13,7 @@ func (mp *MessageProducer) CronConstructor(to, from address.Address, params cron
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsCron.Constructor, ser, opts...)
 }
-func (mp *MessageProducer) CronEpochTick(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) CronEpochTick(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsCron.EpochTick, ser, opts...)
 }

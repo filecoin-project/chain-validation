@@ -62,13 +62,13 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 		// Expect Message application to fail due to callseqnum being invalid: 1 instead of 0
 		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(1)),
-			exitcode.SysErrInvalidCallSeqNum)
+			exitcode.SysErrSenderStateInvalid)
 
 		// Expect message application to fail due to unknow actor when call seq num is also incorrect
 		unknown := utils.NewIDAddr(t, 10000000)
 		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(1)),
-			exitcode.SysErrActorNotFound)
+			exitcode.SysErrSenderInvalid)
 	})
 
 	t.Run("abort during actor execution", func(t *testing.T) {

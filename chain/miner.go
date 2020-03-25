@@ -15,8 +15,8 @@ func (mp *MessageProducer) MinerConstructor(to, from address.Address, params pow
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsMiner.Constructor, ser, opts...)
 }
-func (mp *MessageProducer) MinerControlAddresses(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) MinerControlAddresses(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsMiner.ControlAddresses, ser, opts...)
 }
 func (mp *MessageProducer) MinerChangeWorkerAddress(to, from address.Address, params miner.ChangeWorkerAddressParams, opts ...MsgOpt) *types.Message {
@@ -31,8 +31,8 @@ func (mp *MessageProducer) MinerSubmitWindowedPoSt(to, from address.Address, par
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsMiner.SubmitWindowedPoSt, ser, opts...)
 }
-func (mp *MessageProducer) MinerOnDeleteMiner(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) MinerOnDeleteMiner(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsMiner.OnDeleteMiner, ser, opts...)
 }
 func (mp *MessageProducer) MinerPreCommitSector(to, from address.Address, params miner.SectorPreCommitInfo, opts ...MsgOpt) *types.Message {
