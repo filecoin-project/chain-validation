@@ -49,7 +49,6 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 				// Process a block with two messages, a simple send back and forth between accounts.
 				rcpts := tipB.WithBlockBuilder(
 					drivers.NewBlockBuilder(td.ExeCtx.Miner).
-						WithTicketCount(1).
 						WithBLSMessageOk(
 							td.MessageProducer.Transfer(bob, alice, chain.Value(sendValue), chain.Nonce(callSeq)),
 						).
@@ -83,7 +82,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 	t.Run("penalize sender does't exist", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
-		blkBuilder := drivers.NewBlockBuilder(td.ExeCtx.Miner)
+		bb := drivers.NewBlockBuilder(td.ExeCtx.Miner)
 		miner := td.ExeCtx.Miner
 
 		_, receiver := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
@@ -94,7 +93,6 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 			utils.NewActorAddr(t, "1234"),
 		}
 
-		bb := blkBuilder.WithTicketCount(1)
 		for _, s := range badSenders {
 			bb.WithBLSMessageAndCode(td.MessageProducer.Transfer(receiver, s, chain.Value(sendValue)),
 				exitcode.SysErrSenderInvalid,
@@ -125,7 +123,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 		miner := td.ExeCtx.Miner
 		tb := drivers.NewTipSetMessageBuilder(td)
-		bb := drivers.NewBlockBuilder(miner).WithTicketCount(1)
+		bb := drivers.NewBlockBuilder(miner)
 
 		_, receiver := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
 		// Various non-account actors that can't be top-level senders.
@@ -159,7 +157,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 		miner := td.ExeCtx.Miner
 		tb := drivers.NewTipSetMessageBuilder(td)
-		bb := drivers.NewBlockBuilder(td.ExeCtx.Miner).WithTicketCount(1)
+		bb := drivers.NewBlockBuilder(td.ExeCtx.Miner)
 
 		_, aliceId := td.NewAccountActor(drivers.BLS, acctDefaultBalance)
 
@@ -184,7 +182,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 		miner := td.ExeCtx.Miner
 		tb := drivers.NewTipSetMessageBuilder(td)
-		bb := drivers.NewBlockBuilder(td.ExeCtx.Miner).WithTicketCount(1)
+		bb := drivers.NewBlockBuilder(td.ExeCtx.Miner)
 
 		halfBalance := abi.NewTokenAmount(10_000_000)
 		_, aliceId := td.NewAccountActor(drivers.BLS, big.Add(halfBalance, halfBalance))
