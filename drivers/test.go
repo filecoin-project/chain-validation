@@ -383,7 +383,15 @@ func (td *TestDriver) validateAndTrackResult(result chain.ApplyResult, code exit
 			foundGas = false
 		}
 	}
-	// TODO in the very near future we will be validating the stateroot here, keep in back of head.
+	if td.Config.ValidateStateRoots() {
+		expectedRoot, found := td.GasMeter.NextExpectedStateRoot()
+		actualRoot := td.State().Root()
+		if found {
+			assert.Equal(td.T, expectedRoot, actualRoot, "Expected StateRoot: %s Actual StateRoot: %s", expectedRoot, actualRoot)
+		} else {
+			td.T.Log("WARNING: failed to find expected state  root for message number")
+		}
+	}
 	return
 }
 

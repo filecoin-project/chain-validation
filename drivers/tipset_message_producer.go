@@ -68,6 +68,17 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() []types.MessageReceipt {
 			}
 		}
 	}
+
+	if t.driver.Config.ValidateStateRoots() {
+		expectedRoot, found := t.driver.GasMeter.NextExpectedStateRoot()
+		actualRoot := t.driver.State().Root()
+		if found {
+			assert.Equal(t.driver.T, expectedRoot, actualRoot, "Expected StateRoot: %s Actual StateRoot: %s", expectedRoot, actualRoot)
+		} else {
+			t.driver.T.Log("WARNING: failed to find expected state  root for message number")
+		}
+	}
+
 	t.Clear()
 	return receipts
 }
