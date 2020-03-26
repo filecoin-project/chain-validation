@@ -10,7 +10,8 @@ import (
 
 	"github.com/ipfs/go-cid"
 
-	"github.com/filecoin-project/chain-validation/box"
+	"github.com/filecoin-project/chain-validation/boxs/gas"
+	"github.com/filecoin-project/chain-validation/boxs/stateroot"
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
@@ -29,14 +30,14 @@ type stateRootElement struct {
 }
 
 func (se *stateRootElement) fileKey() string {
-	return fmt.Sprintf("%s", se.state.String())
+	return se.state.String()
 }
 
 type GasMeter struct {
 	T testing.TB
 
-	receipts *list.List
-	roots    *list.List
+	receipts   *list.List
+	stateroots *list.List
 
 	// index in gasUnits of expected gas
 	gasIdx int
@@ -44,8 +45,8 @@ type GasMeter struct {
 	expectedGasUnits []int64
 
 	// index in stateRoots of expected state root
-	rootIdx int
-	// slice of state roots used by test
+	staterootIdx int
+	// slice of state stateroots used by test
 	expectedStateRoots []cid.Cid
 }
 
@@ -53,14 +54,14 @@ func NewGasMeter(t testing.TB) *GasMeter {
 	return &GasMeter{
 		T: t,
 
-		receipts: list.New(),
-		roots:    list.New(),
+		receipts:   list.New(),
+		stateroots: list.New(),
 
 		gasIdx:           0,
 		expectedGasUnits: LoadGasForTest(t),
 
-		rootIdx:            0,
-		expectedStateRoots: nil,
+		staterootIdx:       0,
+		expectedStateRoots: LoadStateRootsForTest(t),
 	}
 }
 
@@ -69,7 +70,7 @@ func (gm *GasMeter) TrackReceipt(receipt types.MessageReceipt) {
 }
 
 func (gm *GasMeter) TrackStateRoot(root cid.Cid) {
-	gm.roots.PushBack(&stateRootElement{state: root})
+	gm.stateroots.PushBack(&stateRootElement{state: root})
 }
 
 func (gm *GasMeter) NextExpectedGas() (types.GasUnits, bool) {
@@ -82,16 +83,25 @@ func (gm *GasMeter) NextExpectedGas() (types.GasUnits, bool) {
 }
 
 func (gm *GasMeter) NextExpectedStateRoot() (cid.Cid, bool) {
+	defer func() { gm.staterootIdx += 1 }()
+	if gm.staterootIdx > len(gm.expectedStateRoots)-1 {
+		return cid.Undef, false
+	}
+	return gm.expectedStateRoots[gm.staterootIdx], true
+}
 
+func (gm *GasMeter) Record() {
+	gm.recordGas()
+	gm.recordStateRoots()
 }
 
 // write the contents of gm.receipts to a file using the format:
 // GasUnit
 // GasUnit
 // ...
-func (gm *GasMeter) Record() {
+func (gm *GasMeter) recordGas() {
 	file := getTestDataFilePath(gm.T)
-	f, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(fmt.Sprintf("%s_GAS", file), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		gm.T.Log(err)
 		return
@@ -106,11 +116,32 @@ func (gm *GasMeter) Record() {
 	}
 }
 
+// write the contents of gm.stateroots to a file using the format:
+// StateRoot
+// StateRoot
+// ...
+func (gm *GasMeter) recordStateRoots() {
+	file := getTestDataFilePath(gm.T)
+	f, err := os.OpenFile(fmt.Sprintf("%s_STATEROOT", file), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	if err != nil {
+		gm.T.Log(err)
+		return
+	}
+	defer f.Close()
+
+	for e := gm.stateroots.Front(); e != nil; e = e.Next() {
+		_, err := fmt.Fprintf(f, "%s\n", e.Value.(*stateRootElement).fileKey())
+		if err != nil {
+			gm.T.Fatal(err)
+		}
+	}
+}
+
 // Given a testing T, load the gas file associated with it and return a slice of the gas used by the test
 // an index in the slice represents the order of apply message calls.
 func LoadGasForTest(t testing.TB) []int64 {
 	fileName := filenameFromTest(t)
-	f, found := box.Get(fileName)
+	f, found := gas.Get(fileName)
 	if !found {
 		t.Logf("WARNING (does NOT indicate test failure): can't find gas file: %s", fileName)
 		// return an empty slice here since `NextExpectedGas` performs bounds checking
@@ -121,10 +152,10 @@ func LoadGasForTest(t testing.TB) []int64 {
 
 func LoadStateRootsForTest(t testing.TB) []cid.Cid {
 	fileName := filenameFromTest(t)
-	f, found := box.Get(fileName)
+	f, found := stateroot.Get(fileName)
 	if !found {
 		t.Logf("WARNING (does NOT indicate test failure): can't find stateroot file: %s", fileName)
-		// return an empty slice here since `NextExpectedGas` performs bounds checking
+		// return an empty slice here since `NextExpectedStateRoot` performs bounds checking
 		return []cid.Cid{}
 	}
 	return f

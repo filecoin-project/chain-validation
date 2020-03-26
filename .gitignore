@@ -21,4 +21,4 @@
 .update-modules
 
 # Intermediate gas cost generated files.
-box/resources
+boxs/resources
