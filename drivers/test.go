@@ -383,7 +383,7 @@ func (td *TestDriver) validateAndTrackResult(result chain.ApplyResult, code exit
 			foundGas = false
 		}
 	}
-	if td.Config.ValidateStateRoots() {
+	if td.Config.ValidateStateRoot() {
 		expectedRoot, found := td.GasMeter.NextExpectedStateRoot()
 		actualRoot := td.State().Root()
 		if found {

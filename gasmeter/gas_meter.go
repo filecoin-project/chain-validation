@@ -141,7 +141,7 @@ func (gm *GasMeter) recordStateRoots() {
 // an index in the slice represents the order of apply message calls.
 func LoadGasForTest(t testing.TB) []int64 {
 	fileName := filenameFromTest(t)
-	f, found := gas.Get(fileName)
+	f, found := gas.Get(fmt.Sprintf("%s_GAS", fileName))
 	if !found {
 		t.Logf("WARNING (does NOT indicate test failure): can't find gas file: %s", fileName)
 		// return an empty slice here since `NextExpectedGas` performs bounds checking
@@ -152,13 +152,21 @@ func LoadGasForTest(t testing.TB) []int64 {
 
 func LoadStateRootsForTest(t testing.TB) []cid.Cid {
 	fileName := filenameFromTest(t)
-	f, found := stateroot.Get(fileName)
+	f, found := stateroot.Get(fmt.Sprintf("%s_STATEROOT", fileName))
 	if !found {
 		t.Logf("WARNING (does NOT indicate test failure): can't find stateroot file: %s", fileName)
 		// return an empty slice here since `NextExpectedStateRoot` performs bounds checking
 		return []cid.Cid{}
 	}
-	return f
+	var out []cid.Cid
+	for _, c := range f {
+		root, err := cid.Decode(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, root)
+	}
+	return out
 }
 
 func getTestDataFilePath(t testing.TB) string {

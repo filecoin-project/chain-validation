@@ -69,7 +69,7 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() []types.MessageReceipt {
 		}
 	}
 
-	if t.driver.Config.ValidateStateRoots() {
+	if t.driver.Config.ValidateStateRoot() {
 		expectedRoot, found := t.driver.GasMeter.NextExpectedStateRoot()
 		actualRoot := t.driver.State().Root()
 		if found {

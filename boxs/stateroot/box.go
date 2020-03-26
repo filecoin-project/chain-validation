@@ -4,14 +4,12 @@
 
 package stateroot
 
-import "github.com/ipfs/go-cid"
-
 type resourceBox struct {
-	storage map[string][]cid.Cid
+	storage map[string][]string
 }
 
 func newResourceBox() *resourceBox {
-	return &resourceBox{storage: make(map[string][]cid.Cid)}
+	return &resourceBox{storage: make(map[string][]string)}
 }
 
 // Find a file
@@ -23,7 +21,7 @@ func (r *resourceBox) Has(file string) bool {
 }
 
 // Get file's content
-func (r *resourceBox) Get(file string) ([]cid.Cid, bool) {
+func (r *resourceBox) Get(file string) ([]string, bool) {
 	if f, ok := r.storage[file]; ok {
 		return f, ok
 	}
@@ -31,7 +29,7 @@ func (r *resourceBox) Get(file string) ([]cid.Cid, bool) {
 }
 
 // Add a file to boxs
-func (r *resourceBox) Add(file string, content []cid.Cid) {
+func (r *resourceBox) Add(file string, content []string) {
 	r.storage[file] = content
 }
 
@@ -39,12 +37,12 @@ func (r *resourceBox) Add(file string, content []cid.Cid) {
 var resources = newResourceBox()
 
 // Get a file from boxs
-func Get(file string) ([]cid.Cid, bool) {
+func Get(file string) ([]string, bool) {
 	return resources.Get(file)
 }
 
 // Add a file content to boxs
-func Add(file string, content []cid.Cid) {
+func Add(file string, content []string) {
 	resources.Add(file, content)
 }
 
