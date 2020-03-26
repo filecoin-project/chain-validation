@@ -12,6 +12,7 @@ import (
 // Applier applies abstract messages to states.
 type Applier interface {
 	ApplyMessage(context *types.ExecutionContext, state VMWrapper, msg *types.Message) (types.MessageReceipt, abi.TokenAmount, abi.TokenAmount, error)
+	ApplySignedMessage(context *types.ExecutionContext, state VMWrapper, msg *types.SignedMessage) (types.MessageReceipt, abi.TokenAmount, abi.TokenAmount, error)
 	ApplyTipSetMessages(state VMWrapper, blocks []types.BlockMessagesInfo, epoch abi.ChainEpoch, rnd RandomnessSource) ([]types.MessageReceipt, error)
 }
 

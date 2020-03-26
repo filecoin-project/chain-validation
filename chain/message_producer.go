@@ -36,7 +36,7 @@ func (mp *MessageProducer) BuildFull(to, from address.Address, method abi_spec.M
 	fm := &types.Message{
 		To:         to,
 		From:       from,
-		CallSeqNum: int64(callSeq), // FIXME should be a uint64 in message
+		CallSeqNum: callSeq,
 		Value:      value,
 		Method:     method,
 		Params:     params,

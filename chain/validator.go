@@ -33,6 +33,15 @@ func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VM
 	}, err
 }
 
+func (v *Validator) ApplySignedMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.SignedMessage) (ApplyResult, error) {
+	receipt, penalty, reward, err := v.applier.ApplySignedMessage(context, state, message)
+	return ApplyResult{
+		Receipt: receipt,
+		Penalty: penalty,
+		Reward:  reward,
+	}, err
+}
+
 func (v *Validator) ApplyTipSetMessages(epoch abi.ChainEpoch, state state.VMWrapper, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) ([]types.MessageReceipt, error) {
 	return v.applier.ApplyTipSetMessages(state, blocks, epoch, rnd)
 }

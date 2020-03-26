@@ -281,6 +281,10 @@ func (td *TestDriver) Complete() {
 	//td.GasMeter.Record()
 }
 
+//
+// Unsigned Message Appliers
+//
+
 func (td *TestDriver) ApplyMessage(msg *types.Message) (result chain.ApplyResult) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -288,6 +292,7 @@ func (td *TestDriver) ApplyMessage(msg *types.Message) (result chain.ApplyResult
 			td.T.Fatalf("message application panicked: %v", r)
 		}
 	}()
+
 	result, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 	require.NoError(td.T, err)
 	return result
@@ -307,9 +312,62 @@ func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) c
 
 func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyResult {
 	result := td.ApplyMessage(msg)
+	if !td.validateAndTrackResult(result, code, retval) {
+		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
+	}
+	return result
+}
+
+//
+// Signed Message Appliers
+//
+
+func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result chain.ApplyResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			result.Receipt.ExitCode = exitcode.SysErrInternal
+			td.T.Fatalf("message application panicked: %v", r)
+		}
+	}()
+	serMsg, err := msg.Serialize()
+	require.NoError(td.T, err)
+
+	msgSig, err := td.Wallet().Sign(msg.From, serMsg)
+	require.NoError(td.T, err)
+
+	smgs := &types.SignedMessage{
+		Message:   *msg,
+		Signature: msgSig,
+	}
+	result, err = td.validator.ApplySignedMessage(td.ExeCtx, td.State(), smgs)
+	require.NoError(td.T, err)
+	return result
+}
+
+func (td *TestDriver) ApplySignedOk(msg *types.Message) chain.ApplyResult {
+	return td.ApplySignedExpect(msg, EmptyReturnValue)
+}
+
+func (td *TestDriver) ApplySignedExpect(msg *types.Message, retval []byte) chain.ApplyResult {
+	return td.applyMessageSignedExpectCodeAndReturn(msg, exitcode.Ok, retval)
+}
+
+func (td *TestDriver) ApplySignedFailure(msg *types.Message, code exitcode.ExitCode) chain.ApplyResult {
+	return td.applyMessageExpectCodeAndReturn(msg, code, EmptyReturnValue)
+}
+
+func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyResult {
+	result := td.ApplyMessageSigned(msg)
+	if !td.validateAndTrackResult(result, code, retval) {
+		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
+	}
+	return result
+}
+
+func (td *TestDriver) validateAndTrackResult(result chain.ApplyResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
+	foundGas = true
 
 	td.GasMeter.Track(result.Receipt)
-
 	if td.Config.ValidateExitCode() {
 		assert.Equal(td.T, code, result.Receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), result.Receipt.ExitCode.Error())
 	}
@@ -321,13 +379,11 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 		if ok {
 			assert.Equal(td.T, expectedGasUsed, result.Receipt.GasUsed, "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, result.Receipt.GasUsed)
 		} else {
-			td.T.Logf("WARNING: failed to find expected gas cost for message: %+v", msg)
+			foundGas = false
 		}
 	}
-
 	// TODO in the very near future we will be validating the stateroot here, keep in back of head.
-
-	return result
+	return
 }
 
 func (td *TestDriver) AssertNoActor(addr address.Address) {
