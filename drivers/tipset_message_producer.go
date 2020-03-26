@@ -40,6 +40,7 @@ func (t *TipSetMessageBuilder) Apply() []types.MessageReceipt {
 
 func (t *TipSetMessageBuilder) ApplyAndValidate() []types.MessageReceipt {
 	receipts := t.Apply()
+	t.driver.GasMeter.TrackStateRoot(t.driver.State().Root())
 
 	var results []Result
 	for _, b := range t.bbs {
@@ -51,7 +52,7 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() []types.MessageReceipt {
 	}
 
 	for i := range receipts {
-		t.driver.GasMeter.Track(receipts[i])
+		t.driver.GasMeter.TrackReceipt(receipts[i])
 		if t.driver.Config.ValidateExitCode() {
 			assert.Equal(t.driver.T, results[i].ExitCode, receipts[i].ExitCode, "Message Number: %d Expected ExitCode: %s Actual ExitCode: %s", i, results[i].ExitCode.Error(), receipts[i].ExitCode.Error())
 		}

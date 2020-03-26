@@ -8,43 +8,68 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/ipfs/go-cid"
+
 	"github.com/filecoin-project/chain-validation/box"
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
 const ValidationDataEnvVar = "CHAIN_VALIDATION_DATA"
 
-type trackerElement struct {
+type receiptElement struct {
 	receipt types.MessageReceipt
 }
 
-func (te *trackerElement) fileKey() string {
-	return fmt.Sprintf("%d", te.receipt.GasUsed)
+func (re *receiptElement) fileKey() string {
+	return fmt.Sprintf("%d", re.receipt.GasUsed)
+}
+
+type stateRootElement struct {
+	state cid.Cid
+}
+
+func (se *stateRootElement) fileKey() string {
+	return fmt.Sprintf("%s", se.state.String())
 }
 
 type GasMeter struct {
-	tracker *list.List
-	T       testing.TB
+	T testing.TB
+
+	receipts *list.List
+	roots    *list.List
 
 	// index in gasUnits of expected gas
 	gasIdx int
 	// slice of gas units used by the test
 	expectedGasUnits []int64
+
+	// index in stateRoots of expected state root
+	rootIdx int
+	// slice of state roots used by test
+	expectedStateRoots []cid.Cid
 }
 
 func NewGasMeter(t testing.TB) *GasMeter {
 	return &GasMeter{
-		tracker:          list.New(),
-		T:                t,
+		T: t,
+
+		receipts: list.New(),
+		roots:    list.New(),
+
 		gasIdx:           0,
 		expectedGasUnits: LoadGasForTest(t),
+
+		rootIdx:            0,
+		expectedStateRoots: nil,
 	}
 }
 
-func (gm *GasMeter) Track(receipt types.MessageReceipt) {
-	gm.tracker.PushBack(&trackerElement{
-		receipt: receipt,
-	})
+func (gm *GasMeter) TrackReceipt(receipt types.MessageReceipt) {
+	gm.receipts.PushBack(&receiptElement{receipt: receipt})
+}
+
+func (gm *GasMeter) TrackStateRoot(root cid.Cid) {
+	gm.roots.PushBack(&stateRootElement{state: root})
 }
 
 func (gm *GasMeter) NextExpectedGas() (types.GasUnits, bool) {
@@ -56,7 +81,11 @@ func (gm *GasMeter) NextExpectedGas() (types.GasUnits, bool) {
 	return types.GasUnits(gm.expectedGasUnits[gm.gasIdx]), true
 }
 
-// write the contents of gm.tracker to a file using the format:
+func (gm *GasMeter) NextExpectedStateRoot() (cid.Cid, bool) {
+
+}
+
+// write the contents of gm.receipts to a file using the format:
 // GasUnit
 // GasUnit
 // ...
@@ -69,8 +98,8 @@ func (gm *GasMeter) Record() {
 	}
 	defer f.Close()
 
-	for e := gm.tracker.Front(); e != nil; e = e.Next() {
-		_, err := fmt.Fprintf(f, "%s\n", e.Value.(*trackerElement).fileKey())
+	for e := gm.receipts.Front(); e != nil; e = e.Next() {
+		_, err := fmt.Fprintf(f, "%s\n", e.Value.(*receiptElement).fileKey())
 		if err != nil {
 			gm.T.Fatal(err)
 		}
@@ -83,9 +112,20 @@ func LoadGasForTest(t testing.TB) []int64 {
 	fileName := filenameFromTest(t)
 	f, found := box.Get(fileName)
 	if !found {
-		t.Logf("WARNING (does NOT indicate test failure): can't find file: %s", fileName)
+		t.Logf("WARNING (does NOT indicate test failure): can't find gas file: %s", fileName)
 		// return an empty slice here since `NextExpectedGas` performs bounds checking
 		return []int64{}
+	}
+	return f
+}
+
+func LoadStateRootsForTest(t testing.TB) []cid.Cid {
+	fileName := filenameFromTest(t)
+	f, found := box.Get(fileName)
+	if !found {
+		t.Logf("WARNING (does NOT indicate test failure): can't find stateroot file: %s", fileName)
+		// return an empty slice here since `NextExpectedGas` performs bounds checking
+		return []cid.Cid{}
 	}
 	return f
 }

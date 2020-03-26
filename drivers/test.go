@@ -367,7 +367,8 @@ func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, 
 func (td *TestDriver) validateAndTrackResult(result chain.ApplyResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
 	foundGas = true
 
-	td.GasMeter.Track(result.Receipt)
+	td.GasMeter.TrackStateRoot(result.Root)
+	td.GasMeter.TrackReceipt(result.Receipt)
 	if td.Config.ValidateExitCode() {
 		assert.Equal(td.T, code, result.Receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), result.Receipt.ExitCode.Error())
 	}

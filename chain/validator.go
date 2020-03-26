@@ -2,6 +2,7 @@ package chain
 
 import (
 	"github.com/filecoin-project/specs-actors/actors/abi"
+	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/state"
@@ -16,6 +17,7 @@ type ApplyResult struct {
 	Receipt types.MessageReceipt
 	Penalty abi.TokenAmount
 	Reward  abi.TokenAmount
+	Root    cid.Cid
 }
 
 // NewValidator builds a new validator.
@@ -30,6 +32,7 @@ func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VM
 		Receipt: receipt,
 		Penalty: penalty,
 		Reward:  reward,
+		Root:    state.Root(),
 	}, err
 }
 
@@ -39,6 +42,7 @@ func (v *Validator) ApplySignedMessage(context *types.ExecutionContext, state st
 		Receipt: receipt,
 		Penalty: penalty,
 		Reward:  reward,
+		Root:    state.Root(),
 	}, err
 }
 
