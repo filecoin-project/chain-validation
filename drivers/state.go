@@ -32,11 +32,14 @@ type StateDriver struct {
 	st state.VMWrapper
 	w  state.KeyManager
 	rs state.RandomnessSource
+
+	// Mapping for IDAddresses to their pubkey/actor addresses. Used for lookup when signing messages.
+	ActorIDMap map[address.Address]address.Address
 }
 
 // NewStateDriver creates a new state driver for a state.
 func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager, rs state.RandomnessSource) *StateDriver {
-	return &StateDriver{tb, st, w, rs}
+	return &StateDriver{tb, st, w, rs, make(map[address.Address]address.Address)}
 }
 
 // State returns the state.
@@ -85,6 +88,7 @@ func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil 
 
 	_, idAddr, err := d.st.CreateActor(builtin_spec.AccountActorCodeID, addr, balanceAttoFil, &account_spec.State{Address: addr})
 	require.NoError(d.tb, err)
+	d.ActorIDMap[idAddr] = addr
 	return addr, idAddr
 }
 

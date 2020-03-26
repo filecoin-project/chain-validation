@@ -102,7 +102,7 @@ type ExpectedResult struct {
 	ReturnVal []byte
 }
 
-func NewBlockBuilder(miner address.Address, td *TestDriver) *BlockBuilder {
+func NewBlockBuilder(td *TestDriver, miner address.Address) *BlockBuilder {
 	return &BlockBuilder{
 		TD:              td,
 		miner:           miner,
@@ -177,8 +177,15 @@ func (bb *BlockBuilder) WithTicketCount(count int64) *BlockBuilder {
 
 func (bb *BlockBuilder) toSignedMessage(m *types.Message) *types.SignedMessage {
 	from := m.From
+	var found bool
+	if from.Protocol() == address.ID {
+		from, found = bb.TD.ActorIDMap[from]
+		if !found {
+			bb.TD.T.Fatalf("Failed to find pubkey address for address: %s", m.From)
+		}
+	}
 	if from.Protocol() != address.SECP256K1 {
-		bb.TD.T.Fatalf("message From field must be SECP256K1 protocol, was: %v", from.Protocol())
+		bb.TD.T.Fatalf("Invalid address for SECP signature, address protocol: %v", from.Protocol())
 	}
 	raw, err := m.Serialize()
 	require.NoError(bb.TD.T, err)

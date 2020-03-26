@@ -58,7 +58,7 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 
 	// Create a miner and add finds to the storage market actor for the miner and a client
 	tipB.WithBlockBuilder(
-		drivers.NewBlockBuilder(td.ExeCtx.Miner, td).
+		drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
 			// Step 1: Register the miner with the power actor
 			WithBLSMessageAndRet(
 				td.MessageProducer.PowerCreateMiner(
@@ -93,7 +93,7 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 	td.ExeCtx.Epoch++
 	// Miner publishes deal to the storage market and precommits its sector
 	tipB.WithBlockBuilder(
-		drivers.NewBlockBuilder(td.ExeCtx.Miner, td).
+		drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
 			// Step 3: Publish presealed deals
 			WithBLSMessageAndRet(
 				td.MessageProducer.MarketPublishStorageDeals(builtin_spec.StorageMarketActorAddr, minerWorker,
@@ -124,7 +124,7 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 	// Miner prove commits its sector
 	td.ExeCtx.Epoch = dealStart
 	tipB.WithBlockBuilder(
-		drivers.NewBlockBuilder(td.ExeCtx.Miner, td).
+		drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
 			WithBLSMessageOk(
 				// Step 5: Prove the committed sector
 				td.MessageProducer.MinerProveCommitSector(minerIDAddr, minerWorker,
@@ -173,7 +173,7 @@ func TestMinerMissPoStChallengeWindow(t *testing.T, factory state.Factories) {
 	// Epoch advances to the end of the proving window. Send a sing message to trigger the cron actor send
 	td.ExeCtx.Epoch += power_spec.WindowedPostChallengeDuration + miner_spec.ProvingPeriod
 	tipB.WithBlockBuilder(
-		drivers.NewBlockBuilder(td.ExeCtx.Miner, td).
+		drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
 			// Step 6: send a single message that causes the cron actor to trigger
 			WithBLSMessageOk(
 				td.MessageProducer.Transfer(minerOwner, minerOwner,
@@ -246,7 +246,7 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 	// move the epoch forward to be withing the proving period window.
 	td.ExeCtx.Epoch += power_spec.WindowedPostChallengeDuration + miner_spec.ProvingPeriod/2
 	tipB.WithBlockBuilder(
-		drivers.NewBlockBuilder(td.ExeCtx.Miner, td).
+		drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
 			WithBLSMessageOk(
 				td.MessageProducer.MinerSubmitWindowedPoSt(minerActorID, minerWorker, abi_spec.OnChainPoStVerifyInfo{Candidates: candidates, Proofs: proofs},
 					chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
@@ -256,7 +256,7 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 	// move the epoch outside of the proving window and send a message to trigger the cron actor
 	td.ExeCtx.Epoch += miner_spec.ProvingPeriod/2 + 1
 	tipB.WithBlockBuilder(
-		drivers.NewBlockBuilder(td.ExeCtx.Miner, td).
+		drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
 			// Step 6: send a single message that causes the cron actor to trigger
 			WithBLSMessageOk(
 				td.MessageProducer.Transfer(minerOwner, minerOwner,

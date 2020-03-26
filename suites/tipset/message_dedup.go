@@ -22,7 +22,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		defer td.Complete()
 		tipB := drivers.NewTipSetMessageBuilder(td)
-		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner, td)
+		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
@@ -41,7 +41,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		defer td.Complete()
 		tipB := drivers.NewTipSetMessageBuilder(td)
-		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner, td)
+		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
@@ -59,7 +59,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		defer td.Complete()
 		tipB := drivers.NewTipSetMessageBuilder(td)
-		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner, td)
+		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
@@ -78,7 +78,7 @@ func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
 		td := builder.Build(t)
 		defer td.Complete()
 		tipB := drivers.NewTipSetMessageBuilder(td)
-		blkB := drivers.NewBlockBuilder(td.ExeCtx.Miner, td)
+		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
 		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10_000_000))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
