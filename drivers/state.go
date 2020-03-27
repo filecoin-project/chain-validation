@@ -94,7 +94,7 @@ func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil 
 
 func (d *StateDriver) ActorPubKey(idAddress address.Address) address.Address {
 	if idAddress.Protocol() != address.ID {
-		d.tb.Fatal("ActorPubKey methods expects ID protocol address. actual: %v", idAddress.Protocol())
+		d.tb.Fatalf("ActorPubKey methods expects ID protocol address. actual: %v", idAddress.Protocol())
 	}
 	pubkeyAddr, found := d.actorIDMap[idAddress]
 	if !found {
