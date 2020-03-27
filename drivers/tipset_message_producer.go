@@ -86,6 +86,8 @@ func (t *TipSetMessageBuilder) Clear() {
 }
 
 type BlockBuilder struct {
+	TD *TestDriver
+
 	miner       address.Address
 	ticketCount int64
 
@@ -100,8 +102,9 @@ type ExpectedResult struct {
 	ReturnVal []byte
 }
 
-func NewBlockBuilder(miner address.Address) *BlockBuilder {
+func NewBlockBuilder(td *TestDriver, miner address.Address) *BlockBuilder {
 	return &BlockBuilder{
+		TD:              td,
 		miner:           miner,
 		ticketCount:     1,
 		secpMsgs:        nil,
@@ -115,17 +118,6 @@ func (bb *BlockBuilder) addResult(code exitcode.ExitCode, retval []byte) {
 		ExitCode:  code,
 		ReturnVal: retval,
 	})
-}
-
-func (bb *BlockBuilder) WithSECPMessageOk(secpMsg *types.SignedMessage) *BlockBuilder {
-	bb.secpMsgs = append(bb.secpMsgs, secpMsg)
-	bb.addResult(exitcode.Ok, EmptyReturnValue)
-	return bb
-}
-
-func (bb *BlockBuilder) WithSECPMessageDropped(secpMsg *types.SignedMessage) *BlockBuilder {
-	bb.secpMsgs = append(bb.secpMsgs, secpMsg)
-	return bb
 }
 
 func (bb *BlockBuilder) WithBLSMessageOk(blsMsg *types.Message) *BlockBuilder {
@@ -151,21 +143,56 @@ func (bb *BlockBuilder) WithBLSMessageAndRet(bm *types.Message, retval []byte) *
 	return bb
 }
 
-func (bb *BlockBuilder) WithSECPMessageAndCode(sm *types.SignedMessage, code exitcode.ExitCode) *BlockBuilder {
-	bb.secpMsgs = append(bb.secpMsgs, sm)
+func (bb *BlockBuilder) WithSECPMessageAndCode(bm *types.Message, code exitcode.ExitCode) *BlockBuilder {
+	secpMsg := bb.toSignedMessage(bm)
+	bb.secpMsgs = append(bb.secpMsgs, secpMsg)
 	bb.addResult(code, EmptyReturnValue)
 	return bb
 }
 
-func (bb *BlockBuilder) WithSECPMessageAndRet(sm *types.SignedMessage, retval []byte) *BlockBuilder {
-	bb.secpMsgs = append(bb.secpMsgs, sm)
+func (bb *BlockBuilder) WithSECPMessageAndRet(bm *types.Message, retval []byte) *BlockBuilder {
+	secpMsg := bb.toSignedMessage(bm)
+	bb.secpMsgs = append(bb.secpMsgs, secpMsg)
 	bb.addResult(exitcode.Ok, retval)
+	return bb
+}
+
+func (bb *BlockBuilder) WithSECPMessageOk(bm *types.Message) *BlockBuilder {
+	secpMsg := bb.toSignedMessage(bm)
+	bb.secpMsgs = append(bb.secpMsgs, secpMsg)
+	bb.addResult(exitcode.Ok, EmptyReturnValue)
+	return bb
+}
+
+func (bb *BlockBuilder) WithSECPMessageDropped(bm *types.Message) *BlockBuilder {
+	secpMsg := bb.toSignedMessage(bm)
+	bb.secpMsgs = append(bb.secpMsgs, secpMsg)
 	return bb
 }
 
 func (bb *BlockBuilder) WithTicketCount(count int64) *BlockBuilder {
 	bb.ticketCount = count
 	return bb
+}
+
+func (bb *BlockBuilder) toSignedMessage(m *types.Message) *types.SignedMessage {
+	from := m.From
+	if from.Protocol() == address.ID {
+		from = bb.TD.ActorPubKey(from)
+	}
+	if from.Protocol() != address.SECP256K1 {
+		bb.TD.T.Fatalf("Invalid address for SECP signature, address protocol: %v", from.Protocol())
+	}
+	raw, err := m.Serialize()
+	require.NoError(bb.TD.T, err)
+
+	sig, err := bb.TD.Wallet().Sign(from, raw)
+	require.NoError(bb.TD.T, err)
+
+	return &types.SignedMessage{
+		Message:   *m,
+		Signature: sig,
+	}
 }
 
 func (bb *BlockBuilder) build() types.BlockMessagesInfo {

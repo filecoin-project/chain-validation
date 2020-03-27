@@ -32,11 +32,14 @@ type StateDriver struct {
 	st state.VMWrapper
 	w  state.KeyManager
 	rs state.RandomnessSource
+
+	// Mapping for IDAddresses to their pubkey/actor addresses. Used for lookup when signing messages.
+	actorIDMap map[address.Address]address.Address
 }
 
 // NewStateDriver creates a new state driver for a state.
 func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager, rs state.RandomnessSource) *StateDriver {
-	return &StateDriver{tb, st, w, rs}
+	return &StateDriver{tb, st, w, rs, make(map[address.Address]address.Address)}
 }
 
 // State returns the state.
@@ -85,7 +88,19 @@ func (d *StateDriver) NewAccountActor(addrType address.Protocol, balanceAttoFil 
 
 	_, idAddr, err := d.st.CreateActor(builtin_spec.AccountActorCodeID, addr, balanceAttoFil, &account_spec.State{Address: addr})
 	require.NoError(d.tb, err)
+	d.actorIDMap[idAddr] = addr
 	return addr, idAddr
+}
+
+func (d *StateDriver) ActorPubKey(idAddress address.Address) address.Address {
+	if idAddress.Protocol() != address.ID {
+		d.tb.Fatalf("ActorPubKey methods expects ID protocol address. actual: %v", idAddress.Protocol())
+	}
+	pubkeyAddr, found := d.actorIDMap[idAddress]
+	if !found {
+		d.tb.Fatalf("Failed to find pubkey address for: %s", idAddress)
+	}
+	return pubkeyAddr
 }
 
 // create miner without sending a message. modify the init and power actor manually
