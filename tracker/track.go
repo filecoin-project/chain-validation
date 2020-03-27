@@ -1,4 +1,4 @@
-package gasmeter
+package tracker
 
 import (
 	"container/list"
@@ -18,7 +18,7 @@ import (
 
 const ValidationDataEnvVar = "CHAIN_VALIDATION_DATA"
 
-type GasMeter struct {
+type StateTracker struct {
 	tracker *list.List
 	T       testing.TB
 
@@ -27,13 +27,15 @@ type GasMeter struct {
 	// slice of gas units used by the test
 	expectedGasUnits []types.GasUnits
 
-	rootIdx            int
+	// index in stateroots of expected cid
+	rootIdx int
+	// slice of state roots used by the test
 	expectedStateRoots []cid.Cid
 }
 
-func NewGasMeter(t testing.TB) *GasMeter {
+func NewStateTracker(t testing.TB) *StateTracker {
 	gasUsed, stateRoots := LoadDataForTest(t)
-	return &GasMeter{
+	return &StateTracker{
 		tracker:            list.New(),
 		T:                  t,
 		gasIdx:             0,
@@ -43,58 +45,58 @@ func NewGasMeter(t testing.TB) *GasMeter {
 	}
 }
 
-func (gm *GasMeter) TrackMessageResult(result chain.ApplyMessageResult) {
-	gm.tracker.PushBack(result)
+func (st *StateTracker) TrackMessageResult(result chain.ApplyMessageResult) {
+	st.tracker.PushBack(result)
 }
 
-func (gm *GasMeter) TrackTipSetMessagesResult(result chain.ApplyTipSetMessagesResult) {
-	gm.tracker.PushBack(result)
+func (st *StateTracker) TrackTipSetMessagesResult(result chain.ApplyTipSetMessagesResult) {
+	st.tracker.PushBack(result)
 }
 
-func (gm *GasMeter) NextExpectedGas() (types.GasUnits, bool) {
-	defer func() { gm.gasIdx += 1 }()
-	if gm.gasIdx > len(gm.expectedGasUnits)-1 {
+func (st *StateTracker) NextExpectedGas() (types.GasUnits, bool) {
+	defer func() { st.gasIdx += 1 }()
+	if st.gasIdx > len(st.expectedGasUnits)-1 {
 		// didn't find any gas
 		return 0, false
 	}
-	return gm.expectedGasUnits[gm.gasIdx], true
+	return st.expectedGasUnits[st.gasIdx], true
 }
 
-func (gm *GasMeter) NextExpectedStateRoot() (cid.Cid, bool) {
-	defer func() { gm.rootIdx += 1 }()
-	if gm.rootIdx > len(gm.expectedStateRoots)-1 {
+func (st *StateTracker) NextExpectedStateRoot() (cid.Cid, bool) {
+	defer func() { st.rootIdx += 1 }()
+	if st.rootIdx > len(st.expectedStateRoots)-1 {
 		// didn't find any gas
 		return cid.Undef, false
 	}
-	return gm.expectedStateRoots[gm.rootIdx], true
+	return st.expectedStateRoots[st.rootIdx], true
 }
 
 // write the contents of gm.tracker to a file using the format:
 // GasUnit
 // GasUnit
 // ...
-func (gm *GasMeter) Record() {
-	file := getTestDataFilePath(gm.T)
+func (st *StateTracker) Record() {
+	file := getTestDataFilePath(st.T)
 	f, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
-		gm.T.Log(err)
+		st.T.Log(err)
 		return
 	}
 	defer func() { _ = f.Close() }()
 	enc := json.NewEncoder(f)
 
-	for e := gm.tracker.Front(); e != nil; e = e.Next() {
+	for e := st.tracker.Front(); e != nil; e = e.Next() {
 		switch ele := e.Value.(type) {
 		case chain.ApplyMessageResult:
 			if err := enc.Encode(ele); err != nil {
-				gm.T.Fatal(err)
+				st.T.Fatal(err)
 			}
 		case chain.ApplyTipSetMessagesResult:
 			if err := enc.Encode(ele); err != nil {
-				gm.T.Fatal(err)
+				st.T.Fatal(err)
 			}
 		default:
-			gm.T.Fatalf("Unknown type: %T", ele)
+			st.T.Fatalf("Unknown type: %T", ele)
 		}
 	}
 }
@@ -157,8 +159,7 @@ func LoadDataForTest(t testing.TB) (gasUsed []types.GasUnits, stateRoots []cid.C
 func getTestDataFilePath(t testing.TB) string {
 	dataPath := os.Getenv(ValidationDataEnvVar)
 	if dataPath == "" {
-		//t.Fatalf("failed to find validation data path, make sure %s is set", ValidationDataEnvVar)
-		dataPath = "/home/frrist/src/github.com/filecoin-project/chain-validation/box/resources"
+		t.Fatalf("failed to find validation data path, make sure %s is set", ValidationDataEnvVar)
 	}
 	return filepath.Join(dataPath, filenameFromTest(t))
 }

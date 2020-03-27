@@ -32,8 +32,8 @@ import (
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
-	"github.com/filecoin-project/chain-validation/gasmeter"
 	"github.com/filecoin-project/chain-validation/state"
+	"github.com/filecoin-project/chain-validation/tracker"
 )
 
 var (
@@ -254,7 +254,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 
 		Config: b.factory.NewValidationConfig(),
 
-		GasMeter: gasmeter.NewGasMeter(t),
+		StateTracker: tracker.NewStateTracker(t),
 	}
 }
 
@@ -269,7 +269,7 @@ type TestDriver struct {
 
 	Config state.ValidationConfig
 
-	GasMeter *gasmeter.GasMeter
+	StateTracker *tracker.StateTracker
 }
 
 func (td *TestDriver) Complete() {
@@ -278,7 +278,7 @@ func (td *TestDriver) Complete() {
 	// Uncomment the following line to persist the actual gas values used to file as the new set
 	// of expectations.
 	//
-	//td.GasMeter.Record()
+	//td.StateTracker.Record()
 }
 
 //
@@ -367,7 +367,7 @@ func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, 
 func (td *TestDriver) validateAndTrackResult(result chain.ApplyMessageResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
 	foundGas = true
 
-	td.GasMeter.TrackMessageResult(result)
+	td.StateTracker.TrackMessageResult(result)
 	if td.Config.ValidateExitCode() {
 		assert.Equal(td.T, code, result.Receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), result.Receipt.ExitCode.Error())
 	}
@@ -375,7 +375,7 @@ func (td *TestDriver) validateAndTrackResult(result chain.ApplyMessageResult, co
 		assert.Equal(td.T, retval, result.Receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, result.Receipt.ReturnValue)
 	}
 	if td.Config.ValidateGas() {
-		expectedGasUsed, ok := td.GasMeter.NextExpectedGas()
+		expectedGasUsed, ok := td.StateTracker.NextExpectedGas()
 		if ok {
 			assert.Equal(td.T, expectedGasUsed, result.Receipt.GasUsed, "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, result.Receipt.GasUsed)
 		} else {
@@ -383,7 +383,7 @@ func (td *TestDriver) validateAndTrackResult(result chain.ApplyMessageResult, co
 		}
 	}
 	if td.Config.ValidateStateRoot() {
-		expectedRoot, found := td.GasMeter.NextExpectedStateRoot()
+		expectedRoot, found := td.StateTracker.NextExpectedStateRoot()
 		actualRoot := td.State().Root()
 		if found {
 			assert.Equal(td.T, expectedRoot, actualRoot, "Expected StateRoot: %s Actual StateRoot: %s", expectedRoot, actualRoot)

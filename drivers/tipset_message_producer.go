@@ -51,7 +51,7 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() chain.ApplyTipSetMessagesResul
 		t.driver.T.Fatalf("ApplyTipSetMessages returned more result than expected. Expected: %d, Actual: %d", len(expected), len(result.Receipts))
 	}
 
-	t.driver.GasMeter.TrackTipSetMessagesResult(result)
+	t.driver.StateTracker.TrackTipSetMessagesResult(result)
 	for i := range result.Receipts {
 		if t.driver.Config.ValidateExitCode() {
 			assert.Equal(t.driver.T, expected[i].ExitCode, result.Receipts[i].ExitCode, "Message Number: %d Expected ExitCode: %s Actual ExitCode: %s", i, expected[i].ExitCode.Error(), result.Receipts[i].ExitCode.Error())
@@ -60,7 +60,7 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() chain.ApplyTipSetMessagesResul
 			assert.Equal(t.driver.T, expected[i].ReturnVal, result.Receipts[i].ReturnValue, "Message Number: %d Expected ReturnValue: %v Actual ReturnValue: %v", i, expected[i].ReturnVal, result.Receipts[i].ReturnValue)
 		}
 		if t.driver.Config.ValidateGas() {
-			expectedGas, found := t.driver.GasMeter.NextExpectedGas()
+			expectedGas, found := t.driver.StateTracker.NextExpectedGas()
 			if found {
 				assert.Equal(t.driver.T, expectedGas, result.Receipts[i].GasUsed, "Message Number: %d Expected GasUsed: %d Actual GasUsed: %d", i, expectedGas, result.Receipts[i].GasUsed)
 			} else {
@@ -69,7 +69,7 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() chain.ApplyTipSetMessagesResul
 		}
 	}
 	if t.driver.Config.ValidateStateRoot() {
-		expectedRoot, found := t.driver.GasMeter.NextExpectedStateRoot()
+		expectedRoot, found := t.driver.StateTracker.NextExpectedStateRoot()
 		actualRoot := t.driver.State().Root()
 		if found {
 			assert.Equal(t.driver.T, expectedRoot, actualRoot, "Expected StateRoot: %s Actual StateRoot: %s", expectedRoot, actualRoot)
