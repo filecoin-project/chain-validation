@@ -1,7 +1,10 @@
 package chain
 
 import (
+	"fmt"
+
 	"github.com/filecoin-project/specs-actors/actors/abi"
+	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/state"
@@ -10,18 +13,6 @@ import (
 // validator arranges the execution of a sequence of messages, returning the resulting receipts and state.
 type Validator struct {
 	applier state.Applier
-}
-
-type ApplyMessageResult struct {
-	Receipt types.MessageReceipt
-	Penalty abi.TokenAmount
-	Reward  abi.TokenAmount
-	Root    string
-}
-
-type ApplyTipSetMessagesResult struct {
-	Receipts []types.MessageReceipt
-	Root     string
 }
 
 // NewValidator builds a new validator.
@@ -43,4 +34,60 @@ func (v *Validator) ApplySignedMessage(context *types.ExecutionContext, state st
 func (v *Validator) ApplyTipSetMessages(epoch abi.ChainEpoch, state state.VMWrapper, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) (ApplyTipSetMessagesResult, error) {
 	receipts, err := v.applier.ApplyTipSetMessages(state, blocks, epoch, rnd)
 	return ApplyTipSetMessagesResult{receipts, state.Root().String()}, err
+}
+
+type Trackable interface {
+	GoSyntax() string
+	GoContainer() string
+}
+
+var _ Trackable = (*ApplyMessageResult)(nil)
+var _ Trackable = (*ApplyTipSetMessagesResult)(nil)
+
+type ApplyMessageResult struct {
+	Receipt types.MessageReceipt
+	Penalty abi.TokenAmount
+	Reward  abi.TokenAmount
+	Root    string
+}
+
+func (mr ApplyMessageResult) GoSyntax() string {
+	return fmt.Sprintf("chain.ApplyMessageResult{Receipt: %#v, Penalty: abi.NewTokenAmount(%d), Reward: abi.NewTokenAmount(%d), Root: \"%s\"}", mr.Receipt, mr.Penalty, mr.Reward, mr.Root)
+}
+
+func (mr ApplyMessageResult) GoContainer() string {
+	return "[]chain.ApplyMessageResult"
+}
+
+func (mr ApplyMessageResult) StateRoot() cid.Cid {
+	root, err := cid.Decode(mr.Root)
+	if err != nil {
+		panic(err)
+	}
+	return root
+}
+
+func (mr ApplyMessageResult) GasUsed() types.GasUnits {
+	return mr.Receipt.GasUsed
+}
+
+type ApplyTipSetMessagesResult struct {
+	Receipts []types.MessageReceipt
+	Root     string
+}
+
+func (tr ApplyTipSetMessagesResult) GoSyntax() string {
+	return fmt.Sprintf("%#v", tr)
+}
+
+func (tr ApplyTipSetMessagesResult) GoContainer() string {
+	return "[]chain.ApplyTipSetMessagesResult"
+}
+
+func (mr ApplyTipSetMessagesResult) StateRoot() cid.Cid {
+	root, err := cid.Decode(mr.Root)
+	if err != nil {
+		panic(err)
+	}
+	return root
 }

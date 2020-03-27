@@ -31,10 +31,7 @@ clean:
 	rm -f .filecoin-build
 	rm -f .update-modules
 
-gen:
-	$(GOBIN) run ./pkg/gen/main.go
-
-gen-gas:
+resources:
 	$(GOBIN) generate ./box/...
 
 tidy:

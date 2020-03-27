@@ -51,7 +51,7 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() chain.ApplyTipSetMessagesResul
 		t.driver.T.Fatalf("ApplyTipSetMessages returned more result than expected. Expected: %d, Actual: %d", len(expected), len(result.Receipts))
 	}
 
-	t.driver.StateTracker.TrackTipSetMessagesResult(result)
+	t.driver.StateTracker.TrackResult(result)
 	for i := range result.Receipts {
 		if t.driver.Config.ValidateExitCode() {
 			assert.Equal(t.driver.T, expected[i].ExitCode, result.Receipts[i].ExitCode, "Message Number: %d Expected ExitCode: %s Actual ExitCode: %s", i, expected[i].ExitCode.Error(), result.Receipts[i].ExitCode.Error())

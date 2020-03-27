@@ -45,11 +45,7 @@ func NewStateTracker(t testing.TB) *StateTracker {
 	}
 }
 
-func (st *StateTracker) TrackMessageResult(result chain.ApplyMessageResult) {
-	st.tracker.PushBack(result)
-}
-
-func (st *StateTracker) TrackTipSetMessagesResult(result chain.ApplyTipSetMessagesResult) {
+func (st *StateTracker) TrackResult(result chain.Trackable) {
 	st.tracker.PushBack(result)
 }
 
@@ -109,45 +105,30 @@ func LoadDataForTest(t testing.TB) (gasUsed []types.GasUnits, stateRoots []cid.C
 		// return an empty slice here since `NextExpectedGas` performs bounds checking
 		return []types.GasUnits{}, []cid.Cid{}
 	}
+
 	switch v := data.(type) {
 	case chain.ApplyMessageResult:
-		root, err := cid.Decode(v.Root)
-		if err != nil {
-			t.Fatal(err)
-		}
-		gasUsed = append(gasUsed, v.Receipt.GasUsed)
-		stateRoots = append(stateRoots, root)
+		gasUsed = append(gasUsed, v.GasUsed())
+		stateRoots = append(stateRoots, v.StateRoot())
 		return
 	case []chain.ApplyMessageResult:
 		for _, res := range v {
-			gasUsed = append(gasUsed, res.Receipt.GasUsed)
-			root, err := cid.Decode(res.Root)
-			if err != nil {
-				t.Fatal(err)
-			}
-			stateRoots = append(stateRoots, root)
+			gasUsed = append(gasUsed, res.GasUsed())
+			stateRoots = append(stateRoots, res.StateRoot())
 		}
 		return
 	case chain.ApplyTipSetMessagesResult:
-		root, err := cid.Decode(v.Root)
-		if err != nil {
-			t.Fatal(err)
-		}
 		for _, rect := range v.Receipts {
 			gasUsed = append(gasUsed, rect.GasUsed)
 		}
-		stateRoots = append(stateRoots, root)
+		stateRoots = append(stateRoots, v.StateRoot())
 		return
 	case []chain.ApplyTipSetMessagesResult:
 		for _, res := range v {
 			for _, rect := range res.Receipts {
 				gasUsed = append(gasUsed, rect.GasUsed)
 			}
-			root, err := cid.Decode(res.Root)
-			if err != nil {
-				t.Fatal(err)
-			}
-			stateRoots = append(stateRoots, root)
+			stateRoots = append(stateRoots, res.StateRoot())
 		}
 		return
 	default:

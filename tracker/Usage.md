@@ -20,7 +20,7 @@ Each line corresponds to an ApplyMessage or ApplyTipSetMessages call. If a test 
 1. Set the environment variable `CHAIN_VALIDATION_DATA` to the location of the chain-validation gas resources directory. For most users this will be: `$GOPATH/chain-validation/box/resources`.
 2. Uncomment this [line](https://github.com/filecoin-project/chain-validation/blob/1f44d3090c52a1c443a2ca85c5747f3417197008/drivers/test.go#L281) to enable the statetracker `Record()` method. This will cause the statetracker to produce a file for each test as the location `CHAIN_VALIDATION_DATA`.
 3. Run tests you wish to record gas for, and verify files with names corresponding to the tests exist in `CHAIN_VALIDATION_DATA`
-4. Run `make gen-gas` to generate `box/blob.go` -- blob.go contains gas data as a go file and is used to populate the [resource box storage](https://github.com/filecoin-project/chain-validation/blob/f6bc23143d179bcccc9c30bfd00242a3c3398432/box/box.go#L8). Since chain-validation is a library imported by implementations storing this data in a go file is necessary.
+4. Run `make resources` to generate `box/blob.go` -- blob.go contains gas data as a go file and is used to populate the [resource box storage](https://github.com/filecoin-project/chain-validation/blob/f6bc23143d179bcccc9c30bfd00242a3c3398432/box/box.go#L8). Since chain-validation is a library imported by implementations storing this data in a go file is necessary.
 
 ## Validation
 
