@@ -177,12 +177,8 @@ func (bb *BlockBuilder) WithTicketCount(count int64) *BlockBuilder {
 
 func (bb *BlockBuilder) toSignedMessage(m *types.Message) *types.SignedMessage {
 	from := m.From
-	var found bool
 	if from.Protocol() == address.ID {
-		from, found = bb.TD.ActorIDMap[from]
-		if !found {
-			bb.TD.T.Fatalf("Failed to find pubkey address for address: %s", m.From)
-		}
+		from = bb.TD.ActorPubKey(from)
 	}
 	if from.Protocol() != address.SECP256K1 {
 		bb.TD.T.Fatalf("Invalid address for SECP signature, address protocol: %v", from.Protocol())
