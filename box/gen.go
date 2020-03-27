@@ -65,22 +65,12 @@ func FormatObj(values []interface{}) string {
 	return builder.String()
 }
 
-func applyMessageResultToString(result ...chain.ApplyMessageResult) string {
-	builder := strings.Builder{}
-	for _, v := range result {
-		builder.WriteString(fmt.Sprintf("chain.ApplyMessageResult{Receipt: %#v, Penalty: abi.NewTokenAmount(%d), Reward: abi.NewTokenAmount(%d), Root: \"%s\"},", v.Receipt, v.Penalty, v.Reward, v.Root))
-	}
-	fmt.Println(builder.String())
-	return builder.String()
+func applyMessageResultToString(result chain.ApplyMessageResult) string {
+	return fmt.Sprintf("chain.ApplyMessageResult{Receipt: %#v, Penalty: abi.NewTokenAmount(%d), Reward: abi.NewTokenAmount(%d), Root: \"%s\"},", result.Receipt, result.Penalty, result.Reward, result.Root)
 }
 
-func applyTipSetResultToString(result ...chain.ApplyTipSetMessagesResult) string {
-	builder := strings.Builder{}
-	for _, v := range result {
-		builder.WriteString(fmt.Sprintf("%#v,", v))
-	}
-	fmt.Println(builder.String())
-	return builder.String()
+func applyTipSetResultToString(result chain.ApplyTipSetMessagesResult) string {
+	return fmt.Sprintf("%#v,", result)
 }
 
 func main() {
