@@ -54,4 +54,5 @@ type ValidationConfig interface {
 	ValidateGas() bool
 	ValidateExitCode() bool
 	ValidateReturnValue() bool
+	ValidateStateRoot() bool
 }

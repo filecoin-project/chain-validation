@@ -32,8 +32,8 @@ import (
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
-	"github.com/filecoin-project/chain-validation/gasmeter"
 	"github.com/filecoin-project/chain-validation/state"
+	"github.com/filecoin-project/chain-validation/tracker"
 )
 
 var (
@@ -254,7 +254,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 
 		Config: b.factory.NewValidationConfig(),
 
-		GasMeter: gasmeter.NewGasMeter(t),
+		StateTracker: tracker.NewStateTracker(t),
 	}
 }
 
@@ -269,7 +269,7 @@ type TestDriver struct {
 
 	Config state.ValidationConfig
 
-	GasMeter *gasmeter.GasMeter
+	StateTracker *tracker.StateTracker
 }
 
 func (td *TestDriver) Complete() {
@@ -278,14 +278,14 @@ func (td *TestDriver) Complete() {
 	// Uncomment the following line to persist the actual gas values used to file as the new set
 	// of expectations.
 	//
-	//td.GasMeter.Record()
+	//td.StateTracker.Record()
 }
 
 //
 // Unsigned Message Appliers
 //
 
-func (td *TestDriver) ApplyMessage(msg *types.Message) (result chain.ApplyResult) {
+func (td *TestDriver) ApplyMessage(msg *types.Message) (result chain.ApplyMessageResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			result.Receipt.ExitCode = exitcode.SysErrInternal
@@ -298,19 +298,19 @@ func (td *TestDriver) ApplyMessage(msg *types.Message) (result chain.ApplyResult
 	return result
 }
 
-func (td *TestDriver) ApplyOk(msg *types.Message) chain.ApplyResult {
+func (td *TestDriver) ApplyOk(msg *types.Message) chain.ApplyMessageResult {
 	return td.ApplyExpect(msg, EmptyReturnValue)
 }
 
-func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) chain.ApplyResult {
+func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) chain.ApplyMessageResult {
 	return td.applyMessageExpectCodeAndReturn(msg, exitcode.Ok, retval)
 }
 
-func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) chain.ApplyResult {
+func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) chain.ApplyMessageResult {
 	return td.applyMessageExpectCodeAndReturn(msg, code, EmptyReturnValue)
 }
 
-func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyResult {
+func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyMessageResult {
 	result := td.ApplyMessage(msg)
 	if !td.validateAndTrackResult(result, code, retval) {
 		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
@@ -322,7 +322,7 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 // Signed Message Appliers
 //
 
-func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result chain.ApplyResult) {
+func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result chain.ApplyMessageResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			result.Receipt.ExitCode = exitcode.SysErrInternal
@@ -344,19 +344,19 @@ func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result chain.Apply
 	return result
 }
 
-func (td *TestDriver) ApplySignedOk(msg *types.Message) chain.ApplyResult {
+func (td *TestDriver) ApplySignedOk(msg *types.Message) chain.ApplyMessageResult {
 	return td.ApplySignedExpect(msg, EmptyReturnValue)
 }
 
-func (td *TestDriver) ApplySignedExpect(msg *types.Message, retval []byte) chain.ApplyResult {
+func (td *TestDriver) ApplySignedExpect(msg *types.Message, retval []byte) chain.ApplyMessageResult {
 	return td.applyMessageSignedExpectCodeAndReturn(msg, exitcode.Ok, retval)
 }
 
-func (td *TestDriver) ApplySignedFailure(msg *types.Message, code exitcode.ExitCode) chain.ApplyResult {
+func (td *TestDriver) ApplySignedFailure(msg *types.Message, code exitcode.ExitCode) chain.ApplyMessageResult {
 	return td.applyMessageExpectCodeAndReturn(msg, code, EmptyReturnValue)
 }
 
-func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyResult {
+func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyMessageResult {
 	result := td.ApplyMessageSigned(msg)
 	if !td.validateAndTrackResult(result, code, retval) {
 		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
@@ -364,10 +364,10 @@ func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, 
 	return result
 }
 
-func (td *TestDriver) validateAndTrackResult(result chain.ApplyResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
+func (td *TestDriver) validateAndTrackResult(result chain.ApplyMessageResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
 	foundGas = true
 
-	td.GasMeter.Track(result.Receipt)
+	td.StateTracker.TrackResult(result)
 	if td.Config.ValidateExitCode() {
 		assert.Equal(td.T, code, result.Receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), result.Receipt.ExitCode.Error())
 	}
@@ -375,14 +375,22 @@ func (td *TestDriver) validateAndTrackResult(result chain.ApplyResult, code exit
 		assert.Equal(td.T, retval, result.Receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, result.Receipt.ReturnValue)
 	}
 	if td.Config.ValidateGas() {
-		expectedGasUsed, ok := td.GasMeter.NextExpectedGas()
+		expectedGasUsed, ok := td.StateTracker.NextExpectedGas()
 		if ok {
 			assert.Equal(td.T, expectedGasUsed, result.Receipt.GasUsed, "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, result.Receipt.GasUsed)
 		} else {
 			foundGas = false
 		}
 	}
-	// TODO in the very near future we will be validating the stateroot here, keep in back of head.
+	if td.Config.ValidateStateRoot() {
+		expectedRoot, found := td.StateTracker.NextExpectedStateRoot()
+		actualRoot := td.State().Root()
+		if found {
+			assert.Equal(td.T, expectedRoot, actualRoot, "Expected StateRoot: %s Actual StateRoot: %s", expectedRoot, actualRoot)
+		} else {
+			td.T.Log("WARNING: failed to find expected state  root for message number")
+		}
+	}
 	return
 }
 

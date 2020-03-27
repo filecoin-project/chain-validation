@@ -47,7 +47,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 				prevRewards := td.GetRewardSummary()
 
 				// Process a block with two messages, a simple send back and forth between accounts.
-				rcpts := tipB.WithBlockBuilder(
+				result := tipB.WithBlockBuilder(
 					drivers.NewBlockBuilder(td.ExeCtx.Miner).
 						WithBLSMessageOk(
 							td.MessageProducer.Transfer(bob, alice, chain.Value(sendValue), chain.Nonce(callSeq)),
@@ -59,9 +59,9 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 				tipB.Clear()
 
 				// Each account has paid gas fees.
-				td.AssertBalance(aliceId, big.Sub(aBal, rcpts[0].GasUsed.Big()))
-				td.AssertBalance(bobId, big.Sub(bBal, rcpts[1].GasUsed.Big()))
-				gasSum := big.Add(rcpts[0].GasUsed.Big(), rcpts[1].GasUsed.Big()) // Exploit gas price = 1
+				td.AssertBalance(aliceId, big.Sub(aBal, result.Receipts[0].GasUsed.Big()))
+				td.AssertBalance(bobId, big.Sub(bBal, result.Receipts[1].GasUsed.Big()))
+				gasSum := big.Add(result.Receipts[0].GasUsed.Big(), result.Receipts[1].GasUsed.Big()) // Exploit gas price = 1
 
 				// Validate rewards.
 				// No reward is paid to the miner directly. The funds for block reward were already held by the
@@ -197,12 +197,12 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		)
 
 		prevRewards := td.GetRewardSummary()
-		receipts := tb.WithBlockBuilder(bb).ApplyAndValidate()
+		result := tb.WithBlockBuilder(bb).ApplyAndValidate()
 
 		newRewards := td.GetRewardSummary()
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
 		gasPenalty := big.NewInt(46)
-		validateRewards(t, prevRewards, newRewards, miner, receipts[0].GasUsed.Big(), gasPenalty)
+		validateRewards(t, prevRewards, newRewards, miner, result.Receipts[0].GasUsed.Big(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(halfBalance, gasPenalty))
 	})
 

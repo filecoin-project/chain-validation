@@ -5,11 +5,11 @@
 package box
 
 type resourceBox struct {
-	storage map[string][]int64
+	storage map[string]interface{}
 }
 
 func newResourceBox() *resourceBox {
-	return &resourceBox{storage: make(map[string][]int64)}
+	return &resourceBox{storage: make(map[string]interface{})}
 }
 
 // Find a file
@@ -21,7 +21,7 @@ func (r *resourceBox) Has(file string) bool {
 }
 
 // Get file's content
-func (r *resourceBox) Get(file string) ([]int64, bool) {
+func (r *resourceBox) Get(file string) (interface{}, bool) {
 	if f, ok := r.storage[file]; ok {
 		return f, ok
 	}
@@ -29,7 +29,7 @@ func (r *resourceBox) Get(file string) ([]int64, bool) {
 }
 
 // Add a file to box
-func (r *resourceBox) Add(file string, content []int64) {
+func (r *resourceBox) Add(file string, content interface{}) {
 	r.storage[file] = content
 }
 
@@ -37,12 +37,12 @@ func (r *resourceBox) Add(file string, content []int64) {
 var resources = newResourceBox()
 
 // Get a file from box
-func Get(file string) ([]int64, bool) {
+func Get(file string) (interface{}, bool) {
 	return resources.Get(file)
 }
 
 // Add a file content to box
-func Add(file string, content []int64) {
+func Add(file string, content interface{}) {
 	resources.Add(file, content)
 }
 

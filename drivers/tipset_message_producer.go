@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
@@ -27,48 +28,57 @@ func (t *TipSetMessageBuilder) WithBlockBuilder(bb *BlockBuilder) *TipSetMessage
 	return t
 }
 
-func (t *TipSetMessageBuilder) Apply() []types.MessageReceipt {
+func (t *TipSetMessageBuilder) Apply() chain.ApplyTipSetResult {
 	var blks []types.BlockMessagesInfo
 	for _, b := range t.bbs {
 		blks = append(blks, b.build())
 	}
-	receipts, err := t.driver.validator.ApplyTipSetMessages(t.driver.ExeCtx.Epoch, t.driver.State(), blks, t.driver.Randomness())
+	result, err := t.driver.validator.ApplyTipSetMessages(t.driver.ExeCtx.Epoch, t.driver.State(), blks, t.driver.Randomness())
 	require.NoError(t.driver.T, err)
 
-	return receipts
+	return result
 }
 
-func (t *TipSetMessageBuilder) ApplyAndValidate() []types.MessageReceipt {
-	receipts := t.Apply()
+func (t *TipSetMessageBuilder) ApplyAndValidate() chain.ApplyTipSetResult {
+	result := t.Apply()
 
-	var results []Result
+	var expected []ExpectedResult
 	for _, b := range t.bbs {
-		results = append(results, b.expectedResults...)
+		expected = append(expected, b.expectedResults...)
 	}
 
-	if len(receipts) > len(results) {
-		t.driver.T.Fatalf("ApplyTipSetMessages returned more receipts than expected. Expected: %d, Actual: %d", len(results), len(receipts))
+	if len(result.Receipts) > len(expected) {
+		t.driver.T.Fatalf("ApplyTipSetMessages returned more result than expected. Expected: %d, Actual: %d", len(expected), len(result.Receipts))
 	}
 
-	for i := range receipts {
-		t.driver.GasMeter.Track(receipts[i])
+	t.driver.StateTracker.TrackResult(result)
+	for i := range result.Receipts {
 		if t.driver.Config.ValidateExitCode() {
-			assert.Equal(t.driver.T, results[i].ExitCode, receipts[i].ExitCode, "Message Number: %d Expected ExitCode: %s Actual ExitCode: %s", i, results[i].ExitCode.Error(), receipts[i].ExitCode.Error())
+			assert.Equal(t.driver.T, expected[i].ExitCode, result.Receipts[i].ExitCode, "Message Number: %d Expected ExitCode: %s Actual ExitCode: %s", i, expected[i].ExitCode.Error(), result.Receipts[i].ExitCode.Error())
 		}
 		if t.driver.Config.ValidateReturnValue() {
-			assert.Equal(t.driver.T, results[i].ReturnVal, receipts[i].ReturnValue, "Message Number: %d Expected ReturnValue: %v Actual ReturnValue: %v", i, results[i].ReturnVal, receipts[i].ReturnValue)
+			assert.Equal(t.driver.T, expected[i].ReturnVal, result.Receipts[i].ReturnValue, "Message Number: %d Expected ReturnValue: %v Actual ReturnValue: %v", i, expected[i].ReturnVal, result.Receipts[i].ReturnValue)
 		}
 		if t.driver.Config.ValidateGas() {
-			expectedGas, found := t.driver.GasMeter.NextExpectedGas()
+			expectedGas, found := t.driver.StateTracker.NextExpectedGas()
 			if found {
-				assert.Equal(t.driver.T, expectedGas, receipts[i].GasUsed, "Message Number: %d Expected GasUsed: %d Actual GasUsed: %d", i, expectedGas, receipts[i].GasUsed)
+				assert.Equal(t.driver.T, expectedGas, result.Receipts[i].GasUsed, "Message Number: %d Expected GasUsed: %d Actual GasUsed: %d", i, expectedGas, result.Receipts[i].GasUsed)
 			} else {
 				t.driver.T.Logf("WARNING: failed to find expected gas cost for message number: %d", i)
 			}
 		}
 	}
+	if t.driver.Config.ValidateStateRoot() {
+		expectedRoot, found := t.driver.StateTracker.NextExpectedStateRoot()
+		actualRoot := t.driver.State().Root()
+		if found {
+			assert.Equal(t.driver.T, expectedRoot, actualRoot, "Expected StateRoot: %s Actual StateRoot: %s", expectedRoot, actualRoot)
+		} else {
+			t.driver.T.Log("WARNING: failed to find expected state  root for message number")
+		}
+	}
 	t.Clear()
-	return receipts
+	return result
 }
 
 func (t *TipSetMessageBuilder) Clear() {
@@ -82,10 +92,10 @@ type BlockBuilder struct {
 	secpMsgs []*types.SignedMessage
 	blsMsgs  []*types.Message
 
-	expectedResults []Result
+	expectedResults []ExpectedResult
 }
 
-type Result struct {
+type ExpectedResult struct {
 	ExitCode  exitcode.ExitCode
 	ReturnVal []byte
 }
@@ -101,7 +111,7 @@ func NewBlockBuilder(miner address.Address) *BlockBuilder {
 }
 
 func (bb *BlockBuilder) addResult(code exitcode.ExitCode, retval []byte) {
-	bb.expectedResults = append(bb.expectedResults, Result{
+	bb.expectedResults = append(bb.expectedResults, ExpectedResult{
 		ExitCode:  code,
 		ReturnVal: retval,
 	})
