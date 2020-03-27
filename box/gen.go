@@ -86,7 +86,7 @@ func main() {
 			for scanner.Scan() {
 				// hacky, if a test name is changed this will break. PR's welcome :)
 				if strings.Contains(f.Name(), "TipSet") {
-					var applytsres chain.ApplyTipSetMessagesResult
+					var applytsres chain.ApplyTipSetResult
 					if err := json.Unmarshal(scanner.Bytes(), &applytsres); err != nil {
 						panic(err)
 					}

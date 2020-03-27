@@ -28,7 +28,7 @@ func (t *TipSetMessageBuilder) WithBlockBuilder(bb *BlockBuilder) *TipSetMessage
 	return t
 }
 
-func (t *TipSetMessageBuilder) Apply() chain.ApplyTipSetMessagesResult {
+func (t *TipSetMessageBuilder) Apply() chain.ApplyTipSetResult {
 	var blks []types.BlockMessagesInfo
 	for _, b := range t.bbs {
 		blks = append(blks, b.build())
@@ -39,7 +39,7 @@ func (t *TipSetMessageBuilder) Apply() chain.ApplyTipSetMessagesResult {
 	return result
 }
 
-func (t *TipSetMessageBuilder) ApplyAndValidate() chain.ApplyTipSetMessagesResult {
+func (t *TipSetMessageBuilder) ApplyAndValidate() chain.ApplyTipSetResult {
 	result := t.Apply()
 
 	var expected []ExpectedResult

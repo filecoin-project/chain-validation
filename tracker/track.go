@@ -87,7 +87,7 @@ func (st *StateTracker) Record() {
 			if err := enc.Encode(ele); err != nil {
 				st.T.Fatal(err)
 			}
-		case chain.ApplyTipSetMessagesResult:
+		case chain.ApplyTipSetResult:
 			if err := enc.Encode(ele); err != nil {
 				st.T.Fatal(err)
 			}
@@ -117,13 +117,13 @@ func LoadDataForTest(t testing.TB) (gasUsed []types.GasUnits, stateRoots []cid.C
 			stateRoots = append(stateRoots, res.StateRoot())
 		}
 		return
-	case chain.ApplyTipSetMessagesResult:
+	case chain.ApplyTipSetResult:
 		for _, rect := range v.Receipts {
 			gasUsed = append(gasUsed, rect.GasUsed)
 		}
 		stateRoots = append(stateRoots, v.StateRoot())
 		return
-	case []chain.ApplyTipSetMessagesResult:
+	case []chain.ApplyTipSetResult:
 		for _, res := range v {
 			for _, rect := range res.Receipts {
 				gasUsed = append(gasUsed, rect.GasUsed)

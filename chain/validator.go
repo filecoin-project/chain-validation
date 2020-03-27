@@ -31,9 +31,9 @@ func (v *Validator) ApplySignedMessage(context *types.ExecutionContext, state st
 	return ApplyMessageResult{receipt, penalty, reward, state.Root().String()}, err
 }
 
-func (v *Validator) ApplyTipSetMessages(epoch abi.ChainEpoch, state state.VMWrapper, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) (ApplyTipSetMessagesResult, error) {
+func (v *Validator) ApplyTipSetMessages(epoch abi.ChainEpoch, state state.VMWrapper, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) (ApplyTipSetResult, error) {
 	receipts, err := v.applier.ApplyTipSetMessages(state, blocks, epoch, rnd)
-	return ApplyTipSetMessagesResult{receipts, state.Root().String()}, err
+	return ApplyTipSetResult{receipts, state.Root().String()}, err
 }
 
 type Trackable interface {
@@ -42,7 +42,7 @@ type Trackable interface {
 }
 
 var _ Trackable = (*ApplyMessageResult)(nil)
-var _ Trackable = (*ApplyTipSetMessagesResult)(nil)
+var _ Trackable = (*ApplyTipSetResult)(nil)
 
 type ApplyMessageResult struct {
 	Receipt types.MessageReceipt
@@ -71,20 +71,20 @@ func (mr ApplyMessageResult) GasUsed() types.GasUnits {
 	return mr.Receipt.GasUsed
 }
 
-type ApplyTipSetMessagesResult struct {
+type ApplyTipSetResult struct {
 	Receipts []types.MessageReceipt
 	Root     string
 }
 
-func (tr ApplyTipSetMessagesResult) GoSyntax() string {
+func (tr ApplyTipSetResult) GoSyntax() string {
 	return fmt.Sprintf("%#v", tr)
 }
 
-func (tr ApplyTipSetMessagesResult) GoContainer() string {
-	return "[]chain.ApplyTipSetMessagesResult"
+func (tr ApplyTipSetResult) GoContainer() string {
+	return "[]chain.ApplyTipSetResult"
 }
 
-func (mr ApplyTipSetMessagesResult) StateRoot() cid.Cid {
+func (mr ApplyTipSetResult) StateRoot() cid.Cid {
 	root, err := cid.Decode(mr.Root)
 	if err != nil {
 		panic(err)
