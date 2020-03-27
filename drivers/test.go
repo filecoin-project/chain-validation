@@ -427,9 +427,8 @@ func (td *TestDriver) AssertActor(addr address.Address, balance abi_spec.TokenAm
 }
 
 func (td *TestDriver) AssertHead(addr address.Address, expected cid.Cid) {
-	actr, err := td.State().Actor(addr)
-	require.NoError(td.T, err)
-	assert.Equal(td.T, expected, actr.Head(), "expected actor %s head %s, actual %s", addr, expected, actr.Head())
+	head := td.GetHead(addr)
+	assert.Equal(td.T, expected, head, "expected actor %s head %s, actual %s", addr, expected, head)
 }
 
 func (td *TestDriver) AssertBalanceCallback(addr address.Address, thing func(actorBalance abi_spec.TokenAmount) bool) {

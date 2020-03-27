@@ -31,6 +31,7 @@ import (
 func TestNestedSends(t *testing.T, factory state.Factories) {
 	var acctDefaultBalance = abi.NewTokenAmount(1_000_000_000)
 	var multisigBalance = abi.NewTokenAmount(1_000_000)
+	nonce := uint64(1)
 
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
@@ -46,10 +47,10 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		// Multisig sends back to the creator.
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(stage.creator, amtSent, builtin.MethodSend, nil, 1)
+		result := stage.send(stage.creator, amtSent, builtin.MethodSend, nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
-		td.AssertActor(stage.creator, big.Sub(big.Add(balanceBefore, amtSent), result.Receipt.GasUsed.Big()), 2)
+		td.AssertActor(stage.creator, big.Sub(big.Add(balanceBefore, amtSent), result.Receipt.GasUsed.Big()), nonce+1)
 	})
 
 	t.Run("ok to new actor", func(t *testing.T) {
@@ -62,7 +63,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		// Multisig sends to new address.
 		newAddr := td.Wallet().NewSECP256k1AccountAddress()
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, 1)
+		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
@@ -80,7 +81,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		// Multisig sends to new address and invokes pubkey method at the same time.
 		newAddr := td.Wallet().NewSECP256k1AccountAddress()
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodsAccount.PubkeyAddress, nil, 1)
+		result := stage.send(newAddr, amtSent, builtin.MethodsAccount.PubkeyAddress, nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 		// TODO: use an explicit Approve() and check the return value is the correct pubkey address
 		// when the multisig Approve() method plumbs through the inner exit code and value.
@@ -107,7 +108,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 			Signer:   anotherId,
 			Increase: false,
 		}
-		result := stage.send(stage.msAddr, big.Zero(), builtin.MethodsMultisig.AddSigner, &params, 1)
+		result := stage.send(stage.msAddr, big.Zero(), builtin.MethodsMultisig.AddSigner, &params, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance)
@@ -127,7 +128,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		amtSent := abi.NewTokenAmount(1)
 		// So long as the parameters are not actually used by the method, a message can carry arbitrary bytes.
 		params := typegen.Deferred{Raw: []byte{1, 2, 3, 4}}
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, &params, 1)
+		result := stage.send(newAddr, amtSent, builtin.MethodSend, &params, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
@@ -158,7 +159,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		newAddr := utils.NewIDAddr(t, 1234)
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, 1)
+		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
@@ -174,7 +175,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		newAddr := utils.NewActorAddr(t, "1234")
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, 1)
+		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
@@ -190,7 +191,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		newAddr := td.Wallet().NewSECP256k1AccountAddress()
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, abi.MethodNum(99), nil, 1)
+		result := stage.send(newAddr, amtSent, abi.MethodNum(99), nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
@@ -205,7 +206,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		balanceBefore := td.GetBalance(stage.creator)
 
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(stage.creator, amtSent, abi.MethodNum(99), nil, 1)
+		result := stage.send(stage.creator, amtSent, abi.MethodNum(99), nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance)                                       // No change.
@@ -224,7 +225,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 	//	// Attempt to transfer from the multisig more than the balance it has.
 	//	// The proposal to do should succeed, but the inner message fail.
 	//	amtSent := big.Add(multisigBalance, abi.NewTokenAmount(1))
-	//	result := stage.send(stage.creator, amtSent, builtin.MethodSend, nil, 1)
+	//	result := stage.send(stage.creator, amtSent, builtin.MethodSend, nil, nonce)
 	//	assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 	//
 	//	td.AssertBalance(stage.msAddr, multisigBalance)                                       // No change.
@@ -240,7 +241,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		params := adt.Empty // Missing params required by AddSigner
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, params, 1)
+		result := stage.send(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, params, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
@@ -263,7 +264,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 			Params: nil,
 		}
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, &params, 1)
+		result := stage.send(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, &params, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
@@ -286,7 +287,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 			TicketCount: 100,
 		}
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(builtin.RewardActorAddr, amtSent, builtin.MethodsReward.AwardBlockReward, &params, 1)
+		result := stage.send(builtin.RewardActorAddr, amtSent, builtin.MethodsReward.AwardBlockReward, &params, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
@@ -311,7 +312,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		}
 
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(builtin.InitActorAddr, amtSent, builtin.MethodsInit.Exec, &execParams, 1)
+		result := stage.send(builtin.InitActorAddr, amtSent, builtin.MethodsInit.Exec, &execParams, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
