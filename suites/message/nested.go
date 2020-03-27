@@ -11,8 +11,11 @@ import (
 	builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	init_ "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	"github.com/filecoin-project/specs-actors/actors/builtin/multisig"
+	"github.com/filecoin-project/specs-actors/actors/builtin/paych"
+	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/runtime"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
+	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	typegen "github.com/whyrusleeping/cbor-gen"
@@ -28,6 +31,7 @@ import (
 func TestNestedSends(t *testing.T, factory state.Factories) {
 	var acctDefaultBalance = abi.NewTokenAmount(1_000_000_000)
 	var multisigBalance = abi.NewTokenAmount(1_000_000)
+	nonce := uint64(1)
 
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
@@ -43,10 +47,10 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		// Multisig sends back to the creator.
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(stage.creator, amtSent, builtin.MethodSend, nil, 1)
+		result := stage.send(stage.creator, amtSent, builtin.MethodSend, nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
-		td.AssertActor(stage.creator, big.Sub(big.Add(balanceBefore, amtSent), result.Receipt.GasUsed.Big()), 2)
+		td.AssertActor(stage.creator, big.Sub(big.Add(balanceBefore, amtSent), result.Receipt.GasUsed.Big()), nonce+1)
 	})
 
 	t.Run("ok to new actor", func(t *testing.T) {
@@ -59,7 +63,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		// Multisig sends to new address.
 		newAddr := td.Wallet().NewSECP256k1AccountAddress()
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, 1)
+		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
@@ -77,7 +81,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		// Multisig sends to new address and invokes pubkey method at the same time.
 		newAddr := td.Wallet().NewSECP256k1AccountAddress()
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodsAccount.PubkeyAddress, nil, 1)
+		result := stage.send(newAddr, amtSent, builtin.MethodsAccount.PubkeyAddress, nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 		// TODO: use an explicit Approve() and check the return value is the correct pubkey address
 		// when the multisig Approve() method plumbs through the inner exit code and value.
@@ -104,7 +108,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 			Signer:   anotherId,
 			Increase: false,
 		}
-		result := stage.send(stage.msAddr, big.Zero(), builtin.MethodsMultisig.AddSigner, &params, 1)
+		result := stage.send(stage.msAddr, big.Zero(), builtin.MethodsMultisig.AddSigner, &params, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance)
@@ -124,7 +128,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		amtSent := abi.NewTokenAmount(1)
 		// So long as the parameters are not actually used by the method, a message can carry arbitrary bytes.
 		params := typegen.Deferred{Raw: []byte{1, 2, 3, 4}}
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, &params, 1)
+		result := stage.send(newAddr, amtSent, builtin.MethodSend, &params, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
@@ -155,7 +159,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		newAddr := utils.NewIDAddr(t, 1234)
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, 1)
+		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
@@ -171,7 +175,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		newAddr := utils.NewActorAddr(t, "1234")
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, 1)
+		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
@@ -187,12 +191,11 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		newAddr := td.Wallet().NewSECP256k1AccountAddress()
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, abi.MethodNum(99), nil, 1)
+		result := stage.send(newAddr, amtSent, abi.MethodNum(99), nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
-		_, err := td.State().Actor(newAddr)
-		assert.Error(t, err)
+		td.AssertNoActor(newAddr)
 	})
 
 	t.Run("fail invalid methodnum for actor", func(t *testing.T) {
@@ -203,30 +206,133 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		balanceBefore := td.GetBalance(stage.creator)
 
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(stage.creator, amtSent, abi.MethodNum(99), nil, 1)
+		result := stage.send(stage.creator, amtSent, abi.MethodNum(99), nil, nonce)
 		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
 
 		td.AssertBalance(stage.msAddr, multisigBalance)                                       // No change.
 		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big())) // Pay gas, don't receive funds.
 	})
 
+	// The multisig actor checks before attempting to transfer more than its balance, so we can't exercise that
+	// the VM also checks this. Need a custome actor to exercise this.
+	//t.Run("fail insufficient funds", func(t *testing.T) {
+	//	td := builder.Build(t)
+	//	defer td.Complete()
+	//
+	//	stage := prepareStage(td, acctDefaultBalance, multisigBalance)
+	//	balanceBefore := td.GetBalance(stage.creator)
+	//
+	//	// Attempt to transfer from the multisig more than the balance it has.
+	//	// The proposal to do should succeed, but the inner message fail.
+	//	amtSent := big.Add(multisigBalance, abi.NewTokenAmount(1))
+	//	result := stage.send(stage.creator, amtSent, builtin.MethodSend, nil, nonce)
+	//	assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+	//
+	//	td.AssertBalance(stage.msAddr, multisigBalance)                                       // No change.
+	//	td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big())) // Pay gas, don't receive funds.
+	//})
+
+	t.Run("fail missing params", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		stage := prepareStage(td, acctDefaultBalance, multisigBalance)
+		balanceBefore := td.GetBalance(stage.creator)
+
+		params := adt.Empty // Missing params required by AddSigner
+		amtSent := abi.NewTokenAmount(1)
+		result := stage.send(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, params, nonce)
+		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+
+		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
+		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
+		assert.Equal(t, 1, len(stage.state().Signers))  // No new signers
+	})
+
+	t.Run("fail mismatched params", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		stage := prepareStage(td, acctDefaultBalance, multisigBalance)
+		balanceBefore := td.GetBalance(stage.creator)
+
+		// Wrong params for AddSigner
+		params := multisig.ProposeParams{
+			To:     stage.creator,
+			Value:  big.Zero(),
+			Method: builtin.MethodSend,
+			Params: nil,
+		}
+		amtSent := abi.NewTokenAmount(1)
+		result := stage.send(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, &params, nonce)
+		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+
+		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
+		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
+		assert.Equal(t, 1, len(stage.state().Signers))  // No new signers
+	})
+
+	t.Run("fail inner abort", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		stage := prepareStage(td, acctDefaultBalance, multisigBalance)
+		prevHead := td.GetHead(builtin.RewardActorAddr)
+
+		// AwardBlockReward will abort unless invoked by the system actor
+		params := reward.AwardBlockRewardParams{
+			Miner:       stage.creator,
+			Penalty:     big.Zero(),
+			GasReward:   big.Zero(),
+			TicketCount: 100,
+		}
+		amtSent := abi.NewTokenAmount(1)
+		result := stage.send(builtin.RewardActorAddr, amtSent, builtin.MethodsReward.AwardBlockReward, &params, nonce)
+		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+
+		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
+		td.AssertHead(builtin.RewardActorAddr, prevHead)
+	})
+
+	t.Run("fail aborted exec", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		stage := prepareStage(td, acctDefaultBalance, multisigBalance)
+		prevHead := td.GetHead(builtin.InitActorAddr)
+
+		// Illegal paych constructor params (addresses are not accounts)
+		ctorParams := paych.ConstructorParams{
+			From: builtin.SystemActorAddr,
+			To:   builtin.SystemActorAddr,
+		}
+		execParams := init_.ExecParams{
+			CodeCID:           builtin.PaymentChannelActorCodeID,
+			ConstructorParams: chain.MustSerialize(&ctorParams),
+		}
+
+		amtSent := abi.NewTokenAmount(1)
+		result := stage.send(builtin.InitActorAddr, amtSent, builtin.MethodsInit.Exec, &execParams, nonce)
+		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+
+		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
+		td.AssertHead(builtin.InitActorAddr, prevHead)  // Init state unchanged.
+	})
+
 	// TODO more tests:
-	// fail send empty params to method with params
-	// fail send wrong shape params to method
 	// fail send running out of gas on inner method
-	// fail send when target method aborts
 	// fail send when target method on multisig (recursive) aborts
 }
 
 // Wraps a multisig actor as a stage for nested sends.
-type ms_stage struct {
+type msStage struct {
 	driver  *drivers.TestDriver
 	creator address.Address // Address of the creator and sole signer of the multisig.
 	msAddr  address.Address // Address of the multisig actor from which nested messages are sent.
 }
 
 // Creates a multisig actor with its creator as sole approver.
-func prepareStage(td *drivers.TestDriver, creatorBalance, msBalance abi.TokenAmount) *ms_stage {
+func prepareStage(td *drivers.TestDriver, creatorBalance, msBalance abi.TokenAmount) *msStage {
 	_, creatorId := td.NewAccountActor(drivers.SECP, creatorBalance)
 
 	msg := td.MessageProducer.CreateMultisigActor(creatorId, []address.Address{creatorId}, 0, 1, chain.Value(msBalance), chain.Nonce(0))
@@ -236,14 +342,14 @@ func prepareStage(td *drivers.TestDriver, creatorBalance, msBalance abi.TokenAmo
 	err := ret.UnmarshalCBOR(bytes.NewReader(result.Receipt.ReturnValue))
 	require.NoError(td.T, err)
 
-	return &ms_stage{
+	return &msStage{
 		driver:  td,
 		creator: creatorId,
 		msAddr:  ret.IDAddress,
 	}
 }
 
-func (s *ms_stage) send(to address.Address, value abi.TokenAmount, method abi.MethodNum, params runtime.CBORMarshaler, approverNonce uint64) chain.ApplyMessageResult {
+func (s *msStage) send(to address.Address, value abi.TokenAmount, method abi.MethodNum, params runtime.CBORMarshaler, approverNonce uint64) chain.ApplyMessageResult {
 	buf := bytes.Buffer{}
 	if params != nil {
 		err := params.MarshalCBOR(&buf)
@@ -257,4 +363,10 @@ func (s *ms_stage) send(to address.Address, value abi.TokenAmount, method abi.Me
 	}
 	msg := s.driver.MessageProducer.MultisigPropose(s.msAddr, s.creator, pparams, chain.Nonce(approverNonce))
 	return s.driver.ApplyMessage(msg)
+}
+
+func (s *msStage) state() *multisig.State {
+	var msState multisig.State
+	s.driver.GetActorState(s.msAddr, &msState)
+	return &msState
 }

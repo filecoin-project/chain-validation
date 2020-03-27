@@ -405,6 +405,12 @@ func (td *TestDriver) GetBalance(addr address.Address) abi_spec.TokenAmount {
 	return actr.Balance()
 }
 
+func (td *TestDriver) GetHead(addr address.Address) cid.Cid {
+	actr, err := td.State().Actor(addr)
+	require.NoError(td.T, err)
+	return actr.Head()
+}
+
 // AssertBalance checks an actor has an expected balance.
 func (td *TestDriver) AssertBalance(addr address.Address, expected abi_spec.TokenAmount) {
 	actr, err := td.State().Actor(addr)
@@ -418,6 +424,11 @@ func (td *TestDriver) AssertActor(addr address.Address, balance abi_spec.TokenAm
 	require.NoError(td.T, err)
 	assert.Equal(td.T, balance, actr.Balance(), fmt.Sprintf("expected actor %s balance: %s, actual balance: %s", addr, balance, actr.Balance()))
 	assert.Equal(td.T, callSeqNum, actr.CallSeqNum(), fmt.Sprintf("expected actor %s callSeqNum: %d, actual : %d", addr, callSeqNum, actr.CallSeqNum()))
+}
+
+func (td *TestDriver) AssertHead(addr address.Address, expected cid.Cid) {
+	head := td.GetHead(addr)
+	assert.Equal(td.T, expected, head, "expected actor %s head %s, actual %s", addr, expected, head)
 }
 
 func (td *TestDriver) AssertBalanceCallback(addr address.Address, thing func(actorBalance abi_spec.TokenAmount) bool) {
