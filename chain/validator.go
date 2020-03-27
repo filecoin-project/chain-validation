@@ -12,10 +12,16 @@ type Validator struct {
 	applier state.Applier
 }
 
-type ApplyResult struct {
+type ApplyMessageResult struct {
 	Receipt types.MessageReceipt
 	Penalty abi.TokenAmount
 	Reward  abi.TokenAmount
+	Root    string
+}
+
+type ApplyTipSetMessagesResult struct {
+	Receipts []types.MessageReceipt
+	Root     string
 }
 
 // NewValidator builds a new validator.
@@ -24,24 +30,17 @@ func NewValidator(executor state.Applier) *Validator {
 }
 
 // ApplyMessages applies a message to a state
-func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.Message) (ApplyResult, error) {
+func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.Message) (ApplyMessageResult, error) {
 	receipt, penalty, reward, err := v.applier.ApplyMessage(context, state, message)
-	return ApplyResult{
-		Receipt: receipt,
-		Penalty: penalty,
-		Reward:  reward,
-	}, err
+	return ApplyMessageResult{receipt, penalty, reward, state.Root().String()}, err
 }
 
-func (v *Validator) ApplySignedMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.SignedMessage) (ApplyResult, error) {
+func (v *Validator) ApplySignedMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.SignedMessage) (ApplyMessageResult, error) {
 	receipt, penalty, reward, err := v.applier.ApplySignedMessage(context, state, message)
-	return ApplyResult{
-		Receipt: receipt,
-		Penalty: penalty,
-		Reward:  reward,
-	}, err
+	return ApplyMessageResult{receipt, penalty, reward, state.Root().String()}, err
 }
 
-func (v *Validator) ApplyTipSetMessages(epoch abi.ChainEpoch, state state.VMWrapper, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) ([]types.MessageReceipt, error) {
-	return v.applier.ApplyTipSetMessages(state, blocks, epoch, rnd)
+func (v *Validator) ApplyTipSetMessages(epoch abi.ChainEpoch, state state.VMWrapper, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) (ApplyTipSetMessagesResult, error) {
+	receipts, err := v.applier.ApplyTipSetMessages(state, blocks, epoch, rnd)
+	return ApplyTipSetMessagesResult{receipts, state.Root().String()}, err
 }

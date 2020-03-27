@@ -243,7 +243,7 @@ func prepareStage(td *drivers.TestDriver, creatorBalance, msBalance abi.TokenAmo
 	}
 }
 
-func (s *ms_stage) send(to address.Address, value abi.TokenAmount, method abi.MethodNum, params runtime.CBORMarshaler, approverNonce uint64) chain.ApplyResult {
+func (s *ms_stage) send(to address.Address, value abi.TokenAmount, method abi.MethodNum, params runtime.CBORMarshaler, approverNonce uint64) chain.ApplyMessageResult {
 	buf := bytes.Buffer{}
 	if params != nil {
 		err := params.MarshalCBOR(&buf)
