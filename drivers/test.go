@@ -295,6 +295,8 @@ func (td *TestDriver) ApplyMessage(msg *types.Message) (result chain.ApplyMessag
 
 	result, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
 	require.NoError(td.T, err)
+
+	td.StateTracker.TrackResult(result)
 	return result
 }
 
@@ -312,7 +314,7 @@ func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) c
 
 func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyMessageResult {
 	result := td.ApplyMessage(msg)
-	if !td.validateAndTrackResult(result, code, retval) {
+	if !td.validateResult(result, code, retval) {
 		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
 	}
 	return result
@@ -341,6 +343,8 @@ func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result chain.Apply
 	}
 	result, err = td.validator.ApplySignedMessage(td.ExeCtx, td.State(), smgs)
 	require.NoError(td.T, err)
+
+	td.StateTracker.TrackResult(result)
 	return result
 }
 
@@ -358,16 +362,15 @@ func (td *TestDriver) ApplySignedFailure(msg *types.Message, code exitcode.ExitC
 
 func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyMessageResult {
 	result := td.ApplyMessageSigned(msg)
-	if !td.validateAndTrackResult(result, code, retval) {
+	if !td.validateResult(result, code, retval) {
 		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
 	}
 	return result
 }
 
-func (td *TestDriver) validateAndTrackResult(result chain.ApplyMessageResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
+func (td *TestDriver) validateResult(result chain.ApplyMessageResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
 	foundGas = true
 
-	td.StateTracker.TrackResult(result)
 	if td.Config.ValidateExitCode() {
 		assert.Equal(td.T, code, result.Receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), result.Receipt.ExitCode.Error())
 	}
