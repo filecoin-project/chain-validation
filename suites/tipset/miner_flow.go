@@ -48,7 +48,7 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 		return workerCallSeq
 	}
 
-	sectorBuilder := drivers.NewMockSectorBuilder()
+	sectorBuilder := drivers.NewMockSectorBuilder(td.T)
 	tipB := drivers.NewTipSetMessageBuilder(td)
 
 	sectorSize, err := sectorType.SectorSize()
@@ -63,7 +63,7 @@ func CreateMinerWithProvenCommittedSector(td *drivers.TestDriver, minerOwner, mi
 			WithBLSMessageAndRet(
 				td.MessageProducer.PowerCreateMiner(
 					builtin_spec.StoragePowerActorAddr, minerOwner,
-					power_spec.CreateMinerParams{Owner: minerOwner, Worker: minerWorker, SectorSize: sectorSize, Peer: utils.RequireRandomPeerID(td.T)},
+					power_spec.CreateMinerParams{Owner: minerOwner, Worker: minerWorker, SectorSize: sectorSize, Peer: "testpeerid"},
 					chain.Nonce(incOwnerCallSeq()), chain.Value(collateral),
 				),
 				chain.MustSerialize(&createMinerRet),
