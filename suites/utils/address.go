@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"math/rand"
+	"encoding/binary"
 	"testing"
 
 	addr "github.com/filecoin-project/go-address"
@@ -27,10 +27,8 @@ func NewSECP256K1Addr(t testing.TB, pubkey string) addr.Address {
 }
 
 func NewBLSAddr(t testing.TB, seed int64) addr.Address {
-	// the pubkey of a bls address is not hashed and must be the correct length.
-	buf := make([]byte, 48)
-	r := rand.New(rand.NewSource(seed))
-	r.Read(buf)
+	buf := make([]byte, addr.BlsPublicKeyBytes)
+	binary.PutVarint(buf, seed)
 
 	address, err := addr.NewBLSAddress(buf)
 	if err != nil {

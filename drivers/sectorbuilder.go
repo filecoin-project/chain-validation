@@ -1,27 +1,31 @@
 package drivers
 
 import (
+	"encoding/binary"
+	"testing"
+
 	"github.com/filecoin-project/go-address"
+	commcid "github.com/filecoin-project/go-fil-commcid"
 	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/filecoin-project/specs-actors/actors/abi/big"
 	"github.com/filecoin-project/specs-actors/actors/builtin/market"
-	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/chain-validation/chain/types"
-	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 type MockSectorBuilder struct {
+	t testing.TB
+	sectorSeq uint64
+
 	// PreSeal is intexted by sectorID
 	MinerSectors map[address.Address][]*types.PreSeal
-
-	cidGetter func() cid.Cid
 }
 
-func NewMockSectorBuilder() *MockSectorBuilder {
+func NewMockSectorBuilder(t testing.TB) *MockSectorBuilder {
 	return &MockSectorBuilder{
+		t:            t,
+		sectorSeq:    0,
 		MinerSectors: make(map[address.Address][]*types.PreSeal),
-		cidGetter:    utils.NewProofCidForTestGetter(),
 	}
 }
 
@@ -29,8 +33,12 @@ func (msb *MockSectorBuilder) NewPreSealedSector(miner, client address.Address, 
 	minerSectors := msb.MinerSectors[miner]
 	sectorID := len(minerSectors)
 
-	R := msb.cidGetter()
-	D := msb.cidGetter()
+	token := make([]byte, 32)
+	binary.PutUvarint(token, msb.sectorSeq)
+	D := commcid.DataCommitmentV1ToCID(token)
+	R := commcid.ReplicaCommitmentV1ToCID(token)
+	msb.sectorSeq++
+
 	preseal := &types.PreSeal{
 		CommR:    R,
 		CommD:    D,
