@@ -9,6 +9,7 @@ import (
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	miner_spec "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
+	acrypto "github.com/filecoin-project/specs-actors/actors/crypto"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,17 @@ var (
 	BLS  = address.BLS
 )
 
+type fakeRandSrc struct {
+}
+
+func (r fakeRandSrc) Randomness(_ context.Context, _ acrypto.DomainSeparationTag, _ abi_spec.ChainEpoch, _ []byte) (abi_spec.Randomness, error) {
+	return abi_spec.Randomness("sausaGes"), nil
+}
+
+func NewRandomnessSource() state.RandomnessSource {
+	return &fakeRandSrc{}
+}
+
 // StateDriver mutates and inspects a state.
 type StateDriver struct {
 	tb testing.TB
@@ -38,8 +50,8 @@ type StateDriver struct {
 }
 
 // NewStateDriver creates a new state driver for a state.
-func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager, rs state.RandomnessSource) *StateDriver {
-	return &StateDriver{tb, st, w, rs, make(map[address.Address]address.Address)}
+func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager) *StateDriver {
+	return &StateDriver{tb, st, w, NewRandomnessSource(), make(map[address.Address]address.Address)}
 }
 
 // State returns the state.

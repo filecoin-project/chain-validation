@@ -12,7 +12,6 @@ import (
 	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/chain-validation/box"
-	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
@@ -45,7 +44,7 @@ func NewStateTracker(t testing.TB) *StateTracker {
 	}
 }
 
-func (st *StateTracker) TrackResult(result chain.Trackable) {
+func (st *StateTracker) TrackResult(result types.Trackable) {
 	st.tracker.PushBack(result)
 }
 
@@ -83,11 +82,11 @@ func (st *StateTracker) Record() {
 
 	for e := st.tracker.Front(); e != nil; e = e.Next() {
 		switch ele := e.Value.(type) {
-		case chain.ApplyMessageResult:
+		case types.ApplyMessageResult:
 			if err := enc.Encode(ele); err != nil {
 				st.T.Fatal(err)
 			}
-		case chain.ApplyTipSetResult:
+		case types.ApplyTipSetResult:
 			if err := enc.Encode(ele); err != nil {
 				st.T.Fatal(err)
 			}
@@ -107,23 +106,23 @@ func LoadDataForTest(t testing.TB) (gasUsed []types.GasUnits, stateRoots []cid.C
 	}
 
 	switch v := data.(type) {
-	case chain.ApplyMessageResult:
+	case types.ApplyMessageResult:
 		gasUsed = append(gasUsed, v.GasUsed())
 		stateRoots = append(stateRoots, v.StateRoot())
 		return
-	case []chain.ApplyMessageResult:
+	case []types.ApplyMessageResult:
 		for _, res := range v {
 			gasUsed = append(gasUsed, res.GasUsed())
 			stateRoots = append(stateRoots, res.StateRoot())
 		}
 		return
-	case chain.ApplyTipSetResult:
+	case types.ApplyTipSetResult:
 		for _, rect := range v.Receipts {
 			gasUsed = append(gasUsed, rect.GasUsed)
 		}
 		stateRoots = append(stateRoots, v.StateRoot())
 		return
-	case []chain.ApplyTipSetResult:
+	case []types.ApplyTipSetResult:
 		for _, res := range v {
 			for _, rect := range res.Receipts {
 				gasUsed = append(gasUsed, rect.GasUsed)

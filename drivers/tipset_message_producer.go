@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
@@ -28,18 +27,18 @@ func (t *TipSetMessageBuilder) WithBlockBuilder(bb *BlockBuilder) *TipSetMessage
 	return t
 }
 
-func (t *TipSetMessageBuilder) Apply() chain.ApplyTipSetResult {
+func (t *TipSetMessageBuilder) Apply() types.ApplyTipSetResult {
 	var blks []types.BlockMessagesInfo
 	for _, b := range t.bbs {
 		blks = append(blks, b.build())
 	}
-	result, err := t.driver.validator.ApplyTipSetMessages(t.driver.ExeCtx.Epoch, t.driver.State(), blks, t.driver.Randomness())
+	result, err := t.driver.validator.ApplyTipSetMessages(t.driver.ExeCtx.Epoch, blks, t.driver.Randomness())
 	require.NoError(t.driver.T, err)
 
 	return result
 }
 
-func (t *TipSetMessageBuilder) ApplyAndValidate() chain.ApplyTipSetResult {
+func (t *TipSetMessageBuilder) ApplyAndValidate() types.ApplyTipSetResult {
 	result := t.Apply()
 
 	var expected []ExpectedResult

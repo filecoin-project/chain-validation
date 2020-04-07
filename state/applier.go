@@ -11,9 +11,9 @@ import (
 
 // Applier applies abstract messages to states.
 type Applier interface {
-	ApplyMessage(context *types.ExecutionContext, state VMWrapper, msg *types.Message) (types.MessageReceipt, abi.TokenAmount, abi.TokenAmount, error)
-	ApplySignedMessage(context *types.ExecutionContext, state VMWrapper, msg *types.SignedMessage) (types.MessageReceipt, abi.TokenAmount, abi.TokenAmount, error)
-	ApplyTipSetMessages(state VMWrapper, blocks []types.BlockMessagesInfo, epoch abi.ChainEpoch, rnd RandomnessSource) ([]types.MessageReceipt, error)
+	ApplyMessage(epoch abi.ChainEpoch, msg *types.Message) (types.ApplyMessageResult, error)
+	ApplySignedMessage(epoch abi.ChainEpoch, msg *types.SignedMessage) (types.ApplyMessageResult, error)
+	ApplyTipSetMessages(epoch abi.ChainEpoch, blocks []types.BlockMessagesInfo, rnd RandomnessSource) (types.ApplyTipSetResult, error)
 }
 
 // RandomnessSource provides randomness to actors.

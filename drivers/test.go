@@ -229,7 +229,8 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price abi_spec.TokenAmount) *Tes
 }
 
 func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
-	sd := NewStateDriver(t, b.factory.NewState(), b.factory.NewKeyManager(), b.factory.NewRandomnessSource())
+	stateWrapper, applier := b.factory.NewStateAndApplier()
+	sd := NewStateDriver(t, stateWrapper, b.factory.NewKeyManager())
 
 	err := initializeStoreWithAdtRoots(sd.st.Store())
 	require.NoError(t, err)
@@ -243,7 +244,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 
 	exeCtx := types.NewExecutionContext(1, minerActorIDAddr)
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
-	validator := chain.NewValidator(b.factory)
+	validator := chain.NewValidator(applier)
 
 	return &TestDriver{
 		T:               t,
@@ -285,7 +286,7 @@ func (td *TestDriver) Complete() {
 // Unsigned Message Appliers
 //
 
-func (td *TestDriver) ApplyMessage(msg *types.Message) (result chain.ApplyMessageResult) {
+func (td *TestDriver) ApplyMessage(msg *types.Message) (result types.ApplyMessageResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			result.Receipt.ExitCode = exitcode.SysErrInternal
@@ -293,26 +294,26 @@ func (td *TestDriver) ApplyMessage(msg *types.Message) (result chain.ApplyMessag
 		}
 	}()
 
-	result, err := td.validator.ApplyMessage(td.ExeCtx, td.State(), msg)
+	result, err := td.validator.ApplyMessage(td.ExeCtx.Epoch, msg)
 	require.NoError(td.T, err)
 
 	td.StateTracker.TrackResult(result)
 	return result
 }
 
-func (td *TestDriver) ApplyOk(msg *types.Message) chain.ApplyMessageResult {
+func (td *TestDriver) ApplyOk(msg *types.Message) types.ApplyMessageResult {
 	return td.ApplyExpect(msg, EmptyReturnValue)
 }
 
-func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) chain.ApplyMessageResult {
+func (td *TestDriver) ApplyExpect(msg *types.Message, retval []byte) types.ApplyMessageResult {
 	return td.applyMessageExpectCodeAndReturn(msg, exitcode.Ok, retval)
 }
 
-func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) chain.ApplyMessageResult {
+func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) types.ApplyMessageResult {
 	return td.applyMessageExpectCodeAndReturn(msg, code, EmptyReturnValue)
 }
 
-func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyMessageResult {
+func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) types.ApplyMessageResult {
 	result := td.ApplyMessage(msg)
 	if !td.validateResult(result, code, retval) {
 		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
@@ -324,7 +325,7 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 // Signed Message Appliers
 //
 
-func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result chain.ApplyMessageResult) {
+func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result types.ApplyMessageResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			result.Receipt.ExitCode = exitcode.SysErrInternal
@@ -337,30 +338,30 @@ func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result chain.Apply
 	msgSig, err := td.Wallet().Sign(msg.From, serMsg)
 	require.NoError(td.T, err)
 
-	smgs := &types.SignedMessage{
+	smsgs := &types.SignedMessage{
 		Message:   *msg,
 		Signature: msgSig,
 	}
-	result, err = td.validator.ApplySignedMessage(td.ExeCtx, td.State(), smgs)
+	result, err = td.validator.ApplySignedMessage(td.ExeCtx.Epoch, smsgs)
 	require.NoError(td.T, err)
 
 	td.StateTracker.TrackResult(result)
 	return result
 }
 
-func (td *TestDriver) ApplySignedOk(msg *types.Message) chain.ApplyMessageResult {
+func (td *TestDriver) ApplySignedOk(msg *types.Message) types.ApplyMessageResult {
 	return td.ApplySignedExpect(msg, EmptyReturnValue)
 }
 
-func (td *TestDriver) ApplySignedExpect(msg *types.Message, retval []byte) chain.ApplyMessageResult {
+func (td *TestDriver) ApplySignedExpect(msg *types.Message, retval []byte) types.ApplyMessageResult {
 	return td.applyMessageSignedExpectCodeAndReturn(msg, exitcode.Ok, retval)
 }
 
-func (td *TestDriver) ApplySignedFailure(msg *types.Message, code exitcode.ExitCode) chain.ApplyMessageResult {
+func (td *TestDriver) ApplySignedFailure(msg *types.Message, code exitcode.ExitCode) types.ApplyMessageResult {
 	return td.applyMessageExpectCodeAndReturn(msg, code, EmptyReturnValue)
 }
 
-func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) chain.ApplyMessageResult {
+func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) types.ApplyMessageResult {
 	result := td.ApplyMessageSigned(msg)
 	if !td.validateResult(result, code, retval) {
 		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
@@ -368,7 +369,7 @@ func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, 
 	return result
 }
 
-func (td *TestDriver) validateResult(result chain.ApplyMessageResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
+func (td *TestDriver) validateResult(result types.ApplyMessageResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
 	foundGas = true
 
 	if td.Config.ValidateExitCode() {
