@@ -15,7 +15,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/filecoin-project/chain-validation/chain"
+	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
 const blob = "blob.go"
@@ -27,7 +27,6 @@ package box
 import (
 	"github.com/filecoin-project/specs-actors/actors/abi"
 
-	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
@@ -40,7 +39,7 @@ func init(){
 
 func ToContainerType(value []interface{}) string {
 	// there are no mixed types in the slice so just look at the first one in the list
-	if code, ok := value[0].(chain.Trackable); ok {
+	if code, ok := value[0].(types.Trackable); ok {
 		return code.GoContainer()
 	}
 	log.Fatalf(fmt.Sprintf("ToContainerType Unknown Type: %T", value))
@@ -50,7 +49,7 @@ func ToContainerType(value []interface{}) string {
 func ToGoSyntax(values []interface{}) string {
 	builder := strings.Builder{}
 	for _, value := range values {
-		if code, ok := value.(chain.Trackable); ok {
+		if code, ok := value.(types.Trackable); ok {
 			builder.WriteString(fmt.Sprintf("%s,", code.GoSyntax()))
 		} else {
 			log.Fatalf("Object does not implement goSyntaxable: %#v", value)
@@ -86,13 +85,13 @@ func main() {
 			for scanner.Scan() {
 				// hacky, if a test name is changed this will break. PR's welcome :)
 				if strings.Contains(f.Name(), "TipSet") {
-					var applytsres chain.ApplyTipSetResult
+					var applytsres types.ApplyTipSetResult
 					if err := json.Unmarshal(scanner.Bytes(), &applytsres); err != nil {
 						panic(err)
 					}
 					resources[relativePath] = append(resources[relativePath], applytsres)
 				} else {
-					var applymsgres chain.ApplyMessageResult
+					var applymsgres types.ApplyMessageResult
 					if err := json.Unmarshal(scanner.Bytes(), &applymsgres); err != nil {
 						panic(err)
 					}
