@@ -1,10 +1,7 @@
 package chain
 
 import (
-	"fmt"
-
 	"github.com/filecoin-project/specs-actors/actors/abi"
-	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/state"
@@ -21,73 +18,14 @@ func NewValidator(executor state.Applier) *Validator {
 }
 
 // ApplyMessages applies a message to a state
-func (v *Validator) ApplyMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.Message) (ApplyMessageResult, error) {
-	receipt, penalty, reward, err := v.applier.ApplyMessage(context, state, message)
-	return ApplyMessageResult{receipt, penalty, reward, state.Root().String()}, err
+func (v *Validator) ApplyMessage(epoch abi.ChainEpoch, message *types.Message) (types.ApplyMessageResult, error) {
+	return v.applier.ApplyMessage(epoch, message)
 }
 
-func (v *Validator) ApplySignedMessage(context *types.ExecutionContext, state state.VMWrapper, message *types.SignedMessage) (ApplyMessageResult, error) {
-	receipt, penalty, reward, err := v.applier.ApplySignedMessage(context, state, message)
-	return ApplyMessageResult{receipt, penalty, reward, state.Root().String()}, err
+func (v *Validator) ApplySignedMessage(epoch abi.ChainEpoch, message *types.SignedMessage) (types.ApplyMessageResult, error) {
+	return v.applier.ApplySignedMessage(epoch, message)
 }
 
-func (v *Validator) ApplyTipSetMessages(epoch abi.ChainEpoch, state state.VMWrapper, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) (ApplyTipSetResult, error) {
-	receipts, err := v.applier.ApplyTipSetMessages(state, blocks, epoch, rnd)
-	return ApplyTipSetResult{receipts, state.Root().String()}, err
-}
-
-type Trackable interface {
-	GoSyntax() string
-	GoContainer() string
-}
-
-var _ Trackable = (*ApplyMessageResult)(nil)
-var _ Trackable = (*ApplyTipSetResult)(nil)
-
-type ApplyMessageResult struct {
-	Receipt types.MessageReceipt
-	Penalty abi.TokenAmount
-	Reward  abi.TokenAmount
-	Root    string
-}
-
-func (mr ApplyMessageResult) GoSyntax() string {
-	return fmt.Sprintf("chain.ApplyMessageResult{Receipt: %#v, Penalty: abi.NewTokenAmount(%d), Reward: abi.NewTokenAmount(%d), Root: \"%s\"}", mr.Receipt, mr.Penalty, mr.Reward, mr.Root)
-}
-
-func (mr ApplyMessageResult) GoContainer() string {
-	return "[]chain.ApplyMessageResult"
-}
-
-func (mr ApplyMessageResult) StateRoot() cid.Cid {
-	root, err := cid.Decode(mr.Root)
-	if err != nil {
-		panic(err)
-	}
-	return root
-}
-
-func (mr ApplyMessageResult) GasUsed() types.GasUnits {
-	return mr.Receipt.GasUsed
-}
-
-type ApplyTipSetResult struct {
-	Receipts []types.MessageReceipt
-	Root     string
-}
-
-func (tr ApplyTipSetResult) GoSyntax() string {
-	return fmt.Sprintf("%#v", tr)
-}
-
-func (tr ApplyTipSetResult) GoContainer() string {
-	return "[]chain.ApplyTipSetResult"
-}
-
-func (mr ApplyTipSetResult) StateRoot() cid.Cid {
-	root, err := cid.Decode(mr.Root)
-	if err != nil {
-		panic(err)
-	}
-	return root
+func (v *Validator) ApplyTipSetMessages(epoch abi.ChainEpoch, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) (types.ApplyTipSetResult, error) {
+	return v.applier.ApplyTipSetMessages(epoch, blocks, rnd)
 }

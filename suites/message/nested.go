@@ -21,6 +21,7 @@ import (
 	typegen "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/chain-validation/chain"
+	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
 	"github.com/filecoin-project/chain-validation/suites/utils"
@@ -349,7 +350,7 @@ func prepareStage(td *drivers.TestDriver, creatorBalance, msBalance abi.TokenAmo
 	}
 }
 
-func (s *msStage) send(to address.Address, value abi.TokenAmount, method abi.MethodNum, params runtime.CBORMarshaler, approverNonce uint64) chain.ApplyMessageResult {
+func (s *msStage) send(to address.Address, value abi.TokenAmount, method abi.MethodNum, params runtime.CBORMarshaler, approverNonce uint64) types.ApplyMessageResult {
 	buf := bytes.Buffer{}
 	if params != nil {
 		err := params.MarshalCBOR(&buf)
