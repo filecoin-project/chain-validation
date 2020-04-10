@@ -10,6 +10,7 @@ import (
 	miner_spec "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	acrypto "github.com/filecoin-project/specs-actors/actors/crypto"
+	"github.com/filecoin-project/specs-actors/actors/runtime"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ type fakeRandSrc struct {
 }
 
 func (r fakeRandSrc) Randomness(_ context.Context, _ acrypto.DomainSeparationTag, _ abi_spec.ChainEpoch, _ []byte) (abi_spec.Randomness, error) {
-	return abi_spec.Randomness("sausaGes"), nil
+	return abi_spec.Randomness("sausages"), nil
 }
 
 func NewRandomnessSource() state.RandomnessSource {
@@ -68,12 +69,12 @@ func (d *StateDriver) Randomness() state.RandomnessSource {
 }
 
 func (d *StateDriver) GetState(c cid.Cid, out cbg.CBORUnmarshaler) {
-	err := d.st.Store().Get(context.Background(), c, out)
+	err := d.st.StoreGet(c, out)
 	require.NoError(d.tb, err)
 }
 
 func (d *StateDriver) PutState(in cbg.CBORMarshaler) cid.Cid {
-	c, err := d.st.Store().Put(context.Background(), in)
+	c, err := d.st.StorePut(in)
 	require.NoError(d.tb, err)
 	return c
 }
@@ -117,7 +118,6 @@ func (d *StateDriver) ActorPubKey(idAddress address.Address) address.Address {
 
 // create miner without sending a message. modify the init and power actor manually
 func (d *StateDriver) newMinerAccountActor() address.Address {
-
 	// creat a miner, owner, and its worker
 	_, minerOwnerID := d.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 	minerWorkerPk, minerWorkerID := d.NewAccountActor(address.BLS, big_spec.Zero())
@@ -152,13 +152,13 @@ func (d *StateDriver) newMinerAccountActor() address.Address {
 	d.GetActorState(builtin_spec.StoragePowerActorAddr, &spa)
 
 	// set the miners balance in the storage power actors state
-	table := adt_spec.AsBalanceTable(d.State().Store(), spa.EscrowTable)
+	table := adt_spec.AsBalanceTable(AsStore(d.State()), spa.EscrowTable)
 	err = table.Set(minerActorIDAddr, big_spec.Zero())
 	require.NoError(d.tb, err)
 	spa.EscrowTable = table.Root()
 
 	// set the miners claim in the storage power actors state
-	hm := adt_spec.AsMap(d.State().Store(), spa.Claims)
+	hm := adt_spec.AsMap(AsStore(d.State()), spa.Claims)
 	err = hm.Put(adt_spec.AddrKey(minerActorIDAddr), &power_spec.Claim{
 		Power:  abi_spec.NewStoragePower(0),
 		Pledge: abi_spec.NewTokenAmount(0),
@@ -171,4 +171,24 @@ func (d *StateDriver) newMinerAccountActor() address.Address {
 
 	// tada a miner has been created without apply a message
 	return minerActorIDAddr
+}
+
+func AsStore(vmw state.VMWrapper) adt_spec.Store {
+	return &storeWrapper{vmw: vmw}
+}
+
+type storeWrapper struct {
+	vmw state.VMWrapper
+}
+
+func (s storeWrapper) Context() context.Context {
+	return context.TODO()
+}
+
+func (s storeWrapper) Get(ctx context.Context, c cid.Cid, out interface{}) error {
+	return s.vmw.StoreGet(c, out.(runtime.CBORUnmarshaler))
+}
+
+func (s storeWrapper) Put(ctx context.Context, v interface{}) (cid.Cid, error) {
+	return s.vmw.StorePut(v.(runtime.CBORMarshaler))
 }

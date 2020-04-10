@@ -232,7 +232,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	stateWrapper, applier := b.factory.NewStateAndApplier()
 	sd := NewStateDriver(t, stateWrapper, b.factory.NewKeyManager())
 
-	err := initializeStoreWithAdtRoots(sd.st.Store())
+	err := initializeStoreWithAdtRoots(AsStore(sd.st))
 	require.NoError(t, err)
 
 	for _, acts := range b.actorStates {
@@ -280,6 +280,7 @@ func (td *TestDriver) Complete() {
 	// of expectations.
 	//
 	//td.StateTracker.Record()
+	td.st.New()
 }
 
 //
@@ -445,7 +446,7 @@ func (td *TestDriver) AssertMultisigTransaction(multisigAddr address.Address, tx
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	txnMap := adt_spec.AsMap(td.State().Store(), msState.PendingTxns)
+	txnMap := adt_spec.AsMap(AsStore(td.State()), msState.PendingTxns)
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
 	assert.NoError(td.T, err)
@@ -458,7 +459,7 @@ func (td *TestDriver) AssertMultisigContainsTransaction(multisigAddr address.Add
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	txnMap := adt_spec.AsMap(td.State().Store(), msState.PendingTxns)
+	txnMap := adt_spec.AsMap(AsStore(td.State()), msState.PendingTxns)
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
 	require.NoError(td.T, err)
@@ -554,14 +555,14 @@ func (td *TestDriver) GetRewardSummary() *RewardSummary {
 	rewards := make(map[address.Address]abi_spec.TokenAmount)
 	// Traverse map keyed by miner address.
 	var r cbg.CborCid
-	err := adt_spec.AsMap(td.State().Store(), rst.RewardMap).ForEach(&r, func(key string) error {
+	err := adt_spec.AsMap(AsStore(td.State()), rst.RewardMap).ForEach(&r, func(key string) error {
 		keyAddr, err := address.NewFromBytes([]byte(key))
 		require.NoError(td.T, err)
 
 		// Traverse array of reward entries.
 		sum := big_spec.Zero()
 		var rw reward_spec.Reward
-		err = adt_spec.AsArray(td.State().Store(), cid.Cid(r)).ForEach(&rw, func(i int64) error {
+		err = adt_spec.AsArray(AsStore(td.State()), cid.Cid(r)).ForEach(&rw, func(i int64) error {
 			sum = big_spec.Sub(big_spec.Add(sum, rw.Value), rw.AmountWithdrawn)
 			return nil
 		})
