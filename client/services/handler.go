@@ -97,8 +97,8 @@ func (c configWrapper) ValidateStateRoot() bool {
 // Impl VMWrapper interface
 //
 
-func (s *ServiceHandler) New() {
-	if err := s.vm.New(); err != nil {
+func (s *ServiceHandler) NewVM() {
+	if err := s.vm.NewVM(); err != nil {
 		log.Fatal(err)
 	}
 }

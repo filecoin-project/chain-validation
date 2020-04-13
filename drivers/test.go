@@ -231,7 +231,7 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price abi_spec.TokenAmount) *Tes
 func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	stateWrapper, applier := b.factory.NewStateAndApplier()
 	sd := NewStateDriver(t, stateWrapper, b.factory.NewKeyManager())
-	stateWrapper.New()
+	stateWrapper.NewVM()
 
 	err := initializeStoreWithAdtRoots(AsStore(sd.st))
 	require.NoError(t, err)

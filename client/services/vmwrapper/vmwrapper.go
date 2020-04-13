@@ -44,7 +44,7 @@ type VmWrapperService struct {
 	rpcClient *client.RpcClient
 }
 
-func (vs *VmWrapperService) New() error {
+func (vs *VmWrapperService) NewVM() error {
 	resp, err := vs.rpcClient.Do(Method_NewVM, nil)
 	if err != nil {
 		return err

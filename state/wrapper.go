@@ -15,7 +15,7 @@ import (
 // The interface wraps a single, mutable state.
 type VMWrapper interface {
 	// Instantiate a new VM
-	New()
+	NewVM()
 
 	// Returns the CID of the root node of the state tree.
 	Root() cid.Cid
