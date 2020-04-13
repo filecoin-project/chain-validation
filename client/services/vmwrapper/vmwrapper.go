@@ -12,19 +12,28 @@ import (
 	logging "github.com/ipfs/go-log"
 
 	"github.com/filecoin-project/chain-validation/chain"
+	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/client"
 )
 
 var log = logging.Logger("service/vmwrapper")
 
 const (
-	Method_New           = "VmWrapperService.New"
+	// create a new vm instance
+	Method_NewVM = "VmWrapperService.NewVM"
+
+	// state inspection and modification methods methods
 	Method_Root          = "VmWrapperService.Root"
 	Method_StoreGet      = "VmWrapperService.StoreGet"
 	Method_StorePut      = "VmWrapperService.StorePut"
 	Method_Actor         = "VmWrapperService.Actor"
 	Method_SetActorState = "VmWrapperService.SetActorState"
 	Method_CreateActor   = "VmWrapperService.CreateActor"
+
+	// message application methods
+	Method_ApplyMessage        = "VmWrapperService.ApplyMessage"
+	Method_ApplySignedMessage  = "VmWrapperService.ApplySignedMessage"
+	Method_ApplyTipSetMessages = "VmWrapperService.ApplyTipSetMessages"
 )
 
 func NewVmWrapperService(client *client.RpcClient) *VmWrapperService {
@@ -36,11 +45,11 @@ type VmWrapperService struct {
 }
 
 func (vs *VmWrapperService) New() error {
-	resp, err := vs.rpcClient.Do(Method_New, nil)
+	resp, err := vs.rpcClient.Do(Method_NewVM, nil)
 	if err != nil {
 		return err
 	}
-	log.Debugw(Method_New, "response", resp)
+	log.Debugw(Method_NewVM, "response", resp)
 	return nil
 }
 
@@ -192,4 +201,84 @@ func (vs *VmWrapperService) CreateActor(code cid.Cid, addr address.Address, bala
 	}
 
 	return &out, nil
+}
+
+type ApplyMessageReply struct {
+	Receipt types.MessageReceipt
+	Penalty abi.TokenAmount
+	Reward  abi.TokenAmount
+	Root    cid.Cid
+}
+
+type ApplyMessageArgs struct {
+	Epoch   abi.ChainEpoch
+	Message *types.Message
+}
+
+func (vs *VmWrapperService) ApplyMessage(epoch abi.ChainEpoch, msg *types.Message) (*ApplyMessageReply, error) {
+	resp, err := vs.rpcClient.Do(Method_ApplyMessage, &ApplyMessageArgs{
+		Epoch:   epoch,
+		Message: msg,
+	})
+	if err != nil {
+		return nil, err
+	}
+	log.Debugw(Method_ApplyMessage, "response", resp)
+
+	var out ApplyMessageReply
+	if err := json.Unmarshal(resp, &out); err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+type ApplySignedMessageArgs struct {
+	Epoch         abi.ChainEpoch
+	SignedMessage *types.SignedMessage
+}
+
+func (vs *VmWrapperService) ApplySignedMessage(epoch abi.ChainEpoch, smsg *types.SignedMessage) (*ApplyMessageReply, error) {
+	resp, err := vs.rpcClient.Do(Method_ApplySignedMessage, &ApplySignedMessageArgs{
+		Epoch:         epoch,
+		SignedMessage: smsg,
+	})
+	if err != nil {
+		return nil, err
+	}
+	log.Debugw(Method_ApplySignedMessage, "response", resp)
+
+	var out ApplyMessageReply
+	if err := json.Unmarshal(resp, &out); err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+type ApplyTipSetMessagesArgs struct {
+	Epoch      abi.ChainEpoch
+	Blocks     []types.BlockMessagesInfo
+	Randomness abi.Randomness
+}
+
+type ApplyTipSetMessagesReply struct {
+	Receipts []types.MessageReceipt
+	Root     cid.Cid
+}
+
+func (vs *VmWrapperService) ApplyTipSetMessages(epoch abi.ChainEpoch, blocks []types.BlockMessagesInfo, rand abi.Randomness) (*ApplyTipSetMessagesReply, error) {
+	resp, err := vs.rpcClient.Do(Method_ApplyTipSetMessages, &ApplyTipSetMessagesArgs{
+		Epoch:      epoch,
+		Randomness: rand,
+		Blocks:     blocks,
+	})
+	if err != nil {
+		return nil, err
+	}
+	log.Debugw(Method_ApplyTipSetMessages, "response", resp)
+
+	var out ApplyTipSetMessagesReply
+	if err := json.Unmarshal(resp, &out); err != nil {
+		return nil, err
+	}
+	return &out, err
 }

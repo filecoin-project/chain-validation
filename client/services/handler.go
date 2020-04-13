@@ -19,7 +19,6 @@ import (
 
 	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/client"
-	"github.com/filecoin-project/chain-validation/client/services/applier"
 	"github.com/filecoin-project/chain-validation/client/services/config"
 	"github.com/filecoin-project/chain-validation/client/services/vmwrapper"
 	"github.com/filecoin-project/chain-validation/state"
@@ -33,16 +32,14 @@ var _ state.Factories = (*ServiceHandler)(nil)
 
 func NewServiceHandler(client *client.RpcClient) *ServiceHandler {
 	return &ServiceHandler{
-		vm:      vmwrapper.NewVmWrapperService(client),
-		config:  config.NewConfigService(client),
-		applier: applier.NewApplierService(client),
+		vm:     vmwrapper.NewVmWrapperService(client),
+		config: config.NewConfigService(client),
 	}
 }
 
 type ServiceHandler struct {
-	vm      *vmwrapper.VmWrapperService
-	config  *config.ConfigService
-	applier *applier.ApplierService
+	vm     *vmwrapper.VmWrapperService
+	config *config.ConfigService
 }
 
 //
@@ -51,21 +48,21 @@ type ServiceHandler struct {
 
 func (s *ServiceHandler) NewStateAndApplier() (state.VMWrapper, state.Applier) {
 	// sanity
-	if s.vm == nil || s.applier == nil {
+	if s.vm == nil {
 		panic("call new service handler first")
 	}
 	return s, s
 }
 
 func (s *ServiceHandler) NewKeyManager() state.KeyManager {
-	if s.vm == nil || s.applier == nil {
+	if s.vm == nil {
 		panic("call new service handler first")
 	}
 	return newKeyManager()
 }
 
 func (s *ServiceHandler) NewValidationConfig() state.ValidationConfig {
-	if s.vm == nil || s.applier == nil {
+	if s.vm == nil {
 		panic("call new service handler first")
 	}
 
@@ -151,7 +148,7 @@ func (s *ServiceHandler) CreateActor(code cid.Cid, addr address.Address, balance
 //
 
 func (s *ServiceHandler) ApplyMessage(epoch abi.ChainEpoch, msg *types.Message) (types.ApplyMessageResult, error) {
-	reply, err := s.applier.ApplyMessage(epoch, msg)
+	reply, err := s.vm.ApplyMessage(epoch, msg)
 	if err != nil {
 		return types.ApplyMessageResult{}, err
 	}
@@ -165,7 +162,7 @@ func (s *ServiceHandler) ApplyMessage(epoch abi.ChainEpoch, msg *types.Message) 
 }
 
 func (s *ServiceHandler) ApplySignedMessage(epoch abi.ChainEpoch, msg *types.SignedMessage) (types.ApplyMessageResult, error) {
-	reply, err := s.applier.ApplySignedMessage(epoch, msg)
+	reply, err := s.vm.ApplySignedMessage(epoch, msg)
 	if err != nil {
 		return types.ApplyMessageResult{}, err
 	}
@@ -179,7 +176,7 @@ func (s *ServiceHandler) ApplySignedMessage(epoch abi.ChainEpoch, msg *types.Sig
 
 // TODO the RandomnessSource is going to be tricky to do over RPC
 func (s *ServiceHandler) ApplyTipSetMessages(epoch abi.ChainEpoch, blocks []types.BlockMessagesInfo, rnd state.RandomnessSource) (types.ApplyTipSetResult, error) {
-	reply, err := s.applier.ApplyTipSetMessages(epoch, blocks, nil)
+	reply, err := s.vm.ApplyTipSetMessages(epoch, blocks, nil)
 	if err != nil {
 		return types.ApplyTipSetResult{}, err
 	}
