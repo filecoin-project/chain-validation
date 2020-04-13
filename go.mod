@@ -22,7 +22,6 @@ require (
 	github.com/multiformats/go-varint v0.0.5
 	github.com/stretchr/testify v1.4.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200321164527-9340289d0ca7
-	gopkg.in/urfave/cli.v2 v2.0.0-20180128182452-d3ae77c26ac8
 )
 
 replace github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi
