@@ -11,13 +11,9 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/runtime"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log"
-	"github.com/minio/blake2b-simd"
-
-	// TODO reimplement these
-	lotustypes "github.com/filecoin-project/lotus/chain/types"
-	lotuswallet "github.com/filecoin-project/lotus/chain/wallet"
 
 	"github.com/filecoin-project/chain-validation/chain/types"
+	"github.com/filecoin-project/chain-validation/chain/wallet"
 	"github.com/filecoin-project/chain-validation/client"
 	"github.com/filecoin-project/chain-validation/client/services/config"
 	"github.com/filecoin-project/chain-validation/client/services/vmwrapper"
@@ -190,10 +186,9 @@ func (s *ServiceHandler) ApplyTipSetMessages(epoch abi.ChainEpoch, blocks []type
 // KeyManager
 //
 
-// XXX: lazily use the lotus wallet package as I don't feel like reimplementing it
 type KeyManager struct {
 	// Private keys by address
-	keys map[address.Address]*lotuswallet.Key
+	keys map[address.Address]*wallet.Key
 
 	// Seed for deterministic secp key generation.
 	secpSeed int64
@@ -203,7 +198,7 @@ type KeyManager struct {
 
 func newKeyManager() *KeyManager {
 	return &KeyManager{
-		keys:     make(map[address.Address]*lotuswallet.Key),
+		keys:     make(map[address.Address]*wallet.Key),
 		secpSeed: 0,
 	}
 }
@@ -225,36 +220,18 @@ func (k *KeyManager) Sign(addr address.Address, data []byte) (acrypto.Signature,
 	if !ok {
 		return acrypto.Signature{}, fmt.Errorf("unknown address %v", addr)
 	}
-	var sigType acrypto.SigType
-	if ki.Type == lotuswallet.KTSecp256k1 {
-		sigType = acrypto.SigTypeBLS
-		hashed := blake2b.Sum256(data)
-		sig, err := crypto.Sign(ki.PrivateKey, hashed[:])
-		if err != nil {
-			return acrypto.Signature{}, err
-		}
-
-		return acrypto.Signature{
-			Type: sigType,
-			Data: sig,
-		}, nil
-	} else if ki.Type == lotuswallet.KTBLS {
-		panic("lotus validator cannot sign BLS messages")
-	} else {
-		panic("unknown signature type")
-	}
-
+	return wallet.Sign(data, ki.PrivateKey, ki.Type)
 }
 
-func (k *KeyManager) newSecp256k1Key() *lotuswallet.Key {
+func (k *KeyManager) newSecp256k1Key() *wallet.Key {
 	randSrc := rand.New(rand.NewSource(k.secpSeed))
 	prv, err := crypto.GenerateKeyFromSeed(randSrc)
 	if err != nil {
 		panic(err)
 	}
 	k.secpSeed++
-	key, err := lotuswallet.NewKey(lotustypes.KeyInfo{
-		Type:       lotuswallet.KTSecp256k1,
+	key, err := wallet.NewKey(wallet.KeyInfo{
+		Type:       acrypto.SigTypeSecp256k1,
 		PrivateKey: prv,
 	})
 	if err != nil {
@@ -263,15 +240,15 @@ func (k *KeyManager) newSecp256k1Key() *lotuswallet.Key {
 	return key
 }
 
-func (k *KeyManager) newBLSKey() *lotuswallet.Key {
+func (k *KeyManager) newBLSKey() *wallet.Key {
 	// FIXME: bls needs deterministic key generation
 	//sk := ffi.PrivateKeyGenerate(s.blsSeed)
 	// s.blsSeed++
 	sk := [32]byte{}
 	sk[0] = uint8(k.blsSeed) // hack to keep gas values determinist
 	k.blsSeed++
-	key, err := lotuswallet.NewKey(lotustypes.KeyInfo{
-		Type:       lotuswallet.KTBLS,
+	key, err := wallet.NewKey(wallet.KeyInfo{
+		Type:       acrypto.SigTypeBLS,
 		PrivateKey: sk[:],
 	})
 	if err != nil {
