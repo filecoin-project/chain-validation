@@ -9,17 +9,22 @@ import (
 	big "github.com/filecoin-project/specs-actors/actors/abi/big"
 	crypto "github.com/filecoin-project/specs-actors/actors/crypto"
 	runtime "github.com/filecoin-project/specs-actors/actors/runtime"
-	adt "github.com/filecoin-project/specs-actors/actors/util/adt"
 )
 
 // VMWrapper abstracts the inspection and mutation of an implementation-specific state tree and storage.
 // The interface wraps a single, mutable state.
 type VMWrapper interface {
+	// Instantiate a new VM
+	NewVM()
+
 	// Returns the CID of the root node of the state tree.
 	Root() cid.Cid
 
-	// Returns the current VM storage
-	Store() adt.Store
+	// Get the value at key from vm store
+	StoreGet(key cid.Cid, out runtime.CBORUnmarshaler) error
+
+	// Put `value` into vm store
+	StorePut(value runtime.CBORMarshaler) (cid.Cid, error)
 
 	// Returns the actor state at `address` (or an error if there is none).
 	Actor(address address.Address) (Actor, error)
@@ -31,6 +36,7 @@ type VMWrapper interface {
 	CreateActor(code cid.Cid, addr address.Address, balance abi.TokenAmount, state runtime.CBORMarshaler) (Actor, address.Address, error)
 }
 
+// TODO this needs to be implemented by chain validation. Providing these methods over RPC doesn't add a lot of value.
 type KeyManager interface {
 	// Creates a new secp private key and returns the associated address.
 	NewSECP256k1AccountAddress() address.Address
