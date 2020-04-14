@@ -151,20 +151,18 @@ func (d *StateDriver) newMinerAccountActor() address.Address {
 	var spa power_spec.State
 	d.GetActorState(builtin_spec.StoragePowerActorAddr, &spa)
 
-	// set the miners balance in the storage power actors state
-	table := adt_spec.AsBalanceTable(AsStore(d.State()), spa.EscrowTable)
-	err = table.Set(minerActorIDAddr, big_spec.Zero())
-	require.NoError(d.tb, err)
-	spa.EscrowTable = table.Root()
-
 	// set the miners claim in the storage power actors state
-	hm := adt_spec.AsMap(AsStore(d.State()), spa.Claims)
+	hm, err := adt_spec.AsMap(AsStore(d.State()), spa.Claims)
+	require.NoError(d.tb, err)
+
 	err = hm.Put(adt_spec.AddrKey(minerActorIDAddr), &power_spec.Claim{
-		Power:  abi_spec.NewStoragePower(0),
-		Pledge: abi_spec.NewTokenAmount(0),
+		RawBytePower:    abi_spec.NewStoragePower(0),
+		QualityAdjPower: abi_spec.NewTokenAmount(0),
 	})
 	require.NoError(d.tb, err)
-	spa.Claims = hm.Root()
+
+	spa.Claims, err = hm.Root()
+	require.NoError(d.tb, err)
 
 	// now update its state in the tree
 	d.PutState(&spa)

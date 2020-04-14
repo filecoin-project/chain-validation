@@ -234,10 +234,6 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 		return ownerCallSeq
 	}
 
-	candidates := []abi_spec.PoStCandidate{{
-		RegisteredProof: abi_spec.RegisteredProof_StackedDRG32GiBPoSt,
-		ChallengeIndex:  0,
-	}}
 	proofs := []abi_spec.PoStProof{{
 		RegisteredProof: abi_spec.RegisteredProof_StackedDRG32GiBPoSt,
 		ProofBytes:      []byte("doesn't matter"),
@@ -248,7 +244,7 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 	tipB.WithBlockBuilder(
 		drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
 			WithBLSMessageOk(
-				td.MessageProducer.MinerSubmitWindowedPoSt(minerActorID, minerWorker, abi_spec.OnChainPoStVerifyInfo{Candidates: candidates, Proofs: proofs},
+				td.MessageProducer.MinerSubmitWindowedPoSt(minerActorID, minerWorker, abi_spec.OnChainWindowPoStVerifyInfo{Proofs: proofs},
 					chain.Nonce(incWorkerCallSeq()), chain.Value(big_spec.Zero())),
 			),
 	).ApplyAndValidate()
@@ -272,5 +268,6 @@ func TestMinerSubmitFallbackPoSt(t *testing.T, factory state.Factories) {
 
 	var powerSt power_spec.State
 	td.GetActorState(builtin_spec.StoragePowerActorAddr, &powerSt)
-	assert.Equal(t, drivers.InitialTotalNetworkPower+int64(32<<30), powerSt.TotalNetworkPower.Int64())
+	// FIXME: ensure this is the correct assertion to make after the changes that landed in specs-actors
+	assert.Equal(t, drivers.InitialTotalNetworkPower+int64(32<<30), powerSt.TotalRawBytePower.Int64())
 }

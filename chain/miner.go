@@ -27,7 +27,7 @@ func (mp *MessageProducer) MinerChangePeerID(to, from address.Address, params mi
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsMiner.ChangePeerID, ser, opts...)
 }
-func (mp *MessageProducer) MinerSubmitWindowedPoSt(to, from address.Address, params abi.OnChainPoStVerifyInfo, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) MinerSubmitWindowedPoSt(to, from address.Address, params abi.OnChainWindowPoStVerifyInfo, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsMiner.SubmitWindowedPoSt, ser, opts...)
 }
@@ -62,4 +62,16 @@ func (mp *MessageProducer) MinerOnDeferredCronEvent(to, from address.Address, pa
 func (mp *MessageProducer) MinerCheckSectorProven(to, from address.Address, params miner.CheckSectorProvenParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsMiner.CheckSectorProven, ser, opts...)
+}
+func (mp *MessageProducer) MinerAwardReward(to, from address.Address, params adt.EmptyValue, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(&params)
+	return mp.Build(to, from, builtin_spec.MethodsMiner.AwardReward, ser, opts...)
+}
+func (mp *MessageProducer) MinerReportConsensusFault(to, from address.Address, params miner.ReportConsensusFaultParams, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(&params)
+	return mp.Build(to, from, builtin_spec.MethodsMiner.ReportConsensusFault, ser, opts...)
+}
+func (mp *MessageProducer) MinerWithdrawBalance(to, from address.Address, params miner.WithdrawBalanceParams, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(&params)
+	return mp.Build(to, from, builtin_spec.MethodsMiner.WithdrawBalance, ser, opts...)
 }

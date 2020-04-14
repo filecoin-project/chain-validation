@@ -44,7 +44,7 @@ func (c ChainValidationSyscalls) VerifySeal(info abi.SealVerifyInfo) error {
 	return nil
 }
 
-func (c ChainValidationSyscalls) VerifyPoSt(info abi.PoStVerifyInfo) error {
+func (c ChainValidationSyscalls) VerifyPoSt(info abi.WindowPoStVerifyInfo) error {
 	return nil
 }
 
