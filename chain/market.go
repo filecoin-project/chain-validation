@@ -41,3 +41,7 @@ func (mp *MessageProducer) MarketComputeDataCommitment(to, from address.Address,
 	ser := MustSerialize(&params)
 	return mp.Build(to, from, builtin_spec.MethodsMarket.ComputeDataCommitment, ser, opts...)
 }
+func (mp *MessageProducer) MarketHandleInitTimeoutDeals(to, from address.Address, params market.HandleInitTimeoutDealsParams, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(&params)
+	return mp.Build(to, from, builtin_spec.MethodsMarket.HandleInitTimeoutDeals, ser, opts...)
+}
