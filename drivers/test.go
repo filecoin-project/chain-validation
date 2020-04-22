@@ -93,10 +93,10 @@ func init() {
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.StoragePowerActorCodeID,
 		State: &power_spec.State{
-			TotalNetworkPower:        abi_spec.NewStoragePower(InitialTotalNetworkPower),
-			EscrowTable:              EmptyMapCid,
+			TotalRawBytePower:        abi_spec.NewStoragePower(InitialTotalNetworkPower),
+			TotalQualityAdjPower:     abi_spec.NewStoragePower(InitialTotalNetworkPower),
+			TotalPledgeCollateral:    abi_spec.NewTokenAmount(0),
 			CronEventQueue:           EmptyMapCid,
-			PoStDetectedFaultMiners:  EmptyMapCid,
 			Claims:                   EmptyMapCid,
 			NumMinersMeetingMinPower: 0,
 		},
@@ -452,11 +452,13 @@ func (td *TestDriver) AssertMultisigTransaction(multisigAddr address.Address, tx
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	txnMap := adt_spec.AsMap(AsStore(td.State()), msState.PendingTxns)
+	txnMap, err := adt_spec.AsMap(AsStore(td.State()), msState.PendingTxns)
+	require.NoError(td.T, err)
+
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
-	assert.NoError(td.T, err)
-	assert.True(td.T, found)
+	require.NoError(td.T, err)
+	require.True(td.T, found)
 
 	assert.Equal(td.T, txn, actualTxn)
 }
@@ -465,10 +467,13 @@ func (td *TestDriver) AssertMultisigContainsTransaction(multisigAddr address.Add
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	txnMap := adt_spec.AsMap(AsStore(td.State()), msState.PendingTxns)
+	txnMap, err := adt_spec.AsMap(AsStore(td.State()), msState.PendingTxns)
+	require.NoError(td.T, err)
+
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
 	require.NoError(td.T, err)
+
 	assert.Equal(td.T, contains, found)
 
 }
@@ -519,7 +524,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce uint64, value abi_s
 		td.MessageProducer.CreateMultisigActor(from, params.Signers, params.UnlockDuration, params.NumApprovalsThreshold, chain.Nonce(nonce), chain.Value(value)),
 		code, retval)
 	/* Assert the actor state was setup as expected */
-	pendingTxMap, err := adt_spec.MakeEmptyMap(newMockStore())
+	pendingTxMapRoot, err := adt_spec.MakeEmptyMap(newMockStore()).Root()
 	require.NoError(td.T, err)
 	initialBalance := big_spec.Zero()
 	startEpoch := abi_spec.ChainEpoch(0)
@@ -536,7 +541,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce uint64, value abi_s
 		UnlockDuration:        params.UnlockDuration,
 		NumApprovalsThreshold: params.NumApprovalsThreshold,
 
-		PendingTxns: pendingTxMap.Root(),
+		PendingTxns: pendingTxMapRoot,
 	})
 	td.AssertBalance(multisigAddr, value)
 }
