@@ -29,7 +29,6 @@ import (
 	cbor "github.com/ipfs/go-ipld-cbor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -561,31 +560,35 @@ func (r *RewardSummary) For(a address.Address) abi_spec.TokenAmount {
 }
 
 func (td *TestDriver) GetRewardSummary() *RewardSummary {
-	var rst reward_spec.State
-	td.GetActorState(builtin_spec.RewardActorAddr, &rst)
-	rewards := make(map[address.Address]abi_spec.TokenAmount)
-	// Traverse map keyed by miner address.
-	var r cbg.CborCid
-	err := adt_spec.AsMap(AsStore(td.State()), rst.RewardMap).ForEach(&r, func(key string) error {
-		keyAddr, err := address.NewFromBytes([]byte(key))
-		require.NoError(td.T, err)
+	/*
+		var rst reward_spec.State
+		td.GetActorState(builtin_spec.RewardActorAddr, &rst)
+		rewards := make(map[address.Address]abi_spec.TokenAmount)
+		// Traverse map keyed by miner address.
+		var r cbg.CborCid
+		err := adt_spec.AsMap(AsStore(td.State()), rst.RewardMap).ForEach(&r, func(key string) error {
+			keyAddr, err := address.NewFromBytes([]byte(key))
+			require.NoError(td.T, err)
 
-		// Traverse array of reward entries.
-		sum := big_spec.Zero()
-		var rw reward_spec.Reward
-		err = adt_spec.AsArray(AsStore(td.State()), cid.Cid(r)).ForEach(&rw, func(i int64) error {
-			sum = big_spec.Sub(big_spec.Add(sum, rw.Value), rw.AmountWithdrawn)
+			// Traverse array of reward entries.
+			sum := big_spec.Zero()
+			var rw reward_spec.Reward
+			err = adt_spec.AsArray(AsStore(td.State()), cid.Cid(r)).ForEach(&rw, func(i int64) error {
+				sum = big_spec.Sub(big_spec.Add(sum, rw.Value), rw.AmountWithdrawn)
+				return nil
+			})
+			require.NoError(td.T, err)
+
+			rewards[keyAddr] = sum
 			return nil
 		})
 		require.NoError(td.T, err)
+		return &RewardSummary{
+			Treasury:    td.GetBalance(builtin_spec.RewardActorAddr),
+			RewardTotal: rst.RewardTotal,
+			Rewards:     rewards,
+		}
 
-		rewards[keyAddr] = sum
-		return nil
-	})
-	require.NoError(td.T, err)
-	return &RewardSummary{
-		Treasury:    td.GetBalance(builtin_spec.RewardActorAddr),
-		RewardTotal: rst.RewardTotal,
-		Rewards:     rewards,
-	}
+	*/
+	return nil
 }

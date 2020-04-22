@@ -8,7 +8,6 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/filecoin-project/specs-actors/actors/abi/big"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
-	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/stretchr/testify/assert"
 
@@ -17,6 +16,9 @@ import (
 	"github.com/filecoin-project/chain-validation/state"
 	"github.com/filecoin-project/chain-validation/suites/utils"
 )
+
+// XXX: get things to compile
+var BlockRewardTarget = big.Zero()
 
 // Test for semantically in/valid messages, including miner penalties.
 func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
@@ -67,7 +69,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 				// No reward is paid to the miner directly. The funds for block reward were already held by the
 				// reward actor. The gas reward should be added to the treasury. The sum of block and gas reward
 				// should be chalked up to the miner address.
-				thisReward := big.Add(reward.BlockRewardTarget, gasSum)
+				thisReward := big.Add(BlockRewardTarget, gasSum)
 				newRewards := td.GetRewardSummary()
 				assert.Equal(t, big.Add(prevRewards.Treasury, gasSum), newRewards.Treasury)
 				assert.Equal(t, big.Add(prevRewards.For(miner), thisReward), newRewards.For(miner))
@@ -212,7 +214,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 }
 
 func validateRewards(t testing.TB, prevRewards *drivers.RewardSummary, newRewards *drivers.RewardSummary, miner addr.Address, gasReward big.Int, gasPenalty big.Int) {
-	rwd := big.Add(big.Sub(reward.BlockRewardTarget, gasPenalty), gasReward)
+	rwd := big.Add(big.Sub(BlockRewardTarget, gasPenalty), gasReward)
 	assert.Equal(t, big.Add(big.Sub(prevRewards.Treasury, gasPenalty), gasReward), newRewards.Treasury)
 	assert.Equal(t, big.Add(prevRewards.For(miner), rwd), newRewards.For(miner))
 	assert.Equal(t, big.Add(prevRewards.RewardTotal, rwd), newRewards.RewardTotal)
