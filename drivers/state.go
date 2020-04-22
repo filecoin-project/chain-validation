@@ -124,52 +124,63 @@ func (d *StateDriver) newMinerAccountActor() address.Address {
 	expectedMinerActorIDAddress := utils.NewIDAddr(d.tb, utils.IdFromAddress(minerWorkerID)+1)
 	minerActorAddrs := computeInitActorExecReturn(d.tb, minerWorkerPk, 0, 1, expectedMinerActorIDAddress)
 
-	// create the miner actor so it exists in the init actors map
+	// create the miner actor s.t. it exists in the init actors map
 	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), &miner_spec.State{
-		PreCommittedSectors: EmptyMapCid,
-		Sectors:             EmptyArrayCid,
-		FaultSet:            abi_spec.NewBitField(),
-		ProvingSet:          EmptyArrayCid,
 		Info: miner_spec.MinerInfo{
 			Owner:            minerOwnerID,
 			Worker:           minerWorkerID,
 			PendingWorkerKey: nil,
 			PeerId:           "chain-validation",
 			SectorSize:       0,
+			// XXX: verify
+			ProvingPeriodBoundary: 0,
 		},
-		PoStState: miner_spec.PoStState{
-			ProvingPeriodStart:     -1,
-			NumConsecutiveFailures: 0,
-		},
+
+		PreCommitDeposits: abi_spec.NewTokenAmount(0),
+		LockedFunds:       abi_spec.NewTokenAmount(0),
+
+		PreCommittedSectors: EmptyMapCid,
+		VestingFunds:        EmptyArrayCid,
+		Sectors:             EmptyArrayCid,
+		SectorExpirations:   EmptyArrayCid,
+		FaultEpochs:         EmptyArrayCid,
+		Deadlines:           EmptyDeadlinesCid,
+
+		NewSectors:      abi_spec.NewBitField(),
+		Faults:          abi_spec.NewBitField(),
+		Recoveries:      abi_spec.NewBitField(),
+		PostSubmissions: abi_spec.NewBitField(),
 	})
 	require.NoError(d.tb, err)
 	// sanity check above code
 	require.Equal(d.tb, expectedMinerActorIDAddress, minerActorIDAddr)
-	// great the miner actor has been created, exists in the state tree, and has an entry in the init actor
-	// now we need to update the storage power actor such that it is aware of the miner
-	// get the spa state
+	// a miner actor has been created, exists in the state tree, and has an entry in the init actor.
+	// next update the storage power actor to track the miner
+
 	var spa power_spec.State
 	d.GetActorState(builtin_spec.StoragePowerActorAddr, &spa)
 
-	// set the miners balance in the storage power actors state
-	table := adt_spec.AsBalanceTable(AsStore(d.State()), spa.EscrowTable)
-	err = table.Set(minerActorIDAddr, big_spec.Zero())
+	// set the miners claim
+	hm, err := adt_spec.AsMap(AsStore(d.State()), spa.Claims)
 	require.NoError(d.tb, err)
-	spa.EscrowTable = table.Root()
 
-	// set the miners claim in the storage power actors state
-	hm := adt_spec.AsMap(AsStore(d.State()), spa.Claims)
+	// add claim for the miner
 	err = hm.Put(adt_spec.AddrKey(minerActorIDAddr), &power_spec.Claim{
-		Power:  abi_spec.NewStoragePower(0),
-		Pledge: abi_spec.NewTokenAmount(0),
+		RawBytePower:    abi_spec.NewStoragePower(0),
+		QualityAdjPower: abi_spec.NewTokenAmount(0),
 	})
 	require.NoError(d.tb, err)
-	spa.Claims = hm.Root()
 
-	// now update its state in the tree
+	// save the claim
+	spa.Claims, err = hm.Root()
+	require.NoError(d.tb, err)
+
+	// update miner count
+	spa.MinerCount += 1
+
+	// update storage power actor's state in the tree
 	d.PutState(&spa)
 
-	// tada a miner has been created without apply a message
 	return minerActorIDAddr
 }
 

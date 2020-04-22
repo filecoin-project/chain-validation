@@ -15,6 +15,7 @@ import (
 	cron_spec "github.com/filecoin-project/specs-actors/actors/builtin/cron"
 	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	market_spec "github.com/filecoin-project/specs-actors/actors/builtin/market"
+	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
@@ -39,10 +40,11 @@ import (
 var (
 
 	// initialized by calling initializeStoreWithAdtRoots
-	EmptyArrayCid    cid.Cid
-	EmptyMapCid      cid.Cid
-	EmptyMultiMapCid cid.Cid
-	EmptySetCid      cid.Cid
+	EmptyArrayCid     cid.Cid
+	EmptyDeadlinesCid cid.Cid
+	EmptyMapCid       cid.Cid
+	EmptyMultiMapCid  cid.Cid
+	EmptySetCid       cid.Cid
 )
 
 var (
@@ -145,29 +147,33 @@ func init() {
 }
 
 func initializeStoreWithAdtRoots(store adt_spec.Store) error {
-	emptyArray, err := adt_spec.MakeEmptyArray(store)
+	var err error
+	EmptyArrayCid, err = adt_spec.MakeEmptyArray(store).Root()
 	if err != nil {
 		return err
 	}
-	EmptyArrayCid = emptyArray.Root()
 
-	emptyMap, err := adt_spec.MakeEmptyMap(store)
+	EmptyMapCid, err = adt_spec.MakeEmptyMap(store).Root()
 	if err != nil {
 		return err
 	}
-	EmptyMapCid = emptyMap.Root()
 
-	emptyMultiMap, err := adt_spec.MakeEmptyMultimap(store)
+	EmptyMultiMapCid, err = adt_spec.MakeEmptyMultimap(store).Root()
 	if err != nil {
 		return err
 	}
-	EmptyMultiMapCid = emptyMultiMap.Root()
 
-	emptySet, err := adt_spec.MakeEmptySet(store)
+	EmptySetCid, err = adt_spec.MakeEmptySet(store).Root()
 	if err != nil {
 		return err
 	}
-	EmptySetCid = emptySet.Root()
+
+	emptyDeadlines := miner.ConstructDeadlines()
+	EmptyDeadlinesCid, err = store.Put(context.Background(), emptyDeadlines)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
