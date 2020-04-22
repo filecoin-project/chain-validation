@@ -7,7 +7,7 @@ all: build lint tidy
 SUBMODULES=
 
 FFI_PATH:=./extern/filecoin-ffi/
-FFI_DEPS:=libfilecoin.a filecoin.pc filecoin.h
+FFI_DEPS:=.install-filcrypto
 FFI_DEPS:=$(addprefix $(FFI_PATH),$(FFI_DEPS))
 
 $(FFI_DEPS): .filecoin-build ;
