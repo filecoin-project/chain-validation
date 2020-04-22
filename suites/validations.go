@@ -28,6 +28,5 @@ func TipSetTestCases() []TestCase {
 		tipset.TestBlockMessageDeduplication,
 		tipset.TestMinerRewardsAndPenalties,
 		tipset.TestMinerMissPoStChallengeWindow,
-		tipset.TestMinerSubmitFallbackPoSt,
 	}
 }
