@@ -548,51 +548,21 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce uint64, value abi_s
 	td.AssertBalance(multisigAddr, value)
 }
 
-// XXX: changes needed here
 type RewardSummary struct {
-	Treasury    abi_spec.TokenAmount
-	RewardTotal abi_spec.TokenAmount
-	Rewards     map[address.Address]abi_spec.TokenAmount
-}
-
-func (r *RewardSummary) For(a address.Address) abi_spec.TokenAmount {
-	v, ok := r.Rewards[a]
-	if !ok {
-		return big_spec.Zero()
-	}
-	return v
+	Treasury           abi_spec.TokenAmount
+	SimpleSupply       abi_spec.TokenAmount
+	BaselineSupply     abi_spec.TokenAmount
+	LastPerEpochReward abi_spec.TokenAmount
 }
 
 func (td *TestDriver) GetRewardSummary() *RewardSummary {
-	/*
-		var rst reward_spec.State
-		td.GetActorState(builtin_spec.RewardActorAddr, &rst)
-		rewards := make(map[address.Address]abi_spec.TokenAmount)
-		// Traverse map keyed by miner address.
-		var r cbg.CborCid
-		err := adt_spec.AsMap(AsStore(td.State()), rst.RewardMap).ForEach(&r, func(key string) error {
-			keyAddr, err := address.NewFromBytes([]byte(key))
-			require.NoError(td.T, err)
+	var rst reward_spec.State
+	td.GetActorState(builtin_spec.RewardActorAddr, &rst)
 
-			// Traverse array of reward entries.
-			sum := big_spec.Zero()
-			var rw reward_spec.Reward
-			err = adt_spec.AsArray(AsStore(td.State()), cid.Cid(r)).ForEach(&rw, func(i int64) error {
-				sum = big_spec.Sub(big_spec.Add(sum, rw.Value), rw.AmountWithdrawn)
-				return nil
-			})
-			require.NoError(td.T, err)
-
-			rewards[keyAddr] = sum
-			return nil
-		})
-		require.NoError(td.T, err)
-		return &RewardSummary{
-			Treasury:    td.GetBalance(builtin_spec.RewardActorAddr),
-			RewardTotal: rst.RewardTotal,
-			Rewards:     rewards,
-		}
-
-	*/
-	return nil
+	return &RewardSummary{
+		Treasury:           td.GetBalance(builtin_spec.RewardActorAddr),
+		SimpleSupply:       rst.SimpleSupply,
+		BaselineSupply:     rst.BaselineSupply,
+		LastPerEpochReward: rst.LastPerEpochReward,
+	}
 }
