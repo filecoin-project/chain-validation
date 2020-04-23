@@ -59,8 +59,7 @@ var (
 
 // if this number is 0 we get a specs-actors panic since it divides by 0
 const (
-	TestSectorSize           = abi_spec.SectorSize(2048)
-	InitialTotalNetworkPower = 1
+	TestSectorSize = abi_spec.SectorSize(2048)
 )
 
 func init() {
@@ -95,8 +94,8 @@ func init() {
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.StoragePowerActorCodeID,
 		State: &power_spec.State{
-			TotalRawBytePower:        abi_spec.NewStoragePower(InitialTotalNetworkPower),
-			TotalQualityAdjPower:     abi_spec.NewStoragePower(InitialTotalNetworkPower),
+			TotalRawBytePower:        abi_spec.NewStoragePower(0),
+			TotalQualityAdjPower:     abi_spec.NewStoragePower(0),
 			TotalPledgeCollateral:    abi_spec.NewTokenAmount(0),
 			CronEventQueue:           EmptyMapCid,
 			Claims:                   EmptyMapCid,
@@ -287,8 +286,7 @@ func (td *TestDriver) Complete() {
 	// Gas expectation recording.
 	// Uncomment the following line to persist the actual gas values used to file as the new set
 	// of expectations.
-	//
-	//td.StateTracker.Record()
+	// td.StateTracker.Record()
 }
 
 //
