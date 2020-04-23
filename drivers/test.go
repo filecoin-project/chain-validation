@@ -545,6 +545,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce uint64, value abi_s
 	td.AssertBalance(multisigAddr, value)
 }
 
+// XXX: changes needed here
 type RewardSummary struct {
 	Treasury    abi_spec.TokenAmount
 	RewardTotal abi_spec.TokenAmount
