@@ -58,7 +58,10 @@ var (
 )
 
 // if this number is 0 we get a specs-actors panic since it divides by 0
-const InitialTotalNetworkPower = 1
+const (
+	TestSectorSize           = abi_spec.SectorSize(2048)
+	InitialTotalNetworkPower = 1
+)
 
 func init() {
 	ms := newMockStore()
@@ -246,7 +249,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		require.NoError(t, err)
 	}
 
-	minerActorIDAddr := sd.newMinerAccountActor()
+	minerActorIDAddr := sd.newMinerAccountActor(TestSectorSize, abi_spec.ChainEpoch(0))
 
 	exeCtx := types.NewExecutionContext(1, minerActorIDAddr)
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)

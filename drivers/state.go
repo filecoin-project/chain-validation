@@ -117,7 +117,7 @@ func (d *StateDriver) ActorPubKey(idAddress address.Address) address.Address {
 }
 
 // create miner without sending a message. modify the init and power actor manually
-func (d *StateDriver) newMinerAccountActor() address.Address {
+func (d *StateDriver) newMinerAccountActor(sectorSize abi_spec.SectorSize, periodBoundary abi_spec.ChainEpoch) address.Address {
 	// creat a miner, owner, and its worker
 	_, minerOwnerID := d.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 	minerWorkerPk, minerWorkerID := d.NewAccountActor(address.BLS, big_spec.Zero())
@@ -125,35 +125,11 @@ func (d *StateDriver) newMinerAccountActor() address.Address {
 	minerActorAddrs := computeInitActorExecReturn(d.tb, minerWorkerPk, 0, 1, expectedMinerActorIDAddress)
 
 	// create the miner actor s.t. it exists in the init actors map
-	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), &miner_spec.State{
-		Info: miner_spec.MinerInfo{
-			Owner:            minerOwnerID,
-			Worker:           minerWorkerID,
-			PendingWorkerKey: nil,
-			PeerId:           "chain-validation",
-			SectorSize:       0,
-			// XXX: verify
-			ProvingPeriodBoundary: 0,
-		},
-
-		PreCommitDeposits: abi_spec.NewTokenAmount(0),
-		LockedFunds:       abi_spec.NewTokenAmount(0),
-
-		PreCommittedSectors: EmptyMapCid,
-		VestingFunds:        EmptyArrayCid,
-		Sectors:             EmptyArrayCid,
-		SectorExpirations:   EmptyArrayCid,
-		FaultEpochs:         EmptyArrayCid,
-		Deadlines:           EmptyDeadlinesCid,
-
-		NewSectors:      abi_spec.NewBitField(),
-		Faults:          abi_spec.NewBitField(),
-		Recoveries:      abi_spec.NewBitField(),
-		PostSubmissions: abi_spec.NewBitField(),
-	})
+	minerState := miner_spec.ConstructState(EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid, minerOwnerID, minerWorkerID, "chain-validation", sectorSize, periodBoundary)
+	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), minerState)
 	require.NoError(d.tb, err)
-	// sanity check above code
 	require.Equal(d.tb, expectedMinerActorIDAddress, minerActorIDAddr)
+
 	// a miner actor has been created, exists in the state tree, and has an entry in the init actor.
 	// next update the storage power actor to track the miner
 
