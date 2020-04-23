@@ -67,11 +67,12 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 				newRewards := td.GetRewardSummary()
 
 				// total supply should decrease by the last reward amount
-				assert.Equal(t, newRewards.Treasury, big.Sub(prevRewards.Treasury, newRewards.LastPerEpochReward))
+				assert.Equal(t, big.Sub(prevRewards.Treasury, newRewards.LastPerEpochReward), newRewards.Treasury)
 
 				// the miners balance should have increased by the reward amount
 				thisReward := big.Add(newRewards.LastPerEpochReward, gasSum)
 				assert.Equal(t, td.GetBalance(miner), big.Add(prevMinerBal, thisReward))
+				assert.Equal(t, big.Add(prevMinerBal, thisReward), td.GetBalance(miner))
 
 				// no money was burnt
 				assert.Equal(t, big.Zero(), td.GetBalance(builtin.BurntFundsActorAddr))
@@ -216,5 +217,5 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 func validateRewards(td *drivers.TestDriver, prevRewards *drivers.RewardSummary, newRewards *drivers.RewardSummary, miner addr.Address, gasReward big.Int, gasPenalty big.Int) {
 	rwd := big.Add(big.Sub(newRewards.LastPerEpochReward, gasPenalty), gasReward)
 	assert.Equal(td.T, big.Add(prevRewards.LastPerEpochReward, rwd), td.GetBalance(miner))
-	assert.Equal(td.T, big.Sub(prevRewards.LastPerEpochReward, rwd), newRewards.LastPerEpochReward)
+	assert.Equal(td.T, big.Sub(prevRewards.Treasury, newRewards.LastPerEpochReward), newRewards.Treasury)
 }
