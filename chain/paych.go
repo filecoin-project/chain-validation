@@ -9,12 +9,12 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
-func (mp *MessageProducer) PaychConstructor(to, from address.Address, params paych.ConstructorParams, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) PaychConstructor(to, from address.Address, params *paych.ConstructorParams, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsPaych.Constructor, ser, opts...)
 }
-func (mp *MessageProducer) PaychUpdateChannelState(to, from address.Address, params paych.UpdateChannelStateParams, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(&params)
+func (mp *MessageProducer) PaychUpdateChannelState(to, from address.Address, params *paych.UpdateChannelStateParams, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsPaych.UpdateChannelState, ser, opts...)
 }
 func (mp *MessageProducer) PaychSettle(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {

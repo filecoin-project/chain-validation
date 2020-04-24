@@ -362,7 +362,7 @@ func (s *msStage) send(to address.Address, value abi.TokenAmount, method abi.Met
 		Method: method,
 		Params: buf.Bytes(),
 	}
-	msg := s.driver.MessageProducer.MultisigPropose(s.msAddr, s.creator, pparams, chain.Nonce(approverNonce))
+	msg := s.driver.MessageProducer.MultisigPropose(s.msAddr, s.creator, &pparams, chain.Nonce(approverNonce))
 	return s.driver.ApplyMessage(msg)
 }
 
