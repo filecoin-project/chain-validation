@@ -77,7 +77,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 			chain.MustSerialize(&createRet))
 
 		td.ApplyOk(
-			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
+			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, &paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
 					TimeLockMin: pcTimeLock,
 					TimeLockMax: 0, // TimeLockMax set to 0 means no timeout
@@ -111,7 +111,7 @@ func TestPaych(t *testing.T, factory state.Factories) {
 		td.AssertBalance(paychAddr, toSend)
 
 		td.ApplyOk(
-			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
+			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, &paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
 					TimeLockMin: abi_spec.ChainEpoch(1),
 					TimeLockMax: 0, // TimeLockMax set to 0 means no timeout

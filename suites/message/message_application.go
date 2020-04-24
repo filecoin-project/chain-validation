@@ -100,7 +100,7 @@ func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 
 		// message application fails due to invalid argument (signature).
 		td.ApplyFailure(
-			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, paych_spec.UpdateChannelStateParams{
+			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, &paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
 					TimeLockMin: pcTimeLock,
 					TimeLockMax: pcTimeLock,

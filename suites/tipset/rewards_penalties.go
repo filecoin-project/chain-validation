@@ -8,7 +8,6 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/filecoin-project/specs-actors/actors/abi/big"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
-	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/stretchr/testify/assert"
 
@@ -45,6 +44,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 				aBal := td.GetBalance(aliceId)
 				bBal := td.GetBalance(bobId)
 				prevRewards := td.GetRewardSummary()
+				prevMinerBal := td.GetBalance(miner)
 
 				// Process a block with two messages, a simple send back and forth between accounts.
 				result := tipB.WithBlockBuilder(
@@ -63,15 +63,18 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 				td.AssertBalance(bobId, big.Sub(bBal, result.Receipts[1].GasUsed.Big()))
 				gasSum := big.Add(result.Receipts[0].GasUsed.Big(), result.Receipts[1].GasUsed.Big()) // Exploit gas price = 1
 
-				// Validate rewards.
-				// No reward is paid to the miner directly. The funds for block reward were already held by the
-				// reward actor. The gas reward should be added to the treasury. The sum of block and gas reward
-				// should be chalked up to the miner address.
-				thisReward := big.Add(reward.BlockRewardTarget, gasSum)
+				// Validate rewards are paid directly to miner
 				newRewards := td.GetRewardSummary()
-				assert.Equal(t, big.Add(prevRewards.Treasury, gasSum), newRewards.Treasury)
-				assert.Equal(t, big.Add(prevRewards.For(miner), thisReward), newRewards.For(miner))
-				assert.Equal(t, big.Add(prevRewards.RewardTotal, thisReward), newRewards.RewardTotal)
+
+				// total supply should decrease by the last reward amount
+				assert.Equal(t, big.Sub(prevRewards.Treasury, newRewards.LastPerEpochReward), newRewards.Treasury)
+
+				// the miners balance should have increased by the reward amount
+				thisReward := big.Add(newRewards.LastPerEpochReward, gasSum)
+				assert.Equal(t, td.GetBalance(miner), big.Add(prevMinerBal, thisReward))
+				assert.Equal(t, big.Add(prevMinerBal, thisReward), td.GetBalance(miner))
+
+				// no money was burnt
 				assert.Equal(t, big.Zero(), td.GetBalance(builtin.BurntFundsActorAddr))
 
 				callSeq++
@@ -113,7 +116,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		gasPenalty := big.NewInt(342)
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward
-		validateRewards(t, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
 
@@ -147,7 +150,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		gasPenalty := big.NewInt(168)
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward.
-		validateRewards(t, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
 
@@ -172,7 +175,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		newRewards := td.GetRewardSummary()
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
 		gasPenalty := big.NewInt(38)
-		validateRewards(t, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
 
@@ -202,7 +205,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		newRewards := td.GetRewardSummary()
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
 		gasPenalty := big.NewInt(46)
-		validateRewards(t, prevRewards, newRewards, miner, result.Receipts[0].GasUsed.Big(), gasPenalty)
+		validateRewards(td, prevRewards, newRewards, miner, result.Receipts[0].GasUsed.Big(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(halfBalance, gasPenalty))
 	})
 
@@ -211,9 +214,8 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 	// - miner penalty followed by non-miner penalty with same nonce (in different block)
 }
 
-func validateRewards(t testing.TB, prevRewards *drivers.RewardSummary, newRewards *drivers.RewardSummary, miner addr.Address, gasReward big.Int, gasPenalty big.Int) {
-	rwd := big.Add(big.Sub(reward.BlockRewardTarget, gasPenalty), gasReward)
-	assert.Equal(t, big.Add(big.Sub(prevRewards.Treasury, gasPenalty), gasReward), newRewards.Treasury)
-	assert.Equal(t, big.Add(prevRewards.For(miner), rwd), newRewards.For(miner))
-	assert.Equal(t, big.Add(prevRewards.RewardTotal, rwd), newRewards.RewardTotal)
+func validateRewards(td *drivers.TestDriver, prevRewards *drivers.RewardSummary, newRewards *drivers.RewardSummary, miner addr.Address, gasReward big.Int, gasPenalty big.Int) {
+	rwd := big.Add(big.Sub(newRewards.LastPerEpochReward, gasPenalty), gasReward)
+	assert.Equal(td.T, big.Add(prevRewards.LastPerEpochReward, rwd), td.GetBalance(miner))
+	assert.Equal(td.T, big.Sub(prevRewards.Treasury, newRewards.LastPerEpochReward), newRewards.Treasury)
 }

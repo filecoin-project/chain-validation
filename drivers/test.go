@@ -15,6 +15,7 @@ import (
 	cron_spec "github.com/filecoin-project/specs-actors/actors/builtin/cron"
 	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	market_spec "github.com/filecoin-project/specs-actors/actors/builtin/market"
+	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
@@ -28,7 +29,6 @@ import (
 	cbor "github.com/ipfs/go-ipld-cbor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -39,10 +39,11 @@ import (
 var (
 
 	// initialized by calling initializeStoreWithAdtRoots
-	EmptyArrayCid    cid.Cid
-	EmptyMapCid      cid.Cid
-	EmptyMultiMapCid cid.Cid
-	EmptySetCid      cid.Cid
+	EmptyArrayCid     cid.Cid
+	EmptyDeadlinesCid cid.Cid
+	EmptyMapCid       cid.Cid
+	EmptyMultiMapCid  cid.Cid
+	EmptySetCid       cid.Cid
 )
 
 var (
@@ -56,8 +57,9 @@ var (
 	DefaultBuiltinActorsState      []ActorState
 )
 
-// if this number is 0 we get a specs-actors panic since it divides by 0
-const InitialTotalNetworkPower = 1
+const (
+	TestSectorSize = abi_spec.SectorSize(2048)
+)
 
 func init() {
 	ms := newMockStore()
@@ -91,10 +93,10 @@ func init() {
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.StoragePowerActorCodeID,
 		State: &power_spec.State{
-			TotalNetworkPower:        abi_spec.NewStoragePower(InitialTotalNetworkPower),
-			EscrowTable:              EmptyMapCid,
+			TotalRawBytePower:        abi_spec.NewStoragePower(0),
+			TotalQualityAdjPower:     abi_spec.NewStoragePower(0),
+			TotalPledgeCollateral:    abi_spec.NewTokenAmount(0),
 			CronEventQueue:           EmptyMapCid,
-			PoStDetectedFaultMiners:  EmptyMapCid,
 			Claims:                   EmptyMapCid,
 			NumMinersMeetingMinPower: 0,
 		},
@@ -145,29 +147,33 @@ func init() {
 }
 
 func initializeStoreWithAdtRoots(store adt_spec.Store) error {
-	emptyArray, err := adt_spec.MakeEmptyArray(store)
+	var err error
+	EmptyArrayCid, err = adt_spec.MakeEmptyArray(store).Root()
 	if err != nil {
 		return err
 	}
-	EmptyArrayCid = emptyArray.Root()
 
-	emptyMap, err := adt_spec.MakeEmptyMap(store)
+	EmptyMapCid, err = adt_spec.MakeEmptyMap(store).Root()
 	if err != nil {
 		return err
 	}
-	EmptyMapCid = emptyMap.Root()
 
-	emptyMultiMap, err := adt_spec.MakeEmptyMultimap(store)
+	EmptyMultiMapCid, err = adt_spec.MakeEmptyMultimap(store).Root()
 	if err != nil {
 		return err
 	}
-	EmptyMultiMapCid = emptyMultiMap.Root()
 
-	emptySet, err := adt_spec.MakeEmptySet(store)
+	EmptySetCid, err = adt_spec.MakeEmptySet(store).Root()
 	if err != nil {
 		return err
 	}
-	EmptySetCid = emptySet.Root()
+
+	emptyDeadlines := miner.ConstructDeadlines()
+	EmptyDeadlinesCid, err = store.Put(context.Background(), emptyDeadlines)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -241,7 +247,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		require.NoError(t, err)
 	}
 
-	minerActorIDAddr := sd.newMinerAccountActor()
+	minerActorIDAddr := sd.newMinerAccountActor(TestSectorSize, abi_spec.ChainEpoch(0))
 
 	exeCtx := types.NewExecutionContext(1, minerActorIDAddr)
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
@@ -279,8 +285,7 @@ func (td *TestDriver) Complete() {
 	// Gas expectation recording.
 	// Uncomment the following line to persist the actual gas values used to file as the new set
 	// of expectations.
-	//
-	//td.StateTracker.Record()
+	// td.StateTracker.Record()
 }
 
 //
@@ -446,11 +451,13 @@ func (td *TestDriver) AssertMultisigTransaction(multisigAddr address.Address, tx
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	txnMap := adt_spec.AsMap(AsStore(td.State()), msState.PendingTxns)
+	txnMap, err := adt_spec.AsMap(AsStore(td.State()), msState.PendingTxns)
+	require.NoError(td.T, err)
+
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
-	assert.NoError(td.T, err)
-	assert.True(td.T, found)
+	require.NoError(td.T, err)
+	require.True(td.T, found)
 
 	assert.Equal(td.T, txn, actualTxn)
 }
@@ -459,10 +466,13 @@ func (td *TestDriver) AssertMultisigContainsTransaction(multisigAddr address.Add
 	var msState multisig_spec.State
 	td.GetActorState(multisigAddr, &msState)
 
-	txnMap := adt_spec.AsMap(AsStore(td.State()), msState.PendingTxns)
+	txnMap, err := adt_spec.AsMap(AsStore(td.State()), msState.PendingTxns)
+	require.NoError(td.T, err)
+
 	var actualTxn multisig_spec.Transaction
 	found, err := txnMap.Get(txnID, &actualTxn)
 	require.NoError(td.T, err)
+
 	assert.Equal(td.T, contains, found)
 
 }
@@ -513,7 +523,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce uint64, value abi_s
 		td.MessageProducer.CreateMultisigActor(from, params.Signers, params.UnlockDuration, params.NumApprovalsThreshold, chain.Nonce(nonce), chain.Value(value)),
 		code, retval)
 	/* Assert the actor state was setup as expected */
-	pendingTxMap, err := adt_spec.MakeEmptyMap(newMockStore())
+	pendingTxMapRoot, err := adt_spec.MakeEmptyMap(newMockStore()).Root()
 	require.NoError(td.T, err)
 	initialBalance := big_spec.Zero()
 	startEpoch := abi_spec.ChainEpoch(0)
@@ -530,51 +540,26 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce uint64, value abi_s
 		UnlockDuration:        params.UnlockDuration,
 		NumApprovalsThreshold: params.NumApprovalsThreshold,
 
-		PendingTxns: pendingTxMap.Root(),
+		PendingTxns: pendingTxMapRoot,
 	})
 	td.AssertBalance(multisigAddr, value)
 }
 
 type RewardSummary struct {
-	Treasury    abi_spec.TokenAmount
-	RewardTotal abi_spec.TokenAmount
-	Rewards     map[address.Address]abi_spec.TokenAmount
-}
-
-func (r *RewardSummary) For(a address.Address) abi_spec.TokenAmount {
-	v, ok := r.Rewards[a]
-	if !ok {
-		return big_spec.Zero()
-	}
-	return v
+	Treasury           abi_spec.TokenAmount
+	SimpleSupply       abi_spec.TokenAmount
+	BaselineSupply     abi_spec.TokenAmount
+	LastPerEpochReward abi_spec.TokenAmount
 }
 
 func (td *TestDriver) GetRewardSummary() *RewardSummary {
 	var rst reward_spec.State
 	td.GetActorState(builtin_spec.RewardActorAddr, &rst)
-	rewards := make(map[address.Address]abi_spec.TokenAmount)
-	// Traverse map keyed by miner address.
-	var r cbg.CborCid
-	err := adt_spec.AsMap(AsStore(td.State()), rst.RewardMap).ForEach(&r, func(key string) error {
-		keyAddr, err := address.NewFromBytes([]byte(key))
-		require.NoError(td.T, err)
 
-		// Traverse array of reward entries.
-		sum := big_spec.Zero()
-		var rw reward_spec.Reward
-		err = adt_spec.AsArray(AsStore(td.State()), cid.Cid(r)).ForEach(&rw, func(i int64) error {
-			sum = big_spec.Sub(big_spec.Add(sum, rw.Value), rw.AmountWithdrawn)
-			return nil
-		})
-		require.NoError(td.T, err)
-
-		rewards[keyAddr] = sum
-		return nil
-	})
-	require.NoError(td.T, err)
 	return &RewardSummary{
-		Treasury:    td.GetBalance(builtin_spec.RewardActorAddr),
-		RewardTotal: rst.RewardTotal,
-		Rewards:     rewards,
+		Treasury:           td.GetBalance(builtin_spec.RewardActorAddr),
+		SimpleSupply:       rst.SimpleSupply,
+		BaselineSupply:     rst.BaselineSupply,
+		LastPerEpochReward: rst.LastPerEpochReward,
 	}
 }

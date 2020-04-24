@@ -21,7 +21,7 @@ func (mp *MessageProducer) Transfer(to, from address.Address, opts ...MsgOpt) *t
 }
 
 func (mp *MessageProducer) CreatePaymentChannelActor(to, from address.Address, opts ...MsgOpt) *types.Message {
-	return mp.InitExec(builtin_spec.InitActorAddr, from, init_spec.ExecParams{
+	return mp.InitExec(builtin_spec.InitActorAddr, from, &init_spec.ExecParams{
 		CodeCID: builtin_spec.PaymentChannelActorCodeID,
 		ConstructorParams: MustSerialize(&paych_spec.ConstructorParams{
 			From: from,
@@ -31,7 +31,7 @@ func (mp *MessageProducer) CreatePaymentChannelActor(to, from address.Address, o
 }
 
 func (mp *MessageProducer) CreateMultisigActor(from address.Address, signers []address.Address, unlockDuration abi_spec.ChainEpoch, numApprovals int64, opts ...MsgOpt) *types.Message {
-	return mp.InitExec(builtin_spec.InitActorAddr, from, init_spec.ExecParams{
+	return mp.InitExec(builtin_spec.InitActorAddr, from, &init_spec.ExecParams{
 		CodeCID: builtin_spec.MultisigActorCodeID,
 		ConstructorParams: MustSerialize(&multisig_spec.ConstructorParams{
 			Signers:               signers,
@@ -42,7 +42,7 @@ func (mp *MessageProducer) CreateMultisigActor(from address.Address, signers []a
 }
 
 func (mp *MessageProducer) CreateMinerActor(owner, worker address.Address, sectorSize abi_spec.SectorSize, pid peer.ID, opts ...MsgOpt) *types.Message {
-	return mp.PowerCreateMiner(builtin_spec.StoragePowerActorAddr, owner, power_spec.CreateMinerParams{
+	return mp.PowerCreateMiner(builtin_spec.StoragePowerActorAddr, owner, &power_spec.CreateMinerParams{
 		Worker:     worker,
 		Owner:      owner,
 		SectorSize: sectorSize,
