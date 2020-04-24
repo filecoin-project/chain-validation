@@ -57,7 +57,6 @@ var (
 	DefaultBuiltinActorsState      []ActorState
 )
 
-// if this number is 0 we get a specs-actors panic since it divides by 0
 const (
 	TestSectorSize = abi_spec.SectorSize(2048)
 )
