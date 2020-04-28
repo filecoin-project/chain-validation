@@ -178,6 +178,64 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
 
+	t.Run("miner penalty exceeds declared gas limit for BLS message", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		miner := td.ExeCtx.Miner
+		tb := drivers.NewTipSetMessageBuilder(td)
+		bb := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
+
+		alice, _ := td.NewAccountActor(drivers.BLS, acctDefaultBalance)
+
+		gasPrice := int64(2)
+		gasLimit := int64(128)
+		bb.WithBLSMessageAndCode(
+			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, alice,
+				chain.Nonce(1),
+				chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
+			exitcode.SysErrSenderStateInvalid,
+		)
+
+		prevRewards := td.GetRewardSummary()
+		tb.WithBlockBuilder(bb).ApplyAndValidate()
+
+		newRewards := td.GetRewardSummary()
+		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
+		gasPenalty := big.NewInt(256)
+		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
+	})
+
+	t.Run("miner penalty exceeds declared gas limit for SECP message", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		miner := td.ExeCtx.Miner
+		tb := drivers.NewTipSetMessageBuilder(td)
+		bb := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
+
+		alice, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
+
+		gasPrice := int64(2)
+		gasLimit := int64(208)
+		bb.WithSECPMessageAndCode(
+			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, alice,
+				chain.Nonce(1),
+				chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
+			exitcode.SysErrSenderStateInvalid,
+		)
+
+		prevRewards := td.GetRewardSummary()
+		tb.WithBlockBuilder(bb).ApplyAndValidate()
+
+		newRewards := td.GetRewardSummary()
+		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
+		gasPenalty := big.NewInt(416)
+		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
+	})
+
 	t.Run("penalize sender insufficient balance", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
