@@ -71,7 +71,6 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 				// the miners balance should have increased by the reward amount
 				thisReward := big.Add(newRewards.LastPerEpochReward, gasSum)
-				assert.Equal(t, td.GetBalance(miner), big.Add(prevMinerBal, thisReward))
 				assert.Equal(t, big.Add(prevMinerBal, thisReward), td.GetBalance(miner))
 
 				// no money was burnt
