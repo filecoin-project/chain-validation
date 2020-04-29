@@ -189,8 +189,8 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		alice, _ := td.NewAccountActor(drivers.BLS, acctDefaultBalance)
 
 		gasPrice := int64(2)
-		gasPenalty := int64(256)
-		gasLimit := gasPenalty - 128
+		gasPenalty := int64(260)
+		gasLimit := gasPenalty - 130
 
 		bb.WithBLSMessageAndCode(
 			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, alice,
@@ -220,8 +220,8 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		alice, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
 
 		gasPrice := int64(2)
-		gasPenalty := int64(416)
-		gasLimit := gasPenalty - 208
+		gasPenalty := int64(420)
+		gasLimit := gasPenalty - 210
 		bb.WithSECPMessageAndCode(
 			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, alice,
 				chain.Nonce(1), // cause the message application to fail resulting in a miner penalty.
