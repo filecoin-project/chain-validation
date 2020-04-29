@@ -117,7 +117,7 @@ func (d *StateDriver) ActorPubKey(idAddress address.Address) address.Address {
 }
 
 // create miner without sending a message. modify the init and power actor manually
-func (d *StateDriver) newMinerAccountActor(sectorSize abi_spec.SectorSize, periodBoundary abi_spec.ChainEpoch) address.Address {
+func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredProof, periodBoundary abi_spec.ChainEpoch) address.Address {
 	// creat a miner, owner, and its worker
 	_, minerOwnerID := d.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 	minerWorkerPk, minerWorkerID := d.NewAccountActor(address.BLS, big_spec.Zero())
@@ -125,7 +125,8 @@ func (d *StateDriver) newMinerAccountActor(sectorSize abi_spec.SectorSize, perio
 	minerActorAddrs := computeInitActorExecReturn(d.tb, minerWorkerPk, 0, 1, expectedMinerActorIDAddress)
 
 	// create the miner actor s.t. it exists in the init actors map
-	minerState := miner_spec.ConstructState(EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid, minerOwnerID, minerWorkerID, "chain-validation", sectorSize, periodBoundary)
+	minerState, err := miner_spec.ConstructState(EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid, minerOwnerID, minerWorkerID, "chain-validation", sealProofType, periodBoundary)
+	require.NoError(d.tb, err)
 	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), minerState)
 	require.NoError(d.tb, err)
 	require.Equal(d.tb, expectedMinerActorIDAddress, minerActorIDAddr)

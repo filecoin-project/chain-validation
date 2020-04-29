@@ -41,11 +41,11 @@ func (mp *MessageProducer) CreateMultisigActor(from address.Address, signers []a
 	}, opts...)
 }
 
-func (mp *MessageProducer) CreateMinerActor(owner, worker address.Address, sectorSize abi_spec.SectorSize, pid peer.ID, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) CreateMinerActor(owner, worker address.Address, sealProofType abi_spec.RegisteredProof, pid peer.ID, opts ...MsgOpt) *types.Message {
 	return mp.PowerCreateMiner(builtin_spec.StoragePowerActorAddr, owner, &power_spec.CreateMinerParams{
-		Worker:     worker,
-		Owner:      owner,
-		SectorSize: sectorSize,
-		Peer:       pid,
+		Worker:        worker,
+		Owner:         owner,
+		SealProofType: sealProofType,
+		Peer:          pid,
 	}, opts...)
 }
