@@ -295,7 +295,7 @@ func (td *TestDriver) Complete() {
 func (td *TestDriver) ApplyMessage(msg *types.Message) (result types.ApplyMessageResult) {
 	defer func() {
 		if r := recover(); r != nil {
-			result.Receipt.ExitCode = exitcode.SysErrInternal
+			result.Receipt.ExitCode = exitcode.SysErrForbidden
 			td.T.Fatalf("message application panicked: %v", r)
 		}
 	}()
@@ -334,7 +334,7 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result types.ApplyMessageResult) {
 	defer func() {
 		if r := recover(); r != nil {
-			result.Receipt.ExitCode = exitcode.SysErrInternal
+			result.Receipt.ExitCode = exitcode.SysErrForbidden
 			td.T.Fatalf("message application panicked: %v", r)
 		}
 	}()
