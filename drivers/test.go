@@ -58,7 +58,7 @@ var (
 )
 
 const (
-	TestSectorSize = abi_spec.SectorSize(2048)
+	TestSealProofType = abi_spec.RegisteredProof_StackedDRG2KiBSeal
 )
 
 func init() {
@@ -247,7 +247,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		require.NoError(t, err)
 	}
 
-	minerActorIDAddr := sd.newMinerAccountActor(TestSectorSize, abi_spec.ChainEpoch(0))
+	minerActorIDAddr := sd.newMinerAccountActor(TestSealProofType, abi_spec.ChainEpoch(0))
 
 	exeCtx := types.NewExecutionContext(1, minerActorIDAddr)
 	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
@@ -295,7 +295,6 @@ func (td *TestDriver) Complete() {
 func (td *TestDriver) ApplyMessage(msg *types.Message) (result types.ApplyMessageResult) {
 	defer func() {
 		if r := recover(); r != nil {
-			result.Receipt.ExitCode = exitcode.SysErrInternal
 			td.T.Fatalf("message application panicked: %v", r)
 		}
 	}()
@@ -334,7 +333,6 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result types.ApplyMessageResult) {
 	defer func() {
 		if r := recover(); r != nil {
-			result.Receipt.ExitCode = exitcode.SysErrInternal
 			td.T.Fatalf("message application panicked: %v", r)
 		}
 	}()
