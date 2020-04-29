@@ -112,7 +112,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 		newRewards := td.GetRewardSummary()
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		gasPenalty := big.NewInt(342)
+		gasPenalty := big.NewInt(350)
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward
 		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
@@ -146,7 +146,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 		newRewards := td.GetRewardSummary()
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		gasPenalty := big.NewInt(168)
+		gasPenalty := big.NewInt(176)
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward.
 		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
@@ -173,7 +173,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 		newRewards := td.GetRewardSummary()
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		gasPenalty := big.NewInt(38)
+		gasPenalty := big.NewInt(40)
 		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
@@ -203,7 +203,7 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 
 		newRewards := td.GetRewardSummary()
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		gasPenalty := big.NewInt(46)
+		gasPenalty := big.NewInt(48)
 		validateRewards(td, prevRewards, newRewards, miner, result.Receipts[0].GasUsed.Big(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(halfBalance, gasPenalty))
 	})
