@@ -14,6 +14,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/runtime"
+	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -320,17 +321,15 @@ type msStage struct {
 
 // Creates a multisig actor with its creator as sole approver.
 func prepareStage(td *drivers.TestDriver, creatorBalance, msBalance abi.TokenAmount) *msStage {
-	creatorPK, creatorId := td.NewAccountActor(drivers.SECP, creatorBalance)
+	_, creatorId := td.NewAccountActor(drivers.SECP, creatorBalance)
 
 	msg := td.MessageProducer.CreateMultisigActor(creatorId, []address.Address{creatorId}, 0, 1, chain.Value(msBalance), chain.Nonce(0))
-	var initAct init_.State
-	td.GetActorState(builtin.InitActorAddr, &initAct)
-	addr, err := address.NewIDAddress(uint64(initAct.NextID))
+	result := td.ApplyMessage(msg)
+	require.Equal(td.T, exitcode.Ok, result.Receipt.ExitCode)
+
+	var ret init_.ExecReturn
+	err := ret.UnmarshalCBOR(bytes.NewReader(result.Receipt.ReturnValue))
 	require.NoError(td.T, err)
-
-	ret := td.ComputeInitActorExecReturn(creatorPK, 0, 0, addr)
-
-	td.ApplyExpect(msg, chain.MustSerialize(&ret))
 
 	return &msStage{
 		driver:  td,
@@ -352,8 +351,9 @@ func (s *msStage) sendOk(to address.Address, value abi.TokenAmount, method abi.M
 		Params: buf.Bytes(),
 	}
 	msg := s.driver.MessageProducer.MultisigPropose(s.msAddr, s.creator, &pparams, chain.Nonce(approverNonce))
-	expRet := typegen.CborInt(0)
-	return s.driver.ApplyExpect(msg, chain.MustSerialize(&expRet))
+	result := s.driver.ApplyMessage(msg)
+	require.Equal(s.driver.T, exitcode.Ok, result.Receipt.ExitCode)
+	return result
 }
 
 func (s *msStage) state() *multisig.State {
