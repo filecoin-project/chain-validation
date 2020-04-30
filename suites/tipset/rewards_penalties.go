@@ -178,6 +178,67 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
 
+	t.Run("miner penalty exceeds declared gas limit for BLS message", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		miner := td.ExeCtx.Miner
+		tb := drivers.NewTipSetMessageBuilder(td)
+		bb := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
+
+		alice, _ := td.NewAccountActor(drivers.BLS, acctDefaultBalance)
+
+		gasPrice := int64(2)
+		gasPenalty := int64(260)
+		gasLimit := gasPenalty - 130
+
+		bb.WithBLSMessageAndCode(
+			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, alice,
+				chain.Nonce(1), // cause the message application to fail resulting in a miner penalty.
+				chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
+			exitcode.SysErrSenderStateInvalid,
+		)
+
+		prevRewards := td.GetRewardSummary()
+		tb.WithBlockBuilder(bb).ApplyAndValidate()
+
+		newRewards := td.GetRewardSummary()
+		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
+		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), big.NewInt(gasPenalty))
+		td.AssertBalance(builtin.BurntFundsActorAddr, big.NewInt(gasPenalty))
+		td.AssertBalance(alice, acctDefaultBalance)
+	})
+
+	t.Run("miner penalty exceeds declared gas limit for SECP message", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		miner := td.ExeCtx.Miner
+		tb := drivers.NewTipSetMessageBuilder(td)
+		bb := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
+
+		alice, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
+
+		gasPrice := int64(2)
+		gasPenalty := int64(420)
+		gasLimit := gasPenalty - 210
+		bb.WithSECPMessageAndCode(
+			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, alice,
+				chain.Nonce(1), // cause the message application to fail resulting in a miner penalty.
+				chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
+			exitcode.SysErrSenderStateInvalid,
+		)
+
+		prevRewards := td.GetRewardSummary()
+		tb.WithBlockBuilder(bb).ApplyAndValidate()
+
+		newRewards := td.GetRewardSummary()
+		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
+		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), big.NewInt(gasPenalty))
+		td.AssertBalance(builtin.BurntFundsActorAddr, big.NewInt(gasPenalty))
+		td.AssertBalance(alice, acctDefaultBalance)
+	})
+
 	t.Run("penalize sender insufficient balance", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
