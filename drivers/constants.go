@@ -11,5 +11,5 @@ const (
 
 var (
 	TotalNetworkBalance = big_spec.Mul(big_spec.NewInt(totalFilecoin), big_spec.NewInt(filecoinPrecision))
-	EmptyReturnValue = []byte{}
+	EmptyReturnValue    = []byte{}
 )

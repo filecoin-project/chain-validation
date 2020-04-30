@@ -48,8 +48,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		// Multisig sends back to the creator.
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(stage.creator, amtSent, builtin.MethodSend, nil, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		result := stage.sendOk(stage.creator, amtSent, builtin.MethodSend, nil, nonce)
 
 		td.AssertActor(stage.creator, big.Sub(big.Add(balanceBefore, amtSent), result.Receipt.GasUsed.Big()), nonce+1)
 	})
@@ -64,8 +63,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		// Multisig sends to new address.
 		newAddr := td.Wallet().NewSECP256k1AccountAddress()
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		result := stage.sendOk(newAddr, amtSent, builtin.MethodSend, nil, nonce)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
 		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
@@ -82,8 +80,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		// Multisig sends to new address and invokes pubkey method at the same time.
 		newAddr := td.Wallet().NewSECP256k1AccountAddress()
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodsAccount.PubkeyAddress, nil, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		result := stage.sendOk(newAddr, amtSent, builtin.MethodsAccount.PubkeyAddress, nil, nonce)
 		// TODO: use an explicit Approve() and check the return value is the correct pubkey address
 		// when the multisig Approve() method plumbs through the inner exit code and value.
 		// https://github.com/filecoin-project/specs-actors/issues/113
@@ -109,8 +106,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 			Signer:   anotherId,
 			Increase: false,
 		}
-		result := stage.send(stage.msAddr, big.Zero(), builtin.MethodsMultisig.AddSigner, &params, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		result := stage.sendOk(stage.msAddr, big.Zero(), builtin.MethodsMultisig.AddSigner, &params, nonce)
 
 		td.AssertBalance(stage.msAddr, multisigBalance)
 		assert.Equal(t, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()), td.GetBalance(stage.creator))
@@ -129,8 +125,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		amtSent := abi.NewTokenAmount(1)
 		// So long as the parameters are not actually used by the method, a message can carry arbitrary bytes.
 		params := typegen.Deferred{Raw: []byte{1, 2, 3, 4}}
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, &params, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		stage.sendOk(newAddr, amtSent, builtin.MethodSend, &params, nonce)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
 		td.AssertBalance(newAddr, amtSent)
@@ -160,8 +155,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		newAddr := utils.NewIDAddr(t, 1234)
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		stage.sendOk(newAddr, amtSent, builtin.MethodSend, nil, nonce)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
 		_, err := td.State().Actor(newAddr)
@@ -176,8 +170,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		newAddr := utils.NewActorAddr(t, "1234")
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, builtin.MethodSend, nil, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		stage.sendOk(newAddr, amtSent, builtin.MethodSend, nil, nonce)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
 		_, err := td.State().Actor(newAddr)
@@ -192,8 +185,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		newAddr := td.Wallet().NewSECP256k1AccountAddress()
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(newAddr, amtSent, abi.MethodNum(99), nil, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		stage.sendOk(newAddr, amtSent, abi.MethodNum(99), nil, nonce)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
 		td.AssertNoActor(newAddr)
@@ -207,8 +199,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		balanceBefore := td.GetBalance(stage.creator)
 
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(stage.creator, amtSent, abi.MethodNum(99), nil, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		result := stage.sendOk(stage.creator, amtSent, abi.MethodNum(99), nil, nonce)
 
 		td.AssertBalance(stage.msAddr, multisigBalance)                                       // No change.
 		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big())) // Pay gas, don't receive funds.
@@ -242,8 +233,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 
 		params := adt.Empty // Missing params required by AddSigner
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, params, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		result := stage.sendOk(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, params, nonce)
 
 		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
@@ -265,8 +255,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 			Params: nil,
 		}
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, &params, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		result := stage.sendOk(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, &params, nonce)
 
 		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
@@ -288,8 +277,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 			TicketCount: 100,
 		}
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(builtin.RewardActorAddr, amtSent, builtin.MethodsReward.AwardBlockReward, &params, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		stage.sendOk(builtin.RewardActorAddr, amtSent, builtin.MethodsReward.AwardBlockReward, &params, nonce)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
 		td.AssertHead(builtin.RewardActorAddr, prevHead)
@@ -313,8 +301,7 @@ func TestNestedSends(t *testing.T, factory state.Factories) {
 		}
 
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.send(builtin.InitActorAddr, amtSent, builtin.MethodsInit.Exec, &execParams, nonce)
-		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+		stage.sendOk(builtin.InitActorAddr, amtSent, builtin.MethodsInit.Exec, &execParams, nonce)
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
 		td.AssertHead(builtin.InitActorAddr, prevHead)  // Init state unchanged.
@@ -339,6 +326,7 @@ func prepareStage(td *drivers.TestDriver, creatorBalance, msBalance abi.TokenAmo
 	msg := td.MessageProducer.CreateMultisigActor(creatorId, []address.Address{creatorId}, 0, 1, chain.Value(msBalance), chain.Nonce(0))
 	result := td.ApplyMessage(msg)
 	require.Equal(td.T, exitcode.Ok, result.Receipt.ExitCode)
+
 	var ret init_.ExecReturn
 	err := ret.UnmarshalCBOR(bytes.NewReader(result.Receipt.ReturnValue))
 	require.NoError(td.T, err)
@@ -350,7 +338,7 @@ func prepareStage(td *drivers.TestDriver, creatorBalance, msBalance abi.TokenAmo
 	}
 }
 
-func (s *msStage) send(to address.Address, value abi.TokenAmount, method abi.MethodNum, params runtime.CBORMarshaler, approverNonce uint64) types.ApplyMessageResult {
+func (s *msStage) sendOk(to address.Address, value abi.TokenAmount, method abi.MethodNum, params runtime.CBORMarshaler, approverNonce uint64) types.ApplyMessageResult {
 	buf := bytes.Buffer{}
 	if params != nil {
 		err := params.MarshalCBOR(&buf)
@@ -363,7 +351,9 @@ func (s *msStage) send(to address.Address, value abi.TokenAmount, method abi.Met
 		Params: buf.Bytes(),
 	}
 	msg := s.driver.MessageProducer.MultisigPropose(s.msAddr, s.creator, &pparams, chain.Nonce(approverNonce))
-	return s.driver.ApplyMessage(msg)
+	result := s.driver.ApplyMessage(msg)
+	require.Equal(s.driver.T, exitcode.Ok, result.Receipt.ExitCode)
+	return result
 }
 
 func (s *msStage) state() *multisig.State {

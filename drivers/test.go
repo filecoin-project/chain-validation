@@ -292,17 +292,9 @@ func (td *TestDriver) Complete() {
 // Unsigned Message Appliers
 //
 
-func (td *TestDriver) ApplyMessage(msg *types.Message) (result types.ApplyMessageResult) {
-	defer func() {
-		if r := recover(); r != nil {
-			td.T.Fatalf("message application panicked: %v", r)
-		}
-	}()
-
-	result, err := td.validator.ApplyMessage(td.ExeCtx.Epoch, msg)
-	require.NoError(td.T, err)
-
-	td.StateTracker.TrackResult(result)
+func (td *TestDriver) ApplyMessage(msg *types.Message) types.ApplyMessageResult {
+	result := td.applyMessage(msg)
+	td.validateState(msg, result)
 	return result
 }
 
@@ -319,10 +311,23 @@ func (td *TestDriver) ApplyFailure(msg *types.Message, code exitcode.ExitCode) t
 }
 
 func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) types.ApplyMessageResult {
-	result := td.ApplyMessage(msg)
-	if !td.validateResult(result, code, retval) {
-		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
-	}
+	result := td.applyMessage(msg)
+	td.validateResult(result, code, retval)
+	td.validateState(msg, result)
+	return result
+}
+
+func (td *TestDriver) applyMessage(msg *types.Message) (result types.ApplyMessageResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			td.T.Fatalf("message application panicked: %v", r)
+		}
+	}()
+
+	result, err := td.validator.ApplyMessage(td.ExeCtx.Epoch, msg)
+	require.NoError(td.T, err)
+
+	td.StateTracker.TrackResult(result)
 	return result
 }
 
@@ -330,7 +335,31 @@ func (td *TestDriver) applyMessageExpectCodeAndReturn(msg *types.Message, code e
 // Signed Message Appliers
 //
 
-func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result types.ApplyMessageResult) {
+func (td *TestDriver) ApplySigned(msg *types.Message) types.ApplyMessageResult {
+	result := td.applyMessageSigned(msg)
+	td.validateState(msg, result)
+	return result
+}
+
+func (td *TestDriver) ApplySignedOk(msg *types.Message) types.ApplyMessageResult {
+	return td.ApplySignedExpect(msg, EmptyReturnValue)
+}
+
+func (td *TestDriver) ApplySignedExpect(msg *types.Message, retval []byte) types.ApplyMessageResult {
+	return td.applyMessageSignedExpectCodeAndReturn(msg, exitcode.Ok, retval)
+}
+
+func (td *TestDriver) ApplySignedFailure(msg *types.Message, code exitcode.ExitCode) types.ApplyMessageResult {
+	return td.applyMessageExpectCodeAndReturn(msg, code, EmptyReturnValue)
+}
+
+func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) types.ApplyMessageResult {
+	result := td.applyMessageSigned(msg)
+	td.validateResult(result, code, retval)
+	td.validateState(msg, result)
+	return result
+}
+func (td *TestDriver) applyMessageSigned(msg *types.Message) (result types.ApplyMessageResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			td.T.Fatalf("message application panicked: %v", r)
@@ -353,41 +382,22 @@ func (td *TestDriver) ApplyMessageSigned(msg *types.Message) (result types.Apply
 	return result
 }
 
-func (td *TestDriver) ApplySignedOk(msg *types.Message) types.ApplyMessageResult {
-	return td.ApplySignedExpect(msg, EmptyReturnValue)
-}
-
-func (td *TestDriver) ApplySignedExpect(msg *types.Message, retval []byte) types.ApplyMessageResult {
-	return td.applyMessageSignedExpectCodeAndReturn(msg, exitcode.Ok, retval)
-}
-
-func (td *TestDriver) ApplySignedFailure(msg *types.Message, code exitcode.ExitCode) types.ApplyMessageResult {
-	return td.applyMessageExpectCodeAndReturn(msg, code, EmptyReturnValue)
-}
-
-func (td *TestDriver) applyMessageSignedExpectCodeAndReturn(msg *types.Message, code exitcode.ExitCode, retval []byte) types.ApplyMessageResult {
-	result := td.ApplyMessageSigned(msg)
-	if !td.validateResult(result, code, retval) {
-		td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
-	}
-	return result
-}
-
-func (td *TestDriver) validateResult(result types.ApplyMessageResult, code exitcode.ExitCode, retval []byte) (foundGas bool) {
-	foundGas = true
-
+func (td *TestDriver) validateResult(result types.ApplyMessageResult, code exitcode.ExitCode, retval []byte) {
 	if td.Config.ValidateExitCode() {
 		assert.Equal(td.T, code, result.Receipt.ExitCode, "Expected ExitCode: %s Actual ExitCode: %s", code.Error(), result.Receipt.ExitCode.Error())
 	}
 	if td.Config.ValidateReturnValue() {
 		assert.Equal(td.T, retval, result.Receipt.ReturnValue, "Expected ReturnValue: %v Actual ReturnValue: %v", retval, result.Receipt.ReturnValue)
 	}
+}
+
+func (td *TestDriver) validateState(msg *types.Message, result types.ApplyMessageResult) {
 	if td.Config.ValidateGas() {
 		expectedGasUsed, ok := td.StateTracker.NextExpectedGas()
 		if ok {
 			assert.Equal(td.T, expectedGasUsed, result.Receipt.GasUsed, "Expected GasUsed: %d Actual GasUsed: %d", expectedGasUsed, result.Receipt.GasUsed)
 		} else {
-			foundGas = false
+			td.T.Logf("WARNING (not a test failure): failed to find expected gas cost for message: %+v", msg)
 		}
 	}
 	if td.Config.ValidateStateRoot() {
@@ -399,7 +409,6 @@ func (td *TestDriver) validateResult(result types.ApplyMessageResult, code exitc
 			td.T.Log("WARNING: failed to find expected state  root for message number")
 		}
 	}
-	return
 }
 
 func (td *TestDriver) AssertNoActor(addr address.Address) {
