@@ -28,6 +28,24 @@ func (t *TipSetMessageBuilder) WithBlockBuilder(bb *BlockBuilder) *TipSetMessage
 }
 
 func (t *TipSetMessageBuilder) Apply() types.ApplyTipSetResult {
+	result := t.apply()
+	t.validateState(result)
+
+	t.Clear()
+	return result
+}
+
+func (t *TipSetMessageBuilder) ApplyAndValidate() types.ApplyTipSetResult {
+	result := t.apply()
+
+	t.validateResult(result)
+	t.validateState(result)
+
+	t.Clear()
+	return result
+}
+
+func (t *TipSetMessageBuilder) apply() types.ApplyTipSetResult {
 	var blks []types.BlockMessagesInfo
 	for _, b := range t.bbs {
 		blks = append(blks, b.build())
@@ -35,22 +53,21 @@ func (t *TipSetMessageBuilder) Apply() types.ApplyTipSetResult {
 	result, err := t.driver.validator.ApplyTipSetMessages(t.driver.ExeCtx.Epoch, blks, t.driver.Randomness())
 	require.NoError(t.driver.T, err)
 
+	t.driver.StateTracker.TrackResult(result)
 	return result
 }
 
-func (t *TipSetMessageBuilder) ApplyAndValidate() types.ApplyTipSetResult {
-	result := t.Apply()
-
-	var expected []ExpectedResult
+func (t *TipSetMessageBuilder) validateResult(result types.ApplyTipSetResult) {
+	expected := []ExpectedResult{}
 	for _, b := range t.bbs {
 		expected = append(expected, b.expectedResults...)
 	}
 
 	if len(result.Receipts) > len(expected) {
 		t.driver.T.Fatalf("ApplyTipSetMessages returned more result than expected. Expected: %d, Actual: %d", len(expected), len(result.Receipts))
+		return
 	}
 
-	t.driver.StateTracker.TrackResult(result)
 	for i := range result.Receipts {
 		if t.driver.Config.ValidateExitCode() {
 			assert.Equal(t.driver.T, expected[i].ExitCode, result.Receipts[i].ExitCode, "Message Number: %d Expected ExitCode: %s Actual ExitCode: %s", i, expected[i].ExitCode.Error(), result.Receipts[i].ExitCode.Error())
@@ -58,7 +75,12 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() types.ApplyTipSetResult {
 		if t.driver.Config.ValidateReturnValue() {
 			assert.Equal(t.driver.T, expected[i].ReturnVal, result.Receipts[i].ReturnValue, "Message Number: %d Expected ReturnValue: %v Actual ReturnValue: %v", i, expected[i].ReturnVal, result.Receipts[i].ReturnValue)
 		}
-		if t.driver.Config.ValidateGas() {
+	}
+}
+
+func (t *TipSetMessageBuilder) validateState(result types.ApplyTipSetResult) {
+	if t.driver.Config.ValidateGas() {
+		for i := range result.Receipts {
 			expectedGas, found := t.driver.StateTracker.NextExpectedGas()
 			if found {
 				assert.Equal(t.driver.T, expectedGas, result.Receipts[i].GasUsed, "Message Number: %d Expected GasUsed: %d Actual GasUsed: %d", i, expectedGas, result.Receipts[i].GasUsed)
@@ -76,8 +98,6 @@ func (t *TipSetMessageBuilder) ApplyAndValidate() types.ApplyTipSetResult {
 			t.driver.T.Log("WARNING: failed to find expected state  root for message number")
 		}
 	}
-	t.Clear()
-	return result
 }
 
 func (t *TipSetMessageBuilder) Clear() {
