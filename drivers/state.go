@@ -46,13 +46,24 @@ type StateDriver struct {
 	w  state.KeyManager
 	rs state.RandomnessSource
 
+	minerInfo *MinerInfo
+
 	// Mapping for IDAddresses to their pubkey/actor addresses. Used for lookup when signing messages.
 	actorIDMap map[address.Address]address.Address
 }
 
+// info about the state drivers builtin miner
+type MinerInfo struct {
+	Owner address.Address
+	OwnerID address.Address
+
+	Worker address.Address
+	WorkerID address.Address
+}
+
 // NewStateDriver creates a new state driver for a state.
 func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager) *StateDriver {
-	return &StateDriver{tb, st, w, NewRandomnessSource(), make(map[address.Address]address.Address)}
+	return &StateDriver{tb, st, w, NewRandomnessSource(), nil,make(map[address.Address]address.Address)}
 }
 
 // State returns the state.
@@ -116,10 +127,14 @@ func (d *StateDriver) ActorPubKey(idAddress address.Address) address.Address {
 	return pubkeyAddr
 }
 
+func (d *StateDriver) BuiltinMinerInfo() *MinerInfo {
+	return d.minerInfo
+}
+
 // create miner without sending a message. modify the init and power actor manually
 func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredProof, periodBoundary abi_spec.ChainEpoch) address.Address {
 	// creat a miner, owner, and its worker
-	_, minerOwnerID := d.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
+	minerOwnerPk, minerOwnerID := d.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 	minerWorkerPk, minerWorkerID := d.NewAccountActor(address.BLS, big_spec.Zero())
 	expectedMinerActorIDAddress := utils.NewIDAddr(d.tb, utils.IdFromAddress(minerWorkerID)+1)
 	minerActorAddrs := computeInitActorExecReturn(d.tb, minerWorkerPk, 0, 1, expectedMinerActorIDAddress)
@@ -157,6 +172,13 @@ func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredProo
 
 	// update storage power actor's state in the tree
 	d.PutState(&spa)
+
+	d.minerInfo = &MinerInfo{
+		Owner:    minerOwnerPk,
+		OwnerID:  minerOwnerID,
+		Worker:   minerWorkerPk,
+		WorkerID: minerWorkerID,
+	}
 
 	return minerActorIDAddr
 }

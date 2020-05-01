@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	miner_spec "github.com/filecoin-project/specs-actors/actors/builtin/miner"
+
 	addr "github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/filecoin-project/specs-actors/actors/abi/big"
@@ -267,6 +269,63 @@ func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 		gasPenalty := big.NewInt(48)
 		validateRewards(td, prevRewards, newRewards, miner, result.Receipts[0].GasUsed.Big(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(halfBalance, gasPenalty))
+	})
+
+	t.Run("insufficient gas to cover return value", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		miner := td.ExeCtx.Miner
+		tb := drivers.NewTipSetMessageBuilder(td)
+
+		alice, _ := td.NewAccountActor(drivers.BLS, acctDefaultBalance)
+
+		// get a successful result so we can determine how much gas it costs. We'll reduce this by 1 in a subsequent call
+		// to test insufficient gas to cover return value.
+		tracerResult := tb.WithBlockBuilder(
+			drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
+				WithBLSMessageAndRet(td.MessageProducer.MinerControlAddresses(miner, alice, nil, chain.Nonce(0)),
+					// required to satisfy testing methods, unrelated to current test.
+					chain.MustSerialize(&miner_spec.GetControlAddressesReturn{
+						Owner:  td.StateDriver.BuiltinMinerInfo().OwnerID,
+						Worker: td.StateDriver.BuiltinMinerInfo().WorkerID,
+					}),
+				),
+		).ApplyAndValidate()
+		requiredGasLimit := tracerResult.Receipts[0].GasUsed
+
+		/* now the test */
+		tb.Clear()
+		rewardsBefore := td.GetRewardSummary()
+		minerBalanceBefore := td.GetBalance(miner)
+		senderBalanceBefore := td.GetBalance(alice)
+		td.ExeCtx.Epoch++
+
+		// Apply the message again with a reduced gas limit
+		// A value just one less than the required limit for success ensures that the gas limit will be reached
+		// at the last possible gas charge, which is that for the return value size.
+		gasLimit := requiredGasLimit - 1
+		result := tb.WithBlockBuilder(
+			drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
+				WithBLSMessageAndCode(td.MessageProducer.MinerControlAddresses(miner, alice, nil, chain.Nonce(1), chain.GasLimit(int64(gasLimit))),
+					exitcode.SysErrOutOfGas,
+				),
+		).ApplyAndValidate()
+		gasUsed := result.Receipts[0].GasUsed
+		gasCost := gasLimit.Big() // Gas price is 1
+		newRewards := td.GetRewardSummary()
+
+		// Check the actual gas charged is equal to the gas limit rather than the amount consumed up to but excluding
+		// the return value which is smaller than the gas limit.
+		assert.Equal(t, gasLimit, gasUsed)
+
+		// Check sender charged exactly the max cost.
+		assert.Equal(td.T, big.Sub(senderBalanceBefore, gasCost), td.GetBalance(alice))
+
+		// Check the miner earned exactly the max cost (plus block reward).
+		thisRwd := big.Add(newRewards.LastPerEpochReward, gasCost)
+		assert.Equal(td.T, big.Add(minerBalanceBefore, thisRwd), td.GetBalance(miner))
+		assert.Equal(td.T, big.Sub(rewardsBefore.Treasury, newRewards.LastPerEpochReward), newRewards.Treasury)
 	})
 
 	// TODO more tests:
