@@ -16,7 +16,7 @@ import (
 	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
-func TestAccountActorCreation(t *testing.T, factory state.Factories) {
+func MessageTest_AccountActorCreation(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
@@ -95,7 +95,7 @@ func TestAccountActorCreation(t *testing.T, factory state.Factories) {
 	}
 }
 
-func TestInitActorSequentialIDAddressCreate(t *testing.T, factory state.Factories) {
+func MessageTest_InitActorSequentialIDAddressCreate(t *testing.T, factory state.Factories) {
 	td := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).

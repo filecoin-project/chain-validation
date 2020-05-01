@@ -33,7 +33,7 @@ type valueTransferTestCases struct {
 	code exitcode.ExitCode
 }
 
-func TestValueTransferSimple(t *testing.T, factories state.Factories) {
+func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 	alice := utils.NewSECP256K1Addr(t, "1")
 	bob := utils.NewSECP256K1Addr(t, "2")
 
@@ -130,7 +130,7 @@ func TestValueTransferSimple(t *testing.T, factories state.Factories) {
 	}
 }
 
-func TestValueTransferAdvance(t *testing.T, factory state.Factories) {
+func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 	var aliceInitialBalance = abi_spec.NewTokenAmount(1_000_000_000)
 
 	builder := drivers.NewBuilder(context.Background(), factory).

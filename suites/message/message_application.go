@@ -17,7 +17,7 @@ import (
 	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
-func TestMessageApplicationEdgecases(t *testing.T, factory state.Factories) {
+func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
