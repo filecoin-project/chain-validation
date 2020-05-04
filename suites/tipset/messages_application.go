@@ -44,8 +44,8 @@ func TipSetTest_BlockMessageApplication(t *testing.T, factory state.Factories) {
 
 		require.Equal(t, 2, len(results.Receipts))
 
-		blsGasUsed := results.Receipts[0].GasUsed
-		secpGasUsed := results.Receipts[1].GasUsed
+		blsGasUsed := int64(results.Receipts[0].GasUsed)
+		secpGasUsed := int64(results.Receipts[1].GasUsed)
 		assert.Greater(t, secpGasUsed, blsGasUsed)
 	})
 
