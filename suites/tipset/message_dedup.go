@@ -2,6 +2,7 @@ package tipset
 
 import (
 	"context"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
@@ -92,4 +93,27 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
 
+	t.Run("apply duplicate BLS and SECP message", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+		tipB := drivers.NewTipSetMessageBuilder(td)
+		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
+
+		senderInitialBal := big_spec.NewInt(10_000_000)
+		_, senderID := td.NewAccountActor(address.SECP256K1, senderInitialBal)
+		_, receiverID := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
+
+		amountSent := big_spec.NewInt(100)
+		result := tipB.WithBlockBuilder(
+			// using ID addresses will ensure the BLS message and the unsigned message encapsulated in the SECP message
+			// have the same CID.
+			blkB.WithBLSMessageOk(td.MessageProducer.Transfer(receiverID, senderID, chain.Nonce(0), chain.Value(amountSent))).
+				WithSECPMessageDropped(td.MessageProducer.Transfer(receiverID, senderID, chain.Nonce(0), chain.Value(amountSent))),
+		).ApplyAndValidate()
+
+		assert.Equal(t, 1, len(result.Receipts))
+
+		td.AssertBalance(receiverID, amountSent)
+		td.AssertBalance(senderID, big_spec.Sub(big_spec.Sub(senderInitialBal, amountSent), result.Receipts[0].GasUsed.Big()))
+	})
 }
