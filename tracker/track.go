@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/ipfs/go-cid"
@@ -151,5 +152,7 @@ func filenameFromTest(t testing.TB) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return fmt.Sprintf("/%s", reg.ReplaceAllString(t.Name(), ""))
+	tokens := strings.Split(t.Name(), "/")
+	chainvalTestName := strings.Join(tokens[1:], "")
+	return fmt.Sprintf("/%s", reg.ReplaceAllString(chainvalTestName, ""))
 }

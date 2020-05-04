@@ -20,7 +20,7 @@ import (
 )
 
 // Test for semantically in/valid messages, including miner penalties.
-func TestMinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
+func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big.NewInt(1)).

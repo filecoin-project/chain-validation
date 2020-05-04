@@ -12,7 +12,7 @@ import (
 	"github.com/filecoin-project/chain-validation/state"
 )
 
-func TestBlockMessageDeduplication(t *testing.T, factory state.Factories) {
+func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).

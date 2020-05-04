@@ -12,20 +12,20 @@ type TestCase func(t *testing.T, factory state.Factories)
 
 func MessageTestCases() []TestCase {
 	return []TestCase{
-		message.TestAccountActorCreation,
-		message.TestInitActorSequentialIDAddressCreate,
-		message.TestMessageApplicationEdgecases,
-		message.TestMultiSigActor,
-		message.TestNestedSends,
-		message.TestPaych,
-		message.TestValueTransferAdvance,
-		message.TestValueTransferSimple,
+		message.MessageTest_AccountActorCreation,
+		message.MessageTest_InitActorSequentialIDAddressCreate,
+		message.MessageTest_MessageApplicationEdgecases,
+		message.MessageTest_MultiSigActor,
+		message.MessageTest_NestedSends,
+		message.MessageTest_Paych,
+		message.MessageTest_ValueTransferAdvance,
+		message.MessageTest_ValueTransferSimple,
 	}
 }
 
 func TipSetTestCases() []TestCase {
 	return []TestCase{
-		tipset.TestBlockMessageDeduplication,
-		tipset.TestMinerRewardsAndPenalties,
+		tipset.TipSetTest_BlockMessageDeduplication,
+		tipset.TipSetTest_MinerRewardsAndPenalties,
 	}
 }

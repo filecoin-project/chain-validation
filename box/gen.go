@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -66,36 +67,40 @@ func main() {
 	}
 
 	resources := make(map[string][]interface{})
-	err := filepath.Walk("resources", func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk("resources", func(walkPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Println("Error :", err)
 			return err
 		}
-		relativePath := filepath.ToSlash(strings.TrimPrefix(path, "resources"))
+		relativePath := filepath.ToSlash(strings.TrimPrefix(walkPath, "resources"))
 		if info.IsDir() {
-			log.Println(path, "is a directory, skipping... \U0001F47B")
+			log.Println(walkPath, "is a directory, skipping... \U0001F47B")
 			return nil
 		} else {
-			log.Println(path, "is a file, baking in... \U0001F31F")
-			f, err := os.Open(path)
+			log.Println(walkPath, "is a file, baking in... \U0001F31F")
+			f, err := os.Open(walkPath)
 			if err != nil {
 				return err
 			}
 			scanner := bufio.NewScanner(f)
 			for scanner.Scan() {
 				// hacky, if a test name is changed this will break. PR's welcome :)
-				if strings.Contains(f.Name(), "TipSet") {
+				if strings.HasPrefix(path.Base(f.Name()), "TipSetTest") {
 					var applytsres types.ApplyTipSetResult
 					if err := json.Unmarshal(scanner.Bytes(), &applytsres); err != nil {
 						panic(err)
 					}
 					resources[relativePath] = append(resources[relativePath], applytsres)
-				} else {
+
+				} else if strings.HasPrefix(path.Base(f.Name()), "MessageTest") {
 					var applymsgres types.ApplyMessageResult
 					if err := json.Unmarshal(scanner.Bytes(), &applymsgres); err != nil {
 						panic(err)
 					}
 					resources[relativePath] = append(resources[relativePath], applymsgres)
+
+				} else {
+					log.Fatalf("Test Filename must start with MessageTest or TipSetTest got %s", f.Name())
 				}
 			}
 
