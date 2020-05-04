@@ -25,6 +25,7 @@ func MessageTestCases() []TestCase {
 
 func TipSetTestCases() []TestCase {
 	return []TestCase{
+		tipset.TipSetTest_BlockMessageApplication,
 		tipset.TipSetTest_BlockMessageDeduplication,
 		tipset.TipSetTest_MinerRewardsAndPenalties,
 	}
