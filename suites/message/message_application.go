@@ -21,7 +21,7 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithActorState(drivers.DefaultBuiltinActorsState)
+		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	var aliceBal = abi_spec.NewTokenAmount(1_000_000_000)
 	var transferAmnt = abi_spec.NewTokenAmount(10)
