@@ -17,6 +17,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
+	"github.com/filecoin-project/specs-actors/actors/puppet"
 )
 
 // This is a tool used to save some time writing all the message builder methods for actors.
@@ -73,6 +74,12 @@ func main() {
 
 	rewardExports := reward.Actor{}.Exports()
 	details = ParseGenerationFields("reward_messages", "Reward", rewardExports, builtin.MethodsReward)
+	f = jen.NewFile(details.file)
+	MakeMethods(f, details)
+	fmt.Printf("%#v", f)
+
+	puppetExports := puppet.Actor{}.Exports()
+	details = ParseGenerationFields("puppet_messages", "Puppet", puppetExports, puppet.MethodsPuppet)
 	f = jen.NewFile(details.file)
 	MakeMethods(f, details)
 	fmt.Printf("%#v", f)
