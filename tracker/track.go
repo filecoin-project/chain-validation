@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -152,7 +153,22 @@ func filenameFromTest(t testing.TB) string {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// this is a really hacky way of getting the chain-validation test method name.
+	pc := make([]uintptr, 6)
+	n := runtime.Callers(5, pc)
+	frames := runtime.CallersFrames(pc[:n])
+	frame, _ := frames.Next()
+	frameTokens := strings.Split(frame.Function, ".")
+	parentTestMethodName := frameTokens[2]
+
+	var childTestMethodName string
 	tokens := strings.Split(t.Name(), "/")
-	chainvalTestName := strings.Join(tokens[1:], "")
-	return fmt.Sprintf("/%s", reg.ReplaceAllString(chainvalTestName, ""))
+	// if the parent test doesn't have children
+	if len(tokens) == 1 {
+		childTestMethodName = ""
+	} else {
+		childTestMethodName = tokens[len(tokens)-1]
+	}
+	testFileName := fmt.Sprintf("%s%s", parentTestMethodName, childTestMethodName)
+	return fmt.Sprintf("/%s", reg.ReplaceAllString(testFileName, ""))
 }
