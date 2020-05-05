@@ -46,10 +46,23 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
 			exitcode.SysErrOutOfGas)
 
-		// Expect Message application to fail due to lack of gas when sender address is unknown
+		// Expect Message application to fail due to lack of gas when the message being sent has invalid destination.
 		unknown := utils.NewIDAddr(t, 10000000)
 		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
+			exitcode.SysErrOutOfGas)
+	})
+
+	t.Run("fail not enough gas to cover account actor creation", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
+		newAccount := utils.NewSECP256K1Addr(t, "1")
+
+		// Expect Message application to fail due to lack of gas
+		td.ApplyFailure(
+			td.MessageProducer.Transfer(newAccount, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(1), chain.GasLimit(200)),
 			exitcode.SysErrOutOfGas)
 	})
 
