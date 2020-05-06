@@ -21,10 +21,6 @@ func (mp *MessageProducer) MarketWithdrawBalance(to, from address.Address, param
 	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsMarket.WithdrawBalance, ser, opts...)
 }
-func (mp *MessageProducer) MarketHandleExpiredDeals(to, from address.Address, params *market.HandleExpiredDealsParams, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsMarket.HandleExpiredDeals, ser, opts...)
-}
 func (mp *MessageProducer) MarketPublishStorageDeals(to, from address.Address, params *market.PublishStorageDealsParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsMarket.PublishStorageDeals, ser, opts...)
@@ -41,7 +37,7 @@ func (mp *MessageProducer) MarketComputeDataCommitment(to, from address.Address,
 	ser := MustSerialize(params)
 	return mp.Build(to, from, builtin_spec.MethodsMarket.ComputeDataCommitment, ser, opts...)
 }
-func (mp *MessageProducer) MarketHandleInitTimeoutDeals(to, from address.Address, params *market.HandleInitTimeoutDealsParams, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) MarketCronTick(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsMarket.HandleInitTimeoutDeals, ser, opts...)
+	return mp.Build(to, from, builtin_spec.MethodsMarket.CronTick, ser, opts...)
 }

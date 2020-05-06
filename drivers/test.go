@@ -112,7 +112,8 @@ func init() {
 			EscrowTable:    EmptyMapCid,
 			LockedTable:    EmptyMapCid,
 			NextID:         abi_spec.DealID(0),
-			DealIDsByParty: EmptyMultiMapCid,
+			DealOpsByEpoch: EmptyMultiMapCid,
+			LastCron:       0,
 		},
 	}
 
