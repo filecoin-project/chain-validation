@@ -46,7 +46,7 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
 			exitcode.SysErrOutOfGas)
 
-		// Expect Message application to fail due to lack of gas when the message being sent has invalid destination.
+		// Expect Message application to fail due to lack of gas when sender is unknown
 		unknown := utils.NewIDAddr(t, 10000000)
 		td.ApplyFailure(
 			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
@@ -58,12 +58,27 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 		defer td.Complete()
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
-		newAccount := utils.NewSECP256K1Addr(t, "1")
+		aliceNonce := uint64(0)
+		aliceNonceF := func() uint64 {
+			defer func() { aliceNonce++ }()
+			return aliceNonce
+		}
+		newAccountA := utils.NewSECP256K1Addr(t, "1")
 
-		// Expect Message application to fail due to lack of gas
-		td.ApplyFailure(
-			td.MessageProducer.Transfer(newAccount, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(1), chain.GasLimit(200)),
-			exitcode.SysErrOutOfGas)
+		// get the "true" gas cost of applying the message
+		result := td.ApplyOk(
+			td.MessageProducer.Transfer(newAccountA, alice, chain.Value(transferAmnt), chain.Nonce(aliceNonceF())),
+		)
+
+		// decrease the gas cost by `gasStep` for each apply and ensure `SysErrOutOfGas` is always returned.
+		trueGas := int64(result.GasUsed())
+		gasStep := int64(50)
+		newAccountB := utils.NewSECP256K1Addr(t, "2")
+		for tryGas := trueGas - gasStep; tryGas > 0; tryGas -= gasStep {
+			td.ApplyFailure(td.MessageProducer.Transfer(newAccountB, alice, chain.Value(transferAmnt), chain.Nonce(aliceNonceF()), chain.GasPrice(1), chain.GasLimit(tryGas)),
+				exitcode.SysErrOutOfGas,
+			)
+		}
 	})
 
 	t.Run("invalid actor CallSeqNum", func(t *testing.T) {
