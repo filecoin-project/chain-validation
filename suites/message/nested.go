@@ -6,6 +6,10 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	typegen "github.com/whyrusleeping/cbor-gen"
+
 	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin "github.com/filecoin-project/specs-actors/actors/builtin"
@@ -13,12 +17,10 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 	"github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
+	"github.com/filecoin-project/specs-actors/actors/puppet"
 	"github.com/filecoin-project/specs-actors/actors/runtime"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	typegen "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -26,6 +28,17 @@ import (
 	"github.com/filecoin-project/chain-validation/state"
 	"github.com/filecoin-project/chain-validation/suites/utils"
 )
+
+var PuppetAddress address.Address
+
+func init() {
+	var err error
+	// the address before the burnt funds address
+	PuppetAddress, err = address.NewIDAddress(builtin.FirstNonSingletonActorId - 2)
+	if err != nil {
+		panic(err)
+	}
+}
 
 // Tests exercising messages sent internally from one actor to another.
 // These use a multisig actor with approvers=1 as a convenient staging ground for arbitrary internal messages.
@@ -37,7 +50,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big.NewInt(1)).
-		WithActorState(drivers.DefaultBuiltinActorsState)
+		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	t.Run("ok basic", func(t *testing.T) {
 		td := builder.Build(t)
@@ -305,6 +318,34 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
 		td.AssertHead(builtin.InitActorAddr, prevHead)  // Init state unchanged.
+	})
+
+	t.Run("fail insufficient funds for transfer in inner send", func(t *testing.T) {
+		puppetBalance := big.Zero()
+		td := builder.WithActorState(drivers.ActorState{
+			Addr:    PuppetAddress,
+			Balance: puppetBalance,
+			Code:    puppet.PuppetActorCodeID,
+			State:   &puppet.State{},
+		}).Build(t)
+		defer td.Complete()
+
+		alice, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
+		bob, _ := td.NewAccountActor(drivers.SECP, big.Zero())
+
+		// alice tells the puppet actor to send funds to bob, the puppet actor has 0 balance so the inner send will fail,
+		// and alice will pay the gas cost.
+		amtSent := abi.NewTokenAmount(1)
+		result := td.ApplyFailure(td.MessageProducer.PuppetSend(PuppetAddress, alice, &puppet.SendParams{
+			To:     bob,
+			Value:  amtSent,
+			Method: builtin.MethodSend,
+			Params: nil,
+		}),
+			exitcode.SysErrInsufficientFunds,
+		)
+		td.AssertBalance(alice, big.Sub(acctDefaultBalance, result.GasUsed().Big()))
+		td.AssertBalance(bob, big.Zero())
 	})
 
 	// TODO more tests:

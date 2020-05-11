@@ -20,7 +20,7 @@ func TipSetTest_BlockMessageApplication(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithActorState(drivers.DefaultBuiltinActorsState)
+		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	t.Run("SECP and BLS messages cost different amounts of gas", func(t *testing.T) {
 		td := builder.Build(t)
@@ -55,7 +55,7 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithActorState(drivers.DefaultBuiltinActorsState)
+		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	t.Run("apply a single BLS message", func(t *testing.T) {
 		td := builder.Build(t)

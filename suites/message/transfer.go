@@ -40,7 +40,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factories).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithActorState(drivers.DefaultBuiltinActorsState)
+		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	testCases := []valueTransferTestCases{
 		{
@@ -136,7 +136,7 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
-		WithActorState(drivers.DefaultBuiltinActorsState)
+		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	t.Run("self transfer", func(t *testing.T) {
 		td := builder.Build(t)

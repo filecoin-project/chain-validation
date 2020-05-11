@@ -220,8 +220,8 @@ type ActorState struct {
 	State   runtime_spec.CBORMarshaler
 }
 
-func (b *TestDriverBuilder) WithActorState(acts []ActorState) *TestDriverBuilder {
-	b.actorStates = acts
+func (b *TestDriverBuilder) WithActorState(acts ...ActorState) *TestDriverBuilder {
+	b.actorStates = append(b.actorStates, acts...)
 	return b
 }
 
