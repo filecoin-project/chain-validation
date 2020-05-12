@@ -23,7 +23,7 @@ import (
 	runtime_spec "github.com/filecoin-project/specs-actors/actors/runtime"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
-	"github.com/ipfs/go-cid"
+	cid "github.com/ipfs/go-cid"
 	datastore "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	cbor "github.com/ipfs/go-ipld-cbor"
@@ -78,7 +78,7 @@ func init() {
 		Addr:    builtin_spec.RewardActorAddr,
 		Balance: TotalNetworkBalance,
 		Code:    builtin_spec.RewardActorCodeID,
-		State:   reward_spec.ConstructState(EmptyMultiMapCid),
+		State:   reward_spec.ConstructState(),
 	}
 
 	DefaultBurntFundsActorState = ActorState{
