@@ -3,6 +3,7 @@ package message
 import (
 	"bytes"
 	"context"
+	"github.com/filecoin-project/specs-actors/actors/puppet"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
@@ -17,7 +18,6 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 	"github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
-	"github.com/filecoin-project/specs-actors/actors/puppet"
 	"github.com/filecoin-project/specs-actors/actors/runtime"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
@@ -320,7 +320,9 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		td.AssertHead(builtin.InitActorAddr, prevHead)  // Init state unchanged.
 	})
 
+	// TODO: Enable this (issue #200)
 	t.Run("fail insufficient funds for transfer in inner send", func(t *testing.T) {
+		t.Skip()
 		puppetBalance := big.Zero()
 		td := builder.WithActorState(drivers.ActorState{
 			Addr:    PuppetAddress,

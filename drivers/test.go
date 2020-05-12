@@ -74,11 +74,14 @@ func init() {
 		State:   init_spec.ConstructState(EmptyMapCid, "chain-validation"),
 	}
 
+	firstRewardState := reward_spec.ConstructState()
+	firstRewardState.LastPerEpochReward = big_spec.NewInt(1e17)
+
 	DefaultRewardActorState = ActorState{
 		Addr:    builtin_spec.RewardActorAddr,
 		Balance: TotalNetworkBalance,
 		Code:    builtin_spec.RewardActorCodeID,
-		State:   reward_spec.ConstructState(),
+		State:   firstRewardState,
 	}
 
 	DefaultBurntFundsActorState = ActorState{
@@ -557,7 +560,8 @@ type RewardSummary struct {
 	Treasury           abi_spec.TokenAmount
 	SimpleSupply       abi_spec.TokenAmount
 	BaselineSupply     abi_spec.TokenAmount
-	LastPerEpochReward abi_spec.TokenAmount
+	NextPerEpochReward abi_spec.TokenAmount
+	NextPerBlockReward abi_spec.TokenAmount
 }
 
 func (td *TestDriver) GetRewardSummary() *RewardSummary {
@@ -568,6 +572,7 @@ func (td *TestDriver) GetRewardSummary() *RewardSummary {
 		Treasury:           td.GetBalance(builtin_spec.RewardActorAddr),
 		SimpleSupply:       rst.SimpleSupply,
 		BaselineSupply:     rst.BaselineSupply,
-		LastPerEpochReward: rst.LastPerEpochReward,
+		NextPerEpochReward: rst.LastPerEpochReward,
+		NextPerBlockReward: big_spec.Div(rst.LastPerEpochReward, big_spec.NewInt(builtin_spec.ExpectedLeadersPerEpoch)),
 	}
 }

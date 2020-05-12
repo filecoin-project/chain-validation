@@ -69,10 +69,10 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 				newRewards := td.GetRewardSummary()
 
 				// total supply should decrease by the last reward amount
-				assert.Equal(t, big.Sub(prevRewards.Treasury, newRewards.LastPerEpochReward), newRewards.Treasury)
+				assert.Equal(t, big.Sub(prevRewards.Treasury, prevRewards.NextPerBlockReward), newRewards.Treasury)
 
 				// the miners balance should have increased by the reward amount
-				thisReward := big.Add(newRewards.LastPerEpochReward, gasSum)
+				thisReward := big.Add(prevRewards.NextPerBlockReward, gasSum)
 				assert.Equal(t, big.Add(prevMinerBal, thisReward), td.GetBalance(miner))
 
 				// no money was burnt
@@ -104,6 +104,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		}
 
 		prevRewards := td.GetRewardSummary()
+		prevMinerBalance := td.GetBalance(miner)
 		drivers.NewTipSetMessageBuilder(td).WithBlockBuilder(bb).ApplyAndValidate()
 
 		// Nothing received, no actors created.
@@ -114,10 +115,11 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 
 		newRewards := td.GetRewardSummary()
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
+		newMinerBalance := td.GetBalance(miner)
 		gasPenalty := big.NewInt(350)
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward
-		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
 
@@ -143,15 +145,17 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 				exitcode.SysErrSenderInvalid)
 		}
 		prevRewards := td.GetRewardSummary()
+		prevMinerBalance := td.GetBalance(miner)
 		tb.WithBlockBuilder(bb).ApplyAndValidate()
 		td.AssertBalance(receiver, acctDefaultBalance)
 
 		newRewards := td.GetRewardSummary()
+		newMinerBalance := td.GetBalance(miner)
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
 		gasPenalty := big.NewInt(176)
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward.
-		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
 
@@ -171,12 +175,14 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		)
 
 		prevRewards := td.GetRewardSummary()
+		prevMinerBalance := td.GetBalance(miner)
 		tb.WithBlockBuilder(bb).ApplyAndValidate()
 
 		newRewards := td.GetRewardSummary()
+		newMinerBalance := td.GetBalance(miner)
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
 		gasPenalty := big.NewInt(40)
-		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), gasPenalty)
+		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
 
@@ -202,11 +208,13 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		)
 
 		prevRewards := td.GetRewardSummary()
+		prevMinerBalance := td.GetBalance(miner)
 		tb.WithBlockBuilder(bb).ApplyAndValidate()
 
 		newRewards := td.GetRewardSummary()
+		newMinerBalance := td.GetBalance(miner)
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), big.NewInt(gasPenalty))
+		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), big.NewInt(gasPenalty))
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.NewInt(gasPenalty))
 		td.AssertBalance(alice, acctDefaultBalance)
 	})
@@ -232,11 +240,13 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		)
 
 		prevRewards := td.GetRewardSummary()
+		prevMinerBalance := td.GetBalance(miner)
 		tb.WithBlockBuilder(bb).ApplyAndValidate()
 
 		newRewards := td.GetRewardSummary()
+		newMinerBalance := td.GetBalance(miner)
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		validateRewards(td, prevRewards, newRewards, miner, big.Zero(), big.NewInt(gasPenalty))
+		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), big.NewInt(gasPenalty))
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.NewInt(gasPenalty))
 		td.AssertBalance(alice, acctDefaultBalance)
 	})
@@ -262,12 +272,14 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		)
 
 		prevRewards := td.GetRewardSummary()
+		prevMinerBalance := td.GetBalance(miner)
 		result := tb.WithBlockBuilder(bb).ApplyAndValidate()
 
 		newRewards := td.GetRewardSummary()
+		newMinerBalance := td.GetBalance(miner)
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
 		gasPenalty := big.NewInt(48)
-		validateRewards(td, prevRewards, newRewards, miner, result.Receipts[0].GasUsed.Big(), gasPenalty)
+		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, result.Receipts[0].GasUsed.Big(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(halfBalance, gasPenalty))
 	})
 
@@ -323,9 +335,9 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		assert.Equal(td.T, big.Sub(senderBalanceBefore, gasCost), td.GetBalance(alice))
 
 		// Check the miner earned exactly the max cost (plus block reward).
-		thisRwd := big.Add(newRewards.LastPerEpochReward, gasCost)
+		thisRwd := big.Add(rewardsBefore.NextPerBlockReward, gasCost)
 		assert.Equal(td.T, big.Add(minerBalanceBefore, thisRwd), td.GetBalance(miner))
-		assert.Equal(td.T, big.Sub(rewardsBefore.Treasury, newRewards.LastPerEpochReward), newRewards.Treasury)
+		assert.Equal(td.T, big.Sub(rewardsBefore.Treasury, rewardsBefore.NextPerBlockReward), newRewards.Treasury)
 	})
 
 	// TODO more tests:
@@ -333,8 +345,8 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 	// - miner penalty followed by non-miner penalty with same nonce (in different block)
 }
 
-func validateRewards(td *drivers.TestDriver, prevRewards *drivers.RewardSummary, newRewards *drivers.RewardSummary, miner addr.Address, gasReward big.Int, gasPenalty big.Int) {
-	rwd := big.Add(big.Sub(newRewards.LastPerEpochReward, gasPenalty), gasReward)
-	assert.Equal(td.T, big.Add(prevRewards.LastPerEpochReward, rwd), td.GetBalance(miner))
-	assert.Equal(td.T, big.Sub(prevRewards.Treasury, newRewards.LastPerEpochReward), newRewards.Treasury)
+func validateRewards(td *drivers.TestDriver, prevRewards *drivers.RewardSummary, newRewards *drivers.RewardSummary, oldMinerBalance abi.TokenAmount, newMinerBalance abi.TokenAmount, gasReward big.Int, gasPenalty big.Int) {
+	rwd := big.Add(big.Sub(prevRewards.NextPerBlockReward, gasPenalty), gasReward)
+	assert.Equal(td.T, big.Add(oldMinerBalance, rwd), newMinerBalance)
+	assert.Equal(td.T, big.Sub(prevRewards.Treasury, prevRewards.NextPerBlockReward), newRewards.Treasury)
 }
