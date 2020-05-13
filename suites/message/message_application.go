@@ -8,7 +8,6 @@ import (
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	paych_spec "github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
-
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"

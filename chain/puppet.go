@@ -16,3 +16,7 @@ func (mp *MessageProducer) PuppetSend(from, to address.Address, params *puppet.S
 	ser := MustSerialize(params)
 	return mp.Build(from, to, puppet.MethodsPuppet.Send, ser, opts...)
 }
+func (mp *MessageProducer) PuppetSendMarshalCBORFailure(to, from address.Address, params *puppet.SendParams, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
+	return mp.Build(to, from, puppet.MethodsPuppet.SendMarshalCBORFailuer, ser, opts...)
+}

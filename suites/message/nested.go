@@ -359,6 +359,65 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 
 	})
 
+	t.Run("fail undecodable params nested send", func(t *testing.T) {
+		puppetBalance := big.NewInt(1_000)
+		td := builder.WithActorState(drivers.ActorState{
+			Addr:    PuppetAddress,
+			Balance: puppetBalance,
+			Code:    puppet.PuppetActorCodeID,
+			State:   &puppet.State{},
+		}).Build(t)
+		defer td.Complete()
+
+		// user separate actors for easier balance assertions
+		alice, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
+		bob, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
+
+		result1 := td.ApplyMessage(
+			td.MessageProducer.PuppetSendMarshalCBORFailure(alice, PuppetAddress, &puppet.SendParams{
+				To:     alice,
+				Value:  abi.NewTokenAmount(10),
+				Method: 0,
+				Params: nil,
+			}))
+
+		// outer send should pass
+		assert.Equal(t, result1.Receipt.ExitCode, exitcode.Ok)
+
+		// prevent a panic in test code
+		require.NotEmpty(t, result1.Receipt.ReturnValue)
+		var puppetRet puppet.SendReturn
+		chain.MustDeserialize(result1.Receipt.ReturnValue, &puppetRet)
+
+		// the inner message must fail
+		assert.Equal(t, exitcode.SysErrInvalidParameters, puppetRet.Code)
+
+		// alice should be charged for the gas cost.
+		td.AssertBalance(alice, big.Sub(acctDefaultBalance, result1.GasUsed().Big()))
+
+		// non-zero methods take a different code path than simple transfer methods.
+		result2 := td.ApplyMessage(
+			td.MessageProducer.PuppetSendMarshalCBORFailure(bob, PuppetAddress, &puppet.SendParams{
+				To:     builtin.InitActorAddr,
+				Value:  big.Zero(),
+				Method: builtin.MethodsInit.Exec,
+				Params: nil,
+			}))
+
+		// outer send should pass
+		assert.Equal(t, result2.Receipt.ExitCode, exitcode.Ok)
+
+		// prevent a panic in test code
+		require.NotEmpty(t, result2.Receipt.ReturnValue)
+		chain.MustDeserialize(result2.Receipt.ReturnValue, &puppetRet)
+
+		// the inner message must fail
+		assert.Equal(t, exitcode.SysErrInvalidParameters, puppetRet.Code)
+
+		// bob should be charged for the gas cost.
+		td.AssertBalance(bob, big.Sub(acctDefaultBalance, result2.GasUsed().Big()))
+	})
+
 	// TODO more tests:
 	// fail send running out of gas on inner method
 	// fail send when target method on multisig (recursive) aborts
