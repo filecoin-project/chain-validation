@@ -3,7 +3,6 @@ package message
 import (
 	"bytes"
 	"context"
-	"github.com/filecoin-project/specs-actors/actors/puppet"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
@@ -18,6 +17,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 	"github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
+	"github.com/filecoin-project/specs-actors/actors/puppet"
 	"github.com/filecoin-project/specs-actors/actors/runtime"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
@@ -320,9 +320,8 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		td.AssertHead(builtin.InitActorAddr, prevHead)  // Init state unchanged.
 	})
 
-	// TODO: Enable this (issue #200)
 	t.Run("fail insufficient funds for transfer in inner send", func(t *testing.T) {
-		t.Skip()
+		// puppet actor has zero funds
 		puppetBalance := big.Zero()
 		td := builder.WithActorState(drivers.ActorState{
 			Addr:    PuppetAddress,
@@ -338,16 +337,26 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		// alice tells the puppet actor to send funds to bob, the puppet actor has 0 balance so the inner send will fail,
 		// and alice will pay the gas cost.
 		amtSent := abi.NewTokenAmount(1)
-		result := td.ApplyFailure(td.MessageProducer.PuppetSend(alice, PuppetAddress, &puppet.SendParams{
+		result := td.ApplyMessage(td.MessageProducer.PuppetSend(alice, PuppetAddress, &puppet.SendParams{
 			To:     bob,
 			Value:  amtSent,
 			Method: builtin.MethodSend,
 			Params: nil,
-		}),
-			exitcode.SysErrInsufficientFunds,
-		)
+		}))
+
+		// the outer message should be applied successfully
+		assert.Equal(t, exitcode.Ok, result.Receipt.ExitCode)
+
+		var puppetRet puppet.SendReturn
+		chain.MustDeserialize(result.Receipt.ReturnValue, &puppetRet)
+
+		// the inner message should fail
+		assert.Equal(t, exitcode.SysErrInsufficientFunds, puppetRet.Code)
+
+		// alice should be charged for the gas cost and bob should have not received any funds.
 		td.AssertBalance(alice, big.Sub(acctDefaultBalance, result.GasUsed().Big()))
 		td.AssertBalance(bob, big.Zero())
+
 	})
 
 	// TODO more tests:
