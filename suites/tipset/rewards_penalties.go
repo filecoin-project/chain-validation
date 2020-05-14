@@ -200,6 +200,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		gasPenalty := int64(260)
 		gasLimit := gasPenalty - 130
 
+		// nonce == 1 causest the message application to fail resulting in a miner penalty.
 		bb.WithBLSMessageAndCode(
 			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
 			exitcode.SysErrSenderStateInvalid,
@@ -230,6 +231,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		gasPrice := int64(2)
 		gasPenalty := int64(420)
 		gasLimit := gasPenalty - 210
+		// nonce == 1 causes the message application to fail resulting in a miner penalty.
 		bb.WithSECPMessageAndCode(
 			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
 			exitcode.SysErrSenderStateInvalid,
