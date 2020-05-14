@@ -10,19 +10,19 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
-func (mp *MessageProducer) RewardConstructor(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) RewardConstructor(from, to address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsReward.Constructor, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsReward.Constructor, ser, opts...)
 }
-func (mp *MessageProducer) RewardAwardBlockReward(to, from address.Address, params *reward.AwardBlockRewardParams, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) RewardAwardBlockReward(from, to address.Address, params *reward.AwardBlockRewardParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsReward.AwardBlockReward, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsReward.AwardBlockReward, ser, opts...)
 }
-func (mp *MessageProducer) RewardLastPerEpochReward(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) RewardLastPerEpochReward(from, to address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsReward.LastPerEpochReward, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsReward.LastPerEpochReward, ser, opts...)
 }
-func (mp *MessageProducer) RewardUpdateNetworkKPI(to, from address.Address, params *big.Int, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) RewardUpdateNetworkKPI(from, to address.Address, params *big.Int, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsReward.UpdateNetworkKPI, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsReward.UpdateNetworkKPI, ser, opts...)
 }

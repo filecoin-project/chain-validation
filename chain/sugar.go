@@ -16,12 +16,12 @@ import (
 var noParams []byte
 
 // Transfer builds a simple value transfer message and returns it.
-func (mp *MessageProducer) Transfer(to, from address.Address, opts ...MsgOpt) *types.Message {
-	return mp.Build(to, from, builtin_spec.MethodSend, noParams, opts...)
+func (mp *MessageProducer) Transfer(from, to address.Address, opts ...MsgOpt) *types.Message {
+	return mp.Build(from, to, builtin_spec.MethodSend, noParams, opts...)
 }
 
-func (mp *MessageProducer) CreatePaymentChannelActor(to, from address.Address, opts ...MsgOpt) *types.Message {
-	return mp.InitExec(builtin_spec.InitActorAddr, from, &init_spec.ExecParams{
+func (mp *MessageProducer) CreatePaymentChannelActor(from, to address.Address, opts ...MsgOpt) *types.Message {
+	return mp.InitExec(from, builtin_spec.InitActorAddr, &init_spec.ExecParams{
 		CodeCID: builtin_spec.PaymentChannelActorCodeID,
 		ConstructorParams: MustSerialize(&paych_spec.ConstructorParams{
 			From: from,
@@ -31,7 +31,7 @@ func (mp *MessageProducer) CreatePaymentChannelActor(to, from address.Address, o
 }
 
 func (mp *MessageProducer) CreateMultisigActor(from address.Address, signers []address.Address, unlockDuration abi_spec.ChainEpoch, numApprovals int64, opts ...MsgOpt) *types.Message {
-	return mp.InitExec(builtin_spec.InitActorAddr, from, &init_spec.ExecParams{
+	return mp.InitExec(from, builtin_spec.InitActorAddr, &init_spec.ExecParams{
 		CodeCID: builtin_spec.MultisigActorCodeID,
 		ConstructorParams: MustSerialize(&multisig_spec.ConstructorParams{
 			Signers:               signers,
@@ -42,7 +42,7 @@ func (mp *MessageProducer) CreateMultisigActor(from address.Address, signers []a
 }
 
 func (mp *MessageProducer) CreateMinerActor(owner, worker address.Address, sealProofType abi_spec.RegisteredProof, pid peer.ID, opts ...MsgOpt) *types.Message {
-	return mp.PowerCreateMiner(builtin_spec.StoragePowerActorAddr, owner, &power_spec.CreateMinerParams{
+	return mp.PowerCreateMiner(owner, builtin_spec.StoragePowerActorAddr, &power_spec.CreateMinerParams{
 		Worker:        worker,
 		Owner:         owner,
 		SealProofType: sealProofType,

@@ -115,7 +115,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			require.Equal(t, tc.senderBal.String(), sendAct.Balance().String())
 
 			result := td.ApplyFailure(
-				td.MessageProducer.Transfer(tc.receiver, tc.sender, chain.Value(tc.transferAmnt), chain.Nonce(0)),
+				td.MessageProducer.Transfer(tc.sender, tc.receiver, chain.Value(tc.transferAmnt), chain.Nonce(0)),
 				tc.code,
 			)
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
@@ -160,7 +160,7 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
 		result := td.ApplyOk(
-			td.MessageProducer.Transfer(receiver, alice, chain.Value(transferAmnt), chain.Nonce(0)),
+			td.MessageProducer.Transfer(alice, receiver, chain.Value(transferAmnt), chain.Nonce(0)),
 		)
 		td.AssertBalance(alice, big_spec.Sub(big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()), transferAmnt))
 		td.AssertBalance(receiver, transferAmnt)
@@ -175,7 +175,7 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
 		td.ApplyFailure(
-			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
+			td.MessageProducer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0)),
 			exitcode.SysErrSenderInvalid)
 		td.AssertBalance(alice, aliceInitialBalance)
 	})
@@ -189,7 +189,7 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
 		td.ApplyFailure(
-			td.MessageProducer.Transfer(receiver, sender, chain.Value(transferAmnt), chain.Nonce(0)),
+			td.MessageProducer.Transfer(sender, receiver, chain.Value(transferAmnt), chain.Nonce(0)),
 			exitcode.SysErrSenderInvalid)
 		td.AssertNoActor(sender)
 		td.AssertNoActor(receiver)

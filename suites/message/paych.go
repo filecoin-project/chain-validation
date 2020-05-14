@@ -40,7 +40,7 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 
 		// init actor creates the payment channel
 		td.ApplyExpect(
-			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+			td.MessageProducer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
 			chain.MustSerialize(&createRet))
 
 		var pcState paych_spec.State
@@ -73,11 +73,11 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 		paychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
 		createRet := td.ComputeInitActorExecReturn(sender, 0, 0, paychAddr)
 		td.ApplyExpect(
-			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+			td.MessageProducer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
 			chain.MustSerialize(&createRet))
 
 		td.ApplyOk(
-			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, &paych_spec.UpdateChannelStateParams{
+			td.MessageProducer.PaychUpdateChannelState(sender, paychAddr, &paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
 					TimeLockMin: pcTimeLock,
 					TimeLockMax: 0, // TimeLockMax set to 0 means no timeout
@@ -106,12 +106,12 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 		paychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
 		initRet := td.ComputeInitActorExecReturn(sender, 0, 0, paychAddr)
 		td.ApplyExpect(
-			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+			td.MessageProducer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
 			chain.MustSerialize(&initRet))
 		td.AssertBalance(paychAddr, toSend)
 
 		td.ApplyOk(
-			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, &paych_spec.UpdateChannelStateParams{
+			td.MessageProducer.PaychUpdateChannelState(sender, paychAddr, &paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
 					TimeLockMin: abi_spec.ChainEpoch(1),
 					TimeLockMax: 0, // TimeLockMax set to 0 means no timeout
@@ -127,13 +127,13 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 
 		// settle the payment channel so it may be collected
 		settleResult := td.ApplyOk(
-			td.MessageProducer.PaychSettle(paychAddr, receiver, nil, chain.Value(big_spec.Zero()), chain.Nonce(0)))
+			td.MessageProducer.PaychSettle(receiver, paychAddr, nil, chain.Value(big_spec.Zero()), chain.Nonce(0)))
 
 		// advance the epoch so the funds may be redeemed.
 		td.ExeCtx.Epoch++
 
 		collectResult := td.ApplyOk(
-			td.MessageProducer.PaychCollect(paychAddr, receiver, nil, chain.Nonce(1), chain.Value(big_spec.Zero())))
+			td.MessageProducer.PaychCollect(receiver, paychAddr, nil, chain.Nonce(1), chain.Value(big_spec.Zero())))
 
 		// receiver_balance = initial_balance + paych_send - settle_paych_msg_gas - collect_paych_msg_gas
 		td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), settleResult.Receipt.GasUsed.Big()), collectResult.Receipt.GasUsed.Big()))

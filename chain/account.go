@@ -8,11 +8,11 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
-func (mp *MessageProducer) AccountConstructor(to, from address.Address, params *address.Address, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) AccountConstructor(from, to address.Address, params *address.Address, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsAccount.Constructor, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsAccount.Constructor, ser, opts...)
 }
-func (mp *MessageProducer) AccountPubkeyAddress(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) AccountPubkeyAddress(from, to address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsAccount.PubkeyAddress, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsAccount.PubkeyAddress, ser, opts...)
 }

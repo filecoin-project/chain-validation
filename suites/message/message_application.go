@@ -49,7 +49,7 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 		// Expect Message application to fail due to lack of gas when sender is unknown
 		unknown := utils.NewIDAddr(t, 10000000)
 		td.ApplyFailure(
-			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
+			td.MessageProducer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
 			exitcode.SysErrOutOfGas)
 	})
 
@@ -67,7 +67,7 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 
 		// get the "true" gas cost of applying the message
 		result := td.ApplyOk(
-			td.MessageProducer.Transfer(newAccountA, alice, chain.Value(transferAmnt), chain.Nonce(aliceNonceF())),
+			td.MessageProducer.Transfer(alice, newAccountA, chain.Value(transferAmnt), chain.Nonce(aliceNonceF())),
 		)
 
 		// decrease the gas cost by `gasStep` for each apply and ensure `SysErrOutOfGas` is always returned.
@@ -75,7 +75,7 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 		gasStep := int64(50)
 		newAccountB := utils.NewSECP256K1Addr(t, "2")
 		for tryGas := trueGas - gasStep; tryGas > 0; tryGas -= gasStep {
-			td.ApplyFailure(td.MessageProducer.Transfer(newAccountB, alice, chain.Value(transferAmnt), chain.Nonce(aliceNonceF()), chain.GasPrice(1), chain.GasLimit(tryGas)),
+			td.ApplyFailure(td.MessageProducer.Transfer(alice, newAccountB, chain.Value(transferAmnt), chain.Nonce(aliceNonceF()), chain.GasPrice(1), chain.GasLimit(tryGas)),
 				exitcode.SysErrOutOfGas,
 			)
 		}
@@ -95,7 +95,7 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 		// Expect message application to fail due to unknow actor when call seq num is also incorrect
 		unknown := utils.NewIDAddr(t, 10000000)
 		td.ApplyFailure(
-			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(1)),
+			td.MessageProducer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(1)),
 			exitcode.SysErrSenderInvalid)
 	})
 
@@ -123,12 +123,12 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 		paychAddr := utils.NewIDAddr(t, utils.IdFromAddress(receiverID)+1)
 		createRet := td.ComputeInitActorExecReturn(sender, 0, 0, paychAddr)
 		td.ApplyExpect(
-			td.MessageProducer.CreatePaymentChannelActor(receiver, sender, chain.Value(toSend), chain.Nonce(0)),
+			td.MessageProducer.CreatePaymentChannelActor(sender, receiver, chain.Value(toSend), chain.Nonce(0)),
 			chain.MustSerialize(&createRet))
 
 		// message application fails due to invalid argument (signature).
 		td.ApplyFailure(
-			td.MessageProducer.PaychUpdateChannelState(paychAddr, sender, &paych_spec.UpdateChannelStateParams{
+			td.MessageProducer.PaychUpdateChannelState(sender, paychAddr, &paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
 					TimeLockMin: pcTimeLock,
 					TimeLockMax: pcTimeLock,

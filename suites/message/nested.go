@@ -338,7 +338,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		// alice tells the puppet actor to send funds to bob, the puppet actor has 0 balance so the inner send will fail,
 		// and alice will pay the gas cost.
 		amtSent := abi.NewTokenAmount(1)
-		result := td.ApplyFailure(td.MessageProducer.PuppetSend(PuppetAddress, alice, &puppet.SendParams{
+		result := td.ApplyFailure(td.MessageProducer.PuppetSend(alice, PuppetAddress, &puppet.SendParams{
 			To:     bob,
 			Value:  amtSent,
 			Method: builtin.MethodSend,
@@ -393,7 +393,7 @@ func (s *msStage) sendOk(to address.Address, value abi.TokenAmount, method abi.M
 		Method: method,
 		Params: buf.Bytes(),
 	}
-	msg := s.driver.MessageProducer.MultisigPropose(s.msAddr, s.creator, &pparams, chain.Nonce(approverNonce))
+	msg := s.driver.MessageProducer.MultisigPropose(s.creator, s.msAddr, &pparams, chain.Nonce(approverNonce))
 	result := s.driver.ApplyMessage(msg)
 	require.Equal(s.driver.T, exitcode.Ok, result.Receipt.ExitCode)
 	return result

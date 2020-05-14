@@ -32,7 +32,7 @@ func (mp *MessageProducer) Messages() []*types.Message {
 }
 
 // BuildFull creates and returns a single message.
-func (mp *MessageProducer) BuildFull(to, from address.Address, method abi_spec.MethodNum, callSeq uint64, value, gasPrice big_spec.Int, gasLimit int64, params []byte) *types.Message {
+func (mp *MessageProducer) BuildFull(from, to address.Address, method abi_spec.MethodNum, callSeq uint64, value, gasPrice big_spec.Int, gasLimit int64, params []byte) *types.Message {
 	fm := &types.Message{
 		To:         to,
 		From:       from,
@@ -48,13 +48,13 @@ func (mp *MessageProducer) BuildFull(to, from address.Address, method abi_spec.M
 }
 
 // Build creates and returns a single message, using default gas parameters unless modified by `opts`.
-func (mp *MessageProducer) Build(to, from address.Address, method abi_spec.MethodNum, params []byte, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) Build(from, to address.Address, method abi_spec.MethodNum, params []byte, opts ...MsgOpt) *types.Message {
 	values := mp.defaults
 	for _, opt := range opts {
 		opt(&values)
 	}
 
-	return mp.BuildFull(to, from, method, values.nonce, values.value, values.gasPrice, values.gasLimit, params)
+	return mp.BuildFull(from, to, method, values.nonce, values.value, values.gasPrice, values.gasLimit, params)
 }
 
 // msgOpts specifies value and gas parameters for a message, supporting a functional options pattern

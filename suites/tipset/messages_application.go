@@ -37,9 +37,9 @@ func TipSetTest_BlockMessageApplication(t *testing.T, factory state.Factories) {
 		results := tipB.WithBlockBuilder(
 			blkB.
 				WithBLSMessageOk(
-					td.MessageProducer.Transfer(receiverBLS, senderBLS, chain.Nonce(0), chain.Value(transferAmnt))).
+					td.MessageProducer.Transfer(senderBLS, receiverBLS, chain.Nonce(0), chain.Value(transferAmnt))).
 				WithSECPMessageOk(
-					td.MessageProducer.Transfer(receiverSECP, senderSECP, chain.Nonce(0), chain.Value(transferAmnt))),
+					td.MessageProducer.Transfer(senderSECP, receiverSECP, chain.Nonce(0), chain.Value(transferAmnt))),
 		).ApplyAndValidate()
 
 		require.Equal(t, 2, len(results.Receipts))
@@ -69,7 +69,7 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		tipB.WithBlockBuilder(
 			// send value from sender to receiver
 			blkB.WithBLSMessageOk(
-				td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
+				td.MessageProducer.Transfer(sender, receiver, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
 			),
 		).ApplyAndValidate()
 
@@ -87,9 +87,9 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 
 		tipB.WithBlockBuilder(
 			// duplicate the message
-			blkB.WithBLSMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
+			blkB.WithBLSMessageOk(td.MessageProducer.Transfer(sender, receiver, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
 				// only should have a single result
-				WithBLSMessageDropped(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))),
+				WithBLSMessageDropped(td.MessageProducer.Transfer(sender, receiver, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))),
 		).ApplyAndValidate()
 		td.AssertBalance(receiver, big_spec.NewInt(100))
 	})
@@ -106,7 +106,7 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		tipB.WithBlockBuilder(
 			// send value from sender to receiver
 			blkB.WithSECPMessageOk(
-				td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
+				td.MessageProducer.Transfer(sender, receiver, chain.Nonce(0), chain.Value(big_spec.NewInt(100))),
 			),
 		).ApplyAndValidate()
 
@@ -124,8 +124,8 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 
 		tipB.WithBlockBuilder(
 			// send value from sender to receiver
-			blkB.WithSECPMessageOk(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
-				WithSECPMessageDropped(td.MessageProducer.Transfer(receiver, sender, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))),
+			blkB.WithSECPMessageOk(td.MessageProducer.Transfer(sender, receiver, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))).
+				WithSECPMessageDropped(td.MessageProducer.Transfer(sender, receiver, chain.Nonce(0), chain.Value(big_spec.NewInt(100)))),
 		).ApplyAndValidate()
 
 		td.AssertBalance(receiver, big_spec.NewInt(100))
@@ -145,8 +145,8 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		result := tipB.WithBlockBuilder(
 			// using ID addresses will ensure the BLS message and the unsigned message encapsulated in the SECP message
 			// have the same CID.
-			blkB.WithBLSMessageOk(td.MessageProducer.Transfer(receiverID, senderID, chain.Nonce(0), chain.Value(amountSent))).
-				WithSECPMessageDropped(td.MessageProducer.Transfer(receiverID, senderID, chain.Nonce(0), chain.Value(amountSent))),
+			blkB.WithBLSMessageOk(td.MessageProducer.Transfer(senderID, receiverID, chain.Nonce(0), chain.Value(amountSent))).
+				WithSECPMessageDropped(td.MessageProducer.Transfer(senderID, receiverID, chain.Nonce(0), chain.Value(amountSent))),
 		).ApplyAndValidate()
 
 		assert.Equal(t, 1, len(result.Receipts))
