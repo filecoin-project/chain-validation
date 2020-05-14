@@ -141,9 +141,21 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 			exitcode.ErrIllegalArgument)
 	})
 
+	t.Run("invalid method for receiver", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
+
+		// message application fails because ComputeDataCommitment isn't defined
+		// on the recipient actor
+		td.ApplyFailure(
+			td.MessageProducer.MarketComputeDataCommitment(alice, alice, nil, chain.Nonce(0)),
+			exitcode.SysErrInvalidMethod)
+	})
+
 	// TODO more tests:
 	// - receiver ID/Actor address does not exist
-	// - invalid method for receiver
 	// - missing/mismatched params for receiver
 	// - various out-of-gas cases
 }
