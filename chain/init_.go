@@ -8,11 +8,11 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
-func (mp *MessageProducer) InitConstructor(to, from address.Address, params *init_.ConstructorParams, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) InitConstructor(from, to address.Address, params *init_.ConstructorParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsInit.Constructor, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsInit.Constructor, ser, opts...)
 }
-func (mp *MessageProducer) InitExec(to, from address.Address, params *init_.ExecParams, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) InitExec(from, to address.Address, params *init_.ExecParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsInit.Exec, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsInit.Exec, ser, opts...)
 }

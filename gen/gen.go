@@ -144,8 +144,8 @@ func MakeMethods(jenFile *jen.File, details GenDetails) {
 		jenFile.Func().Params(
 			jen.Id("mp").Id("*MessageProducer"),
 		).Id(fmt.Sprintf("%s%s", d.methodPrefix, d.method)).Params(
-			jen.Id("to"),
-			jen.Id("from").Id("address.Address"),
+			jen.Id("from"),
+			jen.Id("to").Id("address.Address"),
 			jen.Id("params").Id(d.params),
 			jen.Id("opts").Id("...MsgOpt"),
 		).Params(

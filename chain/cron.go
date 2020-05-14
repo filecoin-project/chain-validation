@@ -9,11 +9,11 @@ import (
 	"github.com/filecoin-project/chain-validation/chain/types"
 )
 
-func (mp *MessageProducer) CronConstructor(to, from address.Address, params *cron.ConstructorParams, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) CronConstructor(from, to address.Address, params *cron.ConstructorParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsCron.Constructor, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsCron.Constructor, ser, opts...)
 }
-func (mp *MessageProducer) CronEpochTick(to, from address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) CronEpochTick(from, to address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(to, from, builtin_spec.MethodsCron.EpochTick, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsCron.EpochTick, ser, opts...)
 }

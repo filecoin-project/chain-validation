@@ -52,10 +52,10 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 				result := tipB.WithBlockBuilder(
 					drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
 						WithBLSMessageOk(
-							td.MessageProducer.Transfer(bob, alice, chain.Value(sendValue), chain.Nonce(callSeq)),
+							td.MessageProducer.Transfer(alice, bob, chain.Value(sendValue), chain.Nonce(callSeq)),
 						).
 						WithBLSMessageOk(
-							td.MessageProducer.Transfer(alice, bob, chain.Value(sendValue), chain.Nonce(callSeq)),
+							td.MessageProducer.Transfer(bob, alice, chain.Value(sendValue), chain.Nonce(callSeq)),
 						),
 				).ApplyAndValidate()
 				tipB.Clear()
@@ -98,7 +98,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		}
 
 		for _, s := range badSenders {
-			bb.WithBLSMessageAndCode(td.MessageProducer.Transfer(receiver, s, chain.Value(sendValue)),
+			bb.WithBLSMessageAndCode(td.MessageProducer.Transfer(s, receiver, chain.Value(sendValue)),
 				exitcode.SysErrSenderInvalid,
 			)
 		}
@@ -141,7 +141,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		}
 
 		for _, sender := range senders {
-			bb.WithBLSMessageAndCode(td.MessageProducer.Transfer(receiver, sender, chain.Value(sendValue)),
+			bb.WithBLSMessageAndCode(td.MessageProducer.Transfer(sender, receiver, chain.Value(sendValue)),
 				exitcode.SysErrSenderInvalid)
 		}
 		prevRewards := td.GetRewardSummary()
@@ -170,7 +170,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		_, aliceId := td.NewAccountActor(drivers.BLS, acctDefaultBalance)
 
 		bb.WithBLSMessageAndCode(
-			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, aliceId, chain.Nonce(1)),
+			td.MessageProducer.Transfer(aliceId, builtin.BurntFundsActorAddr, chain.Nonce(1)),
 			exitcode.SysErrSenderStateInvalid,
 		)
 
@@ -200,10 +200,9 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		gasPenalty := int64(260)
 		gasLimit := gasPenalty - 130
 
+		// nonce == 1 causest the message application to fail resulting in a miner penalty.
 		bb.WithBLSMessageAndCode(
-			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, alice,
-				chain.Nonce(1), // cause the message application to fail resulting in a miner penalty.
-				chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
+			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
 			exitcode.SysErrSenderStateInvalid,
 		)
 
@@ -232,10 +231,9 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		gasPrice := int64(2)
 		gasPenalty := int64(420)
 		gasLimit := gasPenalty - 210
+		// nonce == 1 causes the message application to fail resulting in a miner penalty.
 		bb.WithSECPMessageAndCode(
-			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, alice,
-				chain.Nonce(1), // cause the message application to fail resulting in a miner penalty.
-				chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
+			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
 			exitcode.SysErrSenderStateInvalid,
 		)
 
@@ -265,9 +263,9 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		// Attempt to whole balance, in two parts.
 		// The second message should fail (insufficient balance to pay fees).
 		bb.WithBLSMessageOk(
-			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, aliceId, chain.Value(halfBalance)),
+			td.MessageProducer.Transfer(aliceId, builtin.BurntFundsActorAddr, chain.Value(halfBalance)),
 		).WithBLSMessageAndCode(
-			td.MessageProducer.Transfer(builtin.BurntFundsActorAddr, aliceId, chain.Value(halfBalance), chain.Nonce(1)),
+			td.MessageProducer.Transfer(aliceId, builtin.BurntFundsActorAddr, chain.Value(halfBalance), chain.Nonce(1)),
 			exitcode.SysErrSenderStateInvalid,
 		)
 
@@ -296,7 +294,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		// to test insufficient gas to cover return value.
 		tracerResult := tb.WithBlockBuilder(
 			drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
-				WithBLSMessageAndRet(td.MessageProducer.MinerControlAddresses(miner, alice, nil, chain.Nonce(0)),
+				WithBLSMessageAndRet(td.MessageProducer.MinerControlAddresses(alice, miner, nil, chain.Nonce(0)),
 					// required to satisfy testing methods, unrelated to current test.
 					chain.MustSerialize(&miner_spec.GetControlAddressesReturn{
 						Owner:  td.StateDriver.BuiltinMinerInfo().OwnerID,
@@ -319,7 +317,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		gasLimit := requiredGasLimit - 1
 		result := tb.WithBlockBuilder(
 			drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
-				WithBLSMessageAndCode(td.MessageProducer.MinerControlAddresses(miner, alice, nil, chain.Nonce(1), chain.GasLimit(int64(gasLimit))),
+				WithBLSMessageAndCode(td.MessageProducer.MinerControlAddresses(alice, miner, nil, chain.Nonce(1), chain.GasLimit(int64(gasLimit))),
 					exitcode.SysErrOutOfGas,
 				),
 		).ApplyAndValidate()
