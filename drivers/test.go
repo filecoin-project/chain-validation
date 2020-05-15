@@ -239,7 +239,8 @@ func (b *TestDriverBuilder) WithDefaultGasPrice(price abi_spec.TokenAmount) *Tes
 }
 
 func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
-	stateWrapper, applier := b.factory.NewStateAndApplier()
+	syscalls := NewChainValidationSysCalls()
+	stateWrapper, applier := b.factory.NewStateAndApplier(syscalls)
 	sd := NewStateDriver(t, stateWrapper, b.factory.NewKeyManager())
 	stateWrapper.NewVM()
 
@@ -267,6 +268,8 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 		Config: b.factory.NewValidationConfig(),
 
 		StateTracker: tracker.NewStateTracker(t),
+
+		SysCalls: syscalls,
 	}
 }
 
@@ -282,6 +285,8 @@ type TestDriver struct {
 	Config state.ValidationConfig
 
 	StateTracker *tracker.StateTracker
+
+	SysCalls *ChainValidationSysCalls
 }
 
 func (td *TestDriver) Complete() {

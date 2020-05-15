@@ -42,7 +42,7 @@ type ServiceHandler struct {
 // Impl Factories interface
 //
 
-func (s *ServiceHandler) NewStateAndApplier() (state.VMWrapper, state.Applier) {
+func (s *ServiceHandler) NewStateAndApplier(syscalls runtime.Syscalls) (state.VMWrapper, state.Applier) {
 	// sanity
 	if s.vm == nil {
 		panic("call new service handler first")
