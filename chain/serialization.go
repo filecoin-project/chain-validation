@@ -23,6 +23,12 @@ func Serialize(i cbg.CBORMarshaler) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func MustDeserialize(b []byte, out interface{}) {
+	if err := Deserialize(b, out); err != nil {
+		panic(err)
+	}
+}
+
 func Deserialize(b []byte, out interface{}) error {
 	um, ok := out.(cbg.CBORUnmarshaler)
 	if !ok {
