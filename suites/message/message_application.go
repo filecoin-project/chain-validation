@@ -154,8 +154,27 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 			exitcode.SysErrInvalidMethod)
 	})
 
+	t.Run("receiver ID/Actor address does not exist", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
+
+		// Sending a message to non-existent ID address must produce an error.
+		unknownA := utils.NewIDAddr(t, 10000000)
+		td.ApplyFailure(
+			td.MessageProducer.Transfer(alice, unknownA, chain.Value(transferAmnt), chain.Nonce(0)),
+			exitcode.SysErrInvalidReceiver)
+
+		// Sending a message to non-existing actor address must produce an error.
+		unknownB := utils.NewActorAddr(t, "1234")
+		td.ApplyFailure(
+			td.MessageProducer.Transfer(alice, unknownB, chain.Value(transferAmnt), chain.Nonce(1)),
+			exitcode.SysErrInvalidReceiver)
+
+	})
+
 	// TODO more tests:
-	// - receiver ID/Actor address does not exist
 	// - missing/mismatched params for receiver
 	// - various out-of-gas cases
 }
