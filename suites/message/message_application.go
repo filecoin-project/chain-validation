@@ -160,11 +160,18 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 
-		// Sending a message to non-existent actor must produce an error.
-		unknown := utils.NewIDAddr(t, 10000000)
+		// Sending a message to non-existent ID address must produce an error.
+		unknownA := utils.NewIDAddr(t, 10000000)
 		td.ApplyFailure(
-			td.MessageProducer.Transfer(alice, unknown, chain.Value(transferAmnt), chain.Nonce(0)),
+			td.MessageProducer.Transfer(alice, unknownA, chain.Value(transferAmnt), chain.Nonce(0)),
 			exitcode.SysErrInvalidReceiver)
+
+		// Sending a message to non-existing actor address must produce an error.
+		unknownB := utils.NewActorAddr(t, "1234")
+		td.ApplyFailure(
+			td.MessageProducer.Transfer(alice, unknownB, chain.Value(transferAmnt), chain.Nonce(1)),
+			exitcode.SysErrInvalidReceiver)
+
 	})
 
 	// TODO more tests:
