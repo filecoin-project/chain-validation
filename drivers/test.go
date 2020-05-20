@@ -8,6 +8,13 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
+	cid "github.com/ipfs/go-cid"
+	datastore "github.com/ipfs/go-datastore"
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	cbor "github.com/ipfs/go-ipld-cbor"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
@@ -20,15 +27,10 @@ import (
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/builtin/system"
+	"github.com/filecoin-project/specs-actors/actors/puppet"
 	runtime_spec "github.com/filecoin-project/specs-actors/actors/runtime"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
-	cid "github.com/ipfs/go-cid"
-	datastore "github.com/ipfs/go-datastore"
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
-	cbor "github.com/ipfs/go-ipld-cbor"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -61,11 +63,53 @@ const (
 	TestSealProofType = abi_spec.RegisteredProof_StackedDRG2KiBSeal
 )
 
+var PuppetAddress address.Address
+
 func init() {
 	ms := newMockStore()
 	if err := initializeStoreWithAdtRoots(ms); err != nil {
 		panic(err)
 	}
+
+	if err := initializePuppetAddress(); err != nil {
+		panic(err)
+	}
+
+	initializeDefaultBuiltinActorStates()
+}
+
+func initializeStoreWithAdtRoots(store adt_spec.Store) error {
+	var err error
+	EmptyArrayCid, err = adt_spec.MakeEmptyArray(store).Root()
+	if err != nil {
+		return err
+	}
+
+	EmptyMapCid, err = adt_spec.MakeEmptyMap(store).Root()
+	if err != nil {
+		return err
+	}
+
+	EmptyMultiMapCid, err = adt_spec.MakeEmptyMultimap(store).Root()
+	if err != nil {
+		return err
+	}
+
+	EmptySetCid, err = adt_spec.MakeEmptySet(store).Root()
+	if err != nil {
+		return err
+	}
+
+	emptyDeadlines := miner.ConstructDeadlines()
+	EmptyDeadlinesCid, err = store.Put(context.Background(), emptyDeadlines)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func initializeDefaultBuiltinActorStates() {
 
 	DefaultInitActorState = ActorState{
 		Addr:    builtin_spec.InitActorAddr,
@@ -150,35 +194,23 @@ func init() {
 	}
 }
 
-func initializeStoreWithAdtRoots(store adt_spec.Store) error {
+func initializePuppetAddress() error {
 	var err error
-	EmptyArrayCid, err = adt_spec.MakeEmptyArray(store).Root()
+	// the address before the burnt funds address
+	PuppetAddress, err = address.NewIDAddress(builtin_spec.FirstNonSingletonActorId - 2)
 	if err != nil {
 		return err
 	}
-
-	EmptyMapCid, err = adt_spec.MakeEmptyMap(store).Root()
-	if err != nil {
-		return err
-	}
-
-	EmptyMultiMapCid, err = adt_spec.MakeEmptyMultimap(store).Root()
-	if err != nil {
-		return err
-	}
-
-	EmptySetCid, err = adt_spec.MakeEmptySet(store).Root()
-	if err != nil {
-		return err
-	}
-
-	emptyDeadlines := miner.ConstructDeadlines()
-	EmptyDeadlinesCid, err = store.Put(context.Background(), emptyDeadlines)
-	if err != nil {
-		return err
-	}
-
 	return nil
+}
+
+func MakePuppetActorState(balance abi_spec.TokenAmount) ActorState {
+	return ActorState{
+		Addr:    PuppetAddress,
+		Balance: balance,
+		Code:    puppet.PuppetActorCodeID,
+		State:   &puppet.State{},
+	}
 }
 
 type mockStore struct {

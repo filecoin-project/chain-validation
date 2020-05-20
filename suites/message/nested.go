@@ -29,17 +29,6 @@ import (
 	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
-var PuppetAddress address.Address
-
-func init() {
-	var err error
-	// the address before the burnt funds address
-	PuppetAddress, err = address.NewIDAddress(builtin.FirstNonSingletonActorId - 2)
-	if err != nil {
-		panic(err)
-	}
-}
-
 // Tests exercising messages sent internally from one actor to another.
 // These use a multisig actor with approvers=1 as a convenient staging ground for arbitrary internal messages.
 func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
@@ -323,12 +312,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 	t.Run("fail insufficient funds for transfer in inner send", func(t *testing.T) {
 		// puppet actor has zero funds
 		puppetBalance := big.Zero()
-		td := builder.WithActorState(drivers.ActorState{
-			Addr:    PuppetAddress,
-			Balance: puppetBalance,
-			Code:    puppet.PuppetActorCodeID,
-			State:   &puppet.State{},
-		}).Build(t)
+		td := builder.WithActorState(drivers.MakePuppetActorState(puppetBalance)).Build(t)
 		defer td.Complete()
 
 		alice, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
@@ -337,7 +321,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		// alice tells the puppet actor to send funds to bob, the puppet actor has 0 balance so the inner send will fail,
 		// and alice will pay the gas cost.
 		amtSent := abi.NewTokenAmount(1)
-		result := td.ApplyMessage(td.MessageProducer.PuppetSend(alice, PuppetAddress, &puppet.SendParams{
+		result := td.ApplyMessage(td.MessageProducer.PuppetSend(alice, drivers.PuppetAddress, &puppet.SendParams{
 			To:     bob,
 			Value:  amtSent,
 			Method: builtin.MethodSend,
@@ -361,12 +345,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 
 	t.Run("fail undecodable params nested send", func(t *testing.T) {
 		puppetBalance := big.NewInt(1_000)
-		td := builder.WithActorState(drivers.ActorState{
-			Addr:    PuppetAddress,
-			Balance: puppetBalance,
-			Code:    puppet.PuppetActorCodeID,
-			State:   &puppet.State{},
-		}).Build(t)
+		td := builder.WithActorState(drivers.MakePuppetActorState(puppetBalance)).Build(t)
 		defer td.Complete()
 
 		// user separate actors for easier balance assertions
@@ -374,7 +353,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		bob, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
 
 		result1 := td.ApplyMessage(
-			td.MessageProducer.PuppetSendMarshalCBORFailure(alice, PuppetAddress, &puppet.SendParams{
+			td.MessageProducer.PuppetSendMarshalCBORFailure(alice, drivers.PuppetAddress, &puppet.SendParams{
 				To:     alice,
 				Value:  abi.NewTokenAmount(10),
 				Method: 0,
@@ -390,14 +369,14 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		chain.MustDeserialize(result1.Receipt.ReturnValue, &puppetRet)
 
 		// the inner message must fail
-		assert.Equal(t, exitcode.SysErrInvalidParameters, puppetRet.Code)
+		assert.Equal(t, exitcode.ErrSerialization, puppetRet.Code)
 
 		// alice should be charged for the gas cost.
 		td.AssertBalance(alice, big.Sub(acctDefaultBalance, result1.GasUsed().Big()))
 
 		// non-zero methods take a different code path than simple transfer methods.
 		result2 := td.ApplyMessage(
-			td.MessageProducer.PuppetSendMarshalCBORFailure(bob, PuppetAddress, &puppet.SendParams{
+			td.MessageProducer.PuppetSendMarshalCBORFailure(bob, drivers.PuppetAddress, &puppet.SendParams{
 				To:     builtin.InitActorAddr,
 				Value:  big.Zero(),
 				Method: builtin.MethodsInit.Exec,
@@ -412,7 +391,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		chain.MustDeserialize(result2.Receipt.ReturnValue, &puppetRet)
 
 		// the inner message must fail
-		assert.Equal(t, exitcode.SysErrInvalidParameters, puppetRet.Code)
+		assert.Equal(t, exitcode.ErrSerialization, puppetRet.Code)
 
 		// bob should be charged for the gas cost.
 		td.AssertBalance(bob, big.Sub(acctDefaultBalance, result2.GasUsed().Big()))
