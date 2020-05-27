@@ -13,6 +13,7 @@ func main() {
 		types.ExpTipSet{},
 
 		types.BlockHeader{},
+		types.FullBlock{},
 
 		types.MessageReceipt{},
 		types.Message{},

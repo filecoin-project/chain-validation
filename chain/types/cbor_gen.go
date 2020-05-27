@@ -596,6 +596,150 @@ func (t *BlockHeader) UnmarshalCBOR(r io.Reader) error {
 	return nil
 }
 
+var lengthBufFullBlock = []byte{131}
+
+func (t *FullBlock) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+	if _, err := w.Write(lengthBufFullBlock); err != nil {
+		return err
+	}
+
+	scratch := make([]byte, 9)
+
+	// t.Header (types.BlockHeader) (struct)
+	if err := t.Header.MarshalCBOR(w); err != nil {
+		return err
+	}
+
+	// t.BlsMessages ([]cid.Cid) (slice)
+	if len(t.BlsMessages) > cbg.MaxLength {
+		return xerrors.Errorf("Slice value in field t.BlsMessages was too long")
+	}
+
+	if err := cbg.WriteMajorTypeHeaderBuf(scratch, w, cbg.MajArray, uint64(len(t.BlsMessages))); err != nil {
+		return err
+	}
+	for _, v := range t.BlsMessages {
+		if err := cbg.WriteCidBuf(scratch, w, v); err != nil {
+			return xerrors.Errorf("failed writing cid field t.BlsMessages: %w", err)
+		}
+	}
+
+	// t.SecpkMessages ([]cid.Cid) (slice)
+	if len(t.SecpkMessages) > cbg.MaxLength {
+		return xerrors.Errorf("Slice value in field t.SecpkMessages was too long")
+	}
+
+	if err := cbg.WriteMajorTypeHeaderBuf(scratch, w, cbg.MajArray, uint64(len(t.SecpkMessages))); err != nil {
+		return err
+	}
+	for _, v := range t.SecpkMessages {
+		if err := cbg.WriteCidBuf(scratch, w, v); err != nil {
+			return xerrors.Errorf("failed writing cid field t.SecpkMessages: %w", err)
+		}
+	}
+	return nil
+}
+
+func (t *FullBlock) UnmarshalCBOR(r io.Reader) error {
+	br := cbg.GetPeeker(r)
+	scratch := make([]byte, 8)
+
+	maj, extra, err := cbg.CborReadHeaderBuf(br, scratch)
+	if err != nil {
+		return err
+	}
+	if maj != cbg.MajArray {
+		return fmt.Errorf("cbor input should be of type array")
+	}
+
+	if extra != 3 {
+		return fmt.Errorf("cbor input had wrong number of fields")
+	}
+
+	// t.Header (types.BlockHeader) (struct)
+
+	{
+
+		pb, err := br.PeekByte()
+		if err != nil {
+			return err
+		}
+		if pb == cbg.CborNull[0] {
+			var nbuf [1]byte
+			if _, err := br.Read(nbuf[:]); err != nil {
+				return err
+			}
+		} else {
+			t.Header = new(BlockHeader)
+			if err := t.Header.UnmarshalCBOR(br); err != nil {
+				return xerrors.Errorf("unmarshaling t.Header pointer: %w", err)
+			}
+		}
+
+	}
+	// t.BlsMessages ([]cid.Cid) (slice)
+
+	maj, extra, err = cbg.CborReadHeaderBuf(br, scratch)
+	if err != nil {
+		return err
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("t.BlsMessages: array too large (%d)", extra)
+	}
+
+	if maj != cbg.MajArray {
+		return fmt.Errorf("expected cbor array")
+	}
+
+	if extra > 0 {
+		t.BlsMessages = make([]cid.Cid, extra)
+	}
+
+	for i := 0; i < int(extra); i++ {
+
+		c, err := cbg.ReadCid(br)
+		if err != nil {
+			return xerrors.Errorf("reading cid field t.BlsMessages failed: %w", err)
+		}
+		t.BlsMessages[i] = c
+	}
+
+	// t.SecpkMessages ([]cid.Cid) (slice)
+
+	maj, extra, err = cbg.CborReadHeaderBuf(br, scratch)
+	if err != nil {
+		return err
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("t.SecpkMessages: array too large (%d)", extra)
+	}
+
+	if maj != cbg.MajArray {
+		return fmt.Errorf("expected cbor array")
+	}
+
+	if extra > 0 {
+		t.SecpkMessages = make([]cid.Cid, extra)
+	}
+
+	for i := 0; i < int(extra); i++ {
+
+		c, err := cbg.ReadCid(br)
+		if err != nil {
+			return xerrors.Errorf("reading cid field t.SecpkMessages failed: %w", err)
+		}
+		t.SecpkMessages[i] = c
+	}
+
+	return nil
+}
+
 var lengthBufMessageReceipt = []byte{131}
 
 func (t *MessageReceipt) MarshalCBOR(w io.Writer) error {
