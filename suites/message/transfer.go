@@ -138,7 +138,7 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
-	t.Run("self transfer", func(t *testing.T) {
+	t.Run("self transfer secp to secp", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
 
@@ -147,6 +147,45 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 
 		result := td.ApplyOk(
 			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)))
+		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
+		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()))
+	})
+
+	t.Run("self transfer secp to id address", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		alice, aliceId := td.NewAccountActor(drivers.SECP, aliceInitialBalance)
+		transferAmnt := abi_spec.NewTokenAmount(10)
+
+		result := td.ApplyOk(
+			td.MessageProducer.Transfer(alice, aliceId, chain.Value(transferAmnt), chain.Nonce(0)))
+		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
+		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()))
+	})
+
+	t.Run("self transfer id to secp address", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		alice, aliceId := td.NewAccountActor(drivers.SECP, aliceInitialBalance)
+		transferAmnt := abi_spec.NewTokenAmount(10)
+
+		result := td.ApplyOk(
+			td.MessageProducer.Transfer(aliceId, alice, chain.Value(transferAmnt), chain.Nonce(0)))
+		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
+		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()))
+	})
+
+	t.Run("self transfer id to id address", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		alice, aliceId := td.NewAccountActor(drivers.SECP, aliceInitialBalance)
+		transferAmnt := abi_spec.NewTokenAmount(10)
+
+		result := td.ApplyOk(
+			td.MessageProducer.Transfer(aliceId, aliceId, chain.Value(transferAmnt), chain.Nonce(0)))
 		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
 		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()))
 	})
