@@ -41,6 +41,18 @@ var fakeVerifyPoStFunc = func(info abi.WindowPoStVerifyInfo) error {
 	return nil
 }
 
+var fakeBatchVerifySealfunc = func(inp map[address.Address][]abi.SealVerifyInfo) (map[address.Address][]bool, error) {
+	out := make(map[address.Address][]bool)
+	for a, svis := range inp {
+		res := make([]bool, len(svis))
+		for i := range res {
+			res[i] = true
+		}
+		out[a] = res
+	}
+	return out, nil
+}
+
 var panicingVerifyConsensusFaultFunc = func(h1, h2, extra []byte) (*runtime.ConsensusFault, error) {
 	panic("implement me")
 }
@@ -52,6 +64,7 @@ type ChainValidationSysCalls struct {
 	VerifySealFunc               func(info abi.SealVerifyInfo) error
 	VerifyPoStFunc               func(info abi.WindowPoStVerifyInfo) error
 	VerifyConsensusFaultFunc     func(h1, h2, extra []byte) (*runtime.ConsensusFault, error)
+	BatchVerifySealsFunc         func(map[address.Address][]abi.SealVerifyInfo) (map[address.Address][]bool, error)
 }
 
 func NewChainValidationSysCalls() *ChainValidationSysCalls {
@@ -64,6 +77,7 @@ func NewChainValidationSysCalls() *ChainValidationSysCalls {
 		VerifyPoStFunc:               fakeVerifyPoStFunc,
 
 		VerifyConsensusFaultFunc: panicingVerifyConsensusFaultFunc,
+		BatchVerifySealsFunc:     fakeBatchVerifySealfunc,
 	}
 }
 
@@ -89,4 +103,8 @@ func (c ChainValidationSysCalls) VerifyPoSt(info abi.WindowPoStVerifyInfo) error
 
 func (c ChainValidationSysCalls) VerifyConsensusFault(h1, h2, extra []byte) (*runtime.ConsensusFault, error) {
 	return c.VerifyConsensusFaultFunc(h1, h2, extra)
+}
+
+func (c ChainValidationSysCalls) BatchVerifySeals(inp map[address.Address][]abi.SealVerifyInfo) (map[address.Address][]bool, error) {
+	return c.BatchVerifySealsFunc(inp)
 }
