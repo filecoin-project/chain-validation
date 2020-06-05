@@ -46,6 +46,6 @@ func (mp *MessageProducer) CreateMinerActor(owner, worker address.Address, sealP
 		Worker:        worker,
 		Owner:         owner,
 		SealProofType: sealProofType,
-		Peer:          pid,
+		Peer:          abi_spec.PeerID(pid),
 	}, opts...)
 }
