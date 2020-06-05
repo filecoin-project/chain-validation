@@ -54,16 +54,16 @@ type StateDriver struct {
 
 // info about the state drivers builtin miner
 type MinerInfo struct {
-	Owner address.Address
+	Owner   address.Address
 	OwnerID address.Address
 
-	Worker address.Address
+	Worker   address.Address
 	WorkerID address.Address
 }
 
 // NewStateDriver creates a new state driver for a state.
 func NewStateDriver(tb testing.TB, st state.VMWrapper, w state.KeyManager) *StateDriver {
-	return &StateDriver{tb, st, w, NewRandomnessSource(), nil,make(map[address.Address]address.Address)}
+	return &StateDriver{tb, st, w, NewRandomnessSource(), nil, make(map[address.Address]address.Address)}
 }
 
 // State returns the state.
@@ -140,7 +140,7 @@ func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredProo
 	minerActorAddrs := computeInitActorExecReturn(d.tb, minerWorkerPk, 0, 1, expectedMinerActorIDAddress)
 
 	// create the miner actor s.t. it exists in the init actors map
-	minerState, err := miner_spec.ConstructState(EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid, minerOwnerID, minerWorkerID, "chain-validation", sealProofType, periodBoundary)
+	minerState, err := miner_spec.ConstructState(EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid, minerOwnerID, minerWorkerID, abi_spec.PeerID("chain-validation"), nil, sealProofType, periodBoundary)
 	require.NoError(d.tb, err)
 	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), minerState)
 	require.NoError(d.tb, err)
