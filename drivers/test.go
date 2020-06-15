@@ -58,7 +58,7 @@ var (
 )
 
 const (
-	TestSealProofType = abi_spec.RegisteredProof_StackedDRG2KiBSeal
+	TestSealProofType = abi_spec.RegisteredSealProof_StackedDrg2KiBV1
 )
 
 func init() {

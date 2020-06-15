@@ -287,7 +287,6 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 			Miner:       stage.creator,
 			Penalty:     big.Zero(),
 			GasReward:   big.Zero(),
-			TicketCount: 100,
 		}
 		amtSent := abi.NewTokenAmount(1)
 		stage.sendOk(builtin.RewardActorAddr, amtSent, builtin.MethodsReward.AwardBlockReward, &params, nonce)
