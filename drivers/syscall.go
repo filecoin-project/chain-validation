@@ -20,7 +20,7 @@ var defaultHashBlake2bFunc = func(data []byte) [32]byte {
 	return blake2b.Sum256(data)
 }
 
-var fakeComputerUnsealedSectorCIDFunc = func(proof abi.RegisteredProof, pieces []abi.PieceInfo) (cid.Cid, error) {
+var fakeComputerUnsealedSectorCIDFunc = func(proof abi.RegisteredSealProof, pieces []abi.PieceInfo) (cid.Cid, error) {
 	// Fake CID computation by hashing the piece info (rather than the real computation over piece commitments).
 	buf := bytes.Buffer{}
 	for _, p := range pieces {
@@ -60,7 +60,7 @@ var panicingVerifyConsensusFaultFunc = func(h1, h2, extra []byte) (*runtime.Cons
 type ChainValidationSysCalls struct {
 	VerifySigFunc                func(signature crypto.Signature, signer address.Address, plaintext []byte) error
 	HashBlake2bFunc              func(data []byte) [32]byte
-	ComputeUnSealedSectorCIDFunc func(proof abi.RegisteredProof, pieces []abi.PieceInfo) (cid.Cid, error)
+	ComputeUnSealedSectorCIDFunc func(proof abi.RegisteredSealProof, pieces []abi.PieceInfo) (cid.Cid, error)
 	VerifySealFunc               func(info abi.SealVerifyInfo) error
 	VerifyPoStFunc               func(info abi.WindowPoStVerifyInfo) error
 	VerifyConsensusFaultFunc     func(h1, h2, extra []byte) (*runtime.ConsensusFault, error)
@@ -89,7 +89,7 @@ func (c ChainValidationSysCalls) HashBlake2b(data []byte) [32]byte {
 	return c.HashBlake2bFunc(data)
 }
 
-func (c ChainValidationSysCalls) ComputeUnsealedSectorCID(proof abi.RegisteredProof, pieces []abi.PieceInfo) (cid.Cid, error) {
+func (c ChainValidationSysCalls) ComputeUnsealedSectorCID(proof abi.RegisteredSealProof, pieces []abi.PieceInfo) (cid.Cid, error) {
 	return c.ComputeUnSealedSectorCIDFunc(proof, pieces)
 }
 

@@ -132,7 +132,7 @@ func (d *StateDriver) BuiltinMinerInfo() *MinerInfo {
 }
 
 // create miner without sending a message. modify the init and power actor manually
-func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredProof, periodBoundary abi_spec.ChainEpoch) address.Address {
+func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredSealProof, periodBoundary abi_spec.ChainEpoch) address.Address {
 	// creat a miner, owner, and its worker
 	minerOwnerPk, minerOwnerID := d.NewAccountActor(address.SECP256K1, big_spec.NewInt(1_000_000_000))
 	minerWorkerPk, minerWorkerID := d.NewAccountActor(address.BLS, big_spec.Zero())
