@@ -30,7 +30,7 @@ func (mp *MessageProducer) CreatePaymentChannelActor(from, to address.Address, o
 	}, opts...)
 }
 
-func (mp *MessageProducer) CreateMultisigActor(from address.Address, signers []address.Address, unlockDuration abi_spec.ChainEpoch, numApprovals int64, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) CreateMultisigActor(from address.Address, signers []address.Address, unlockDuration abi_spec.ChainEpoch, numApprovals uint64, opts ...MsgOpt) *types.Message {
 	return mp.InitExec(from, builtin_spec.InitActorAddr, &init_spec.ExecParams{
 		CodeCID: builtin_spec.MultisigActorCodeID,
 		ConstructorParams: MustSerialize(&multisig_spec.ConstructorParams{

@@ -25,9 +25,13 @@ func (mp *MessageProducer) MarketPublishStorageDeals(from, to address.Address, p
 	ser := MustSerialize(params)
 	return mp.Build(from, to, builtin_spec.MethodsMarket.PublishStorageDeals, ser, opts...)
 }
-func (mp *MessageProducer) MarketVerifyDealsOnSectorProveCommit(from, to address.Address, params *market.VerifyDealsOnSectorProveCommitParams, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) MarketVerifyDealsForActivation(from, to address.Address, params *market.VerifyDealsForActivationParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(from, to, builtin_spec.MethodsMarket.VerifyDealsOnSectorProveCommit, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsMarket.VerifyDealsForActivation, ser, opts...)
+}
+func (mp *MessageProducer) MarketActivateDeals(from, to address.Address, params *market.ActivateDealsParams, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
+	return mp.Build(from, to, builtin_spec.MethodsMarket.ActivateDeals, ser, opts...)
 }
 func (mp *MessageProducer) MarketOnMinerSectorsTerminate(from, to address.Address, params *market.OnMinerSectorsTerminateParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)

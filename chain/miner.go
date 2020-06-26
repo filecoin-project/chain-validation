@@ -75,3 +75,12 @@ func (mp *MessageProducer) MinerWithdrawBalance(from, to address.Address, params
 	ser := MustSerialize(params)
 	return mp.Build(from, to, builtin_spec.MethodsMiner.WithdrawBalance, ser, opts...)
 }
+func (mp *MessageProducer) MinerConfirmSectorProofsValid(from, to address.Address, params *builtin_spec.ConfirmSectorProofsParams, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
+	return mp.Build(from, to, builtin_spec.MethodsMiner.ConfirmSectorProofsValid, ser, opts...)
+}
+func (mp *MessageProducer) MinerChangeMultiaddrs(from, to address.Address, params *miner.ChangeMultiaddrsParams, opts ...MsgOpt) *types.Message {
+	ser := MustSerialize(params)
+	//TODO: Specs-actors needs ChangeMultiaddrs added to MethodsMiner
+	return mp.Build(from, to, 18, ser, opts...)
+}
