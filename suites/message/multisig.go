@@ -4,6 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/filecoin-project/chain-validation/chain"
+	"github.com/filecoin-project/chain-validation/drivers"
+	"github.com/filecoin-project/chain-validation/state"
+	"github.com/filecoin-project/chain-validation/suites/utils"
 	address "github.com/filecoin-project/go-address"
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
@@ -12,12 +16,6 @@ import (
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	"github.com/minio/blake2b-simd"
 	"github.com/stretchr/testify/require"
-	typegen "github.com/whyrusleeping/cbor-gen"
-
-	"github.com/filecoin-project/chain-validation/chain"
-	"github.com/filecoin-project/chain-validation/drivers"
-	"github.com/filecoin-project/chain-validation/state"
-	"github.com/filecoin-project/chain-validation/suites/utils"
 )
 
 func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
@@ -27,7 +25,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	t.Run("constructor test", func(t *testing.T) {
-		const numApprovals = 3
+		const numApprovals = 1
 		const unlockDuration = 10
 		var valueSend = abi_spec.NewTokenAmount(10)
 		var initialBal = abi_spec.NewTokenAmount(200000000000)
@@ -88,7 +86,12 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 
 		// propose the transaction and assert it exists in the actor state
 		txID0 := multisig_spec.TxnID(0)
-		expected := typegen.CborInt(txID0)
+		expected := multisig_spec.ProposeReturn{
+			TxnID:   0,
+			Applied: false,
+			Code:    0,
+			Ret:     nil,
+		}
 		td.ApplyExpect(
 			td.MessageProducer.MultisigPropose(alice, multisigAddr, &pparams, chain.Nonce(1)),
 			chain.MustSerialize(&expected))
@@ -162,10 +165,15 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 
 		// propose the transaction and assert it exists in the actor state
 		txID0 := multisig_spec.TxnID(0)
-		expected := typegen.CborInt(txID0)
+		expectedPropose := multisig_spec.ProposeReturn{
+			TxnID:   0,
+			Applied: false,
+			Code:    0,
+			Ret:     nil,
+		}
 		td.ApplyExpect(
 			td.MessageProducer.MultisigPropose(alice, multisigAddr, &pparams, chain.Nonce(1)),
-			chain.MustSerialize(&expected))
+			chain.MustSerialize(&expectedPropose))
 
 		txn0 := multisig_spec.Transaction{
 			To:       pparams.To,
@@ -192,9 +200,15 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 		balanceBefore := td.GetBalance(outsider)
 
 		// bob approves transfer of 'valueSend' FIL to outsider.
-		td.ApplyOk(
+		expectedApprove := multisig_spec.ApproveReturn{
+			Applied: true,
+			Code:    0,
+			Ret:     nil,
+		}
+		td.ApplyExpect(
 			td.MessageProducer.MultisigApprove(bob, multisigAddr, &multisig_spec.TxnIDParams{ID: txID0, ProposalHash: ph}, chain.Nonce(0)),
-		)
+			chain.MustSerialize(&expectedApprove))
+
 		txID1 := multisig_spec.TxnID(1)
 		td.AssertMultisigState(multisigAddr, multisig_spec.State{
 			Signers:               []address.Address{aliceId, bobId},
@@ -249,8 +263,12 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 		// AddSigner must be staged through the multisig itself
 		// Alice proposes the AddSigner.
 		// Since approvals = 1 this auto-approves the transaction.
-		txID0 := multisig_spec.TxnID(0)
-		expected := typegen.CborInt(txID0)
+		expected := multisig_spec.ProposeReturn{
+			TxnID:   0,
+			Applied: true,
+			Code:    0,
+			Ret:     nil,
+		}
 		td.ApplyExpect(
 			td.MessageProducer.MultisigPropose(alice, multisigAddr, &multisig_spec.ProposeParams{
 				To:     multisigAddr,
