@@ -19,10 +19,6 @@ func (mp *MessageProducer) PowerCreateMiner(from, to address.Address, params *po
 	ser := MustSerialize(params)
 	return mp.Build(from, to, builtin_spec.MethodsPower.CreateMiner, ser, opts...)
 }
-func (mp *MessageProducer) PowerDeleteMiner(from, to address.Address, params *power.DeleteMinerParams, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(params)
-	return mp.Build(from, to, builtin_spec.MethodsPower.DeleteMiner, ser, opts...)
-}
 func (mp *MessageProducer) PowerUpdateClaimedPower(from, to address.Address, params *power.UpdateClaimedPowerParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
 	return mp.Build(from, to, builtin_spec.MethodsPower.UpdateClaimedPower, ser, opts...)

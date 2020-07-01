@@ -110,13 +110,14 @@ func init() {
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.StorageMarketActorCodeID,
 		State: &market_spec.State{
-			Proposals:      EmptyArrayCid,
-			States:         EmptyArrayCid,
-			EscrowTable:    EmptyMapCid,
-			LockedTable:    EmptyMapCid,
-			NextID:         abi_spec.DealID(0),
-			DealOpsByEpoch: EmptyMultiMapCid,
-			LastCron:       0,
+			Proposals:        EmptyArrayCid,
+			States:           EmptyArrayCid,
+			PendingProposals: EmptyMapCid,
+			EscrowTable:      EmptyMapCid,
+			LockedTable:      EmptyMapCid,
+			NextID:           abi_spec.DealID(0),
+			DealOpsByEpoch:   EmptyMultiMapCid,
+			LastCron:         0,
 		},
 	}
 
