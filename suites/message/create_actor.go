@@ -18,7 +18,7 @@ import (
 
 func MessageTest_AccountActorCreation(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
-		WithDefaultGasLimit(1_000_000).
+		WithDefaultGasLimit(1_000_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
@@ -36,7 +36,7 @@ func MessageTest_AccountActorCreation(t *testing.T, factory state.Factories) {
 		{
 			"success create SECP256K1 account actor",
 			address.SECP256K1,
-			abi_spec.NewTokenAmount(10_000_000),
+			abi_spec.NewTokenAmount(10_000_000_000),
 
 			utils.NewSECP256K1Addr(t, "publickeyfoo"),
 			abi_spec.NewTokenAmount(10_000),
@@ -46,7 +46,7 @@ func MessageTest_AccountActorCreation(t *testing.T, factory state.Factories) {
 		{
 			"success create BLS account actor",
 			address.SECP256K1,
-			abi_spec.NewTokenAmount(10_000_000),
+			abi_spec.NewTokenAmount(10_000_000_000),
 
 			utils.NewBLSAddr(t, 1),
 			abi_spec.NewTokenAmount(10_000),
@@ -97,7 +97,7 @@ func MessageTest_AccountActorCreation(t *testing.T, factory state.Factories) {
 
 func MessageTest_InitActorSequentialIDAddressCreate(t *testing.T, factory state.Factories) {
 	td := drivers.NewBuilder(context.Background(), factory).
-		WithDefaultGasLimit(1_000_000).
+		WithDefaultGasLimit(1_000_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState...).Build(t)
 	defer td.Complete()

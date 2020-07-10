@@ -37,8 +37,9 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 	alice := utils.NewSECP256K1Addr(t, "1")
 	bob := utils.NewSECP256K1Addr(t, "2")
 
+	const gasLimit = 1_000_000_000
 	builder := drivers.NewBuilder(context.Background(), factories).
-		WithDefaultGasLimit(1_000_000).
+		WithDefaultGasLimit(gasLimit).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
@@ -47,7 +48,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			desc: "successfully transfer funds from sender to receiver",
 
 			sender:    alice,
-			senderBal: big_spec.NewInt(10_000_000),
+			senderBal: big_spec.NewInt(10 * gasLimit),
 
 			transferAmnt: big_spec.NewInt(50),
 
@@ -60,7 +61,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			desc: "successfully transfer zero funds from sender to receiver",
 
 			sender:    alice,
-			senderBal: big_spec.NewInt(10_000_000),
+			senderBal: big_spec.NewInt(10 * gasLimit),
 
 			transferAmnt: big_spec.NewInt(0),
 
@@ -73,9 +74,9 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			desc: "fail to transfer more funds than sender balance > 0",
 
 			sender:    alice,
-			senderBal: big_spec.NewInt(10_000_000),
+			senderBal: big_spec.NewInt(10 * gasLimit),
 
-			transferAmnt: big_spec.NewInt(10_000_001),
+			transferAmnt: big_spec.NewInt(10*gasLimit - gasLimit + 1),
 
 			receiver:    bob,
 			receiverBal: big_spec.Zero(),
@@ -86,7 +87,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			desc: "fail to transfer more funds than sender has when sender balance == zero",
 
 			sender:    alice,
-			senderBal: big_spec.Zero(),
+			senderBal: big_spec.NewInt(gasLimit),
 
 			transferAmnt: big_spec.NewInt(1),
 
@@ -131,10 +132,10 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 }
 
 func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
-	var aliceInitialBalance = abi_spec.NewTokenAmount(1_000_000_000)
+	var aliceInitialBalance = abi_spec.NewTokenAmount(10_000_000_000)
 
 	builder := drivers.NewBuilder(context.Background(), factory).
-		WithDefaultGasLimit(1_000_000).
+		WithDefaultGasLimit(1_000_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 

@@ -19,11 +19,11 @@ import (
 
 func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
-		WithDefaultGasLimit(1_000_000).
+		WithDefaultGasLimit(1_000_000_000).
 		WithDefaultGasPrice(big_spec.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
-	var aliceBal = abi_spec.NewTokenAmount(1_000_000_000)
+	var aliceBal = abi_spec.NewTokenAmount(1_000_000_000_000)
 	var transferAmnt = abi_spec.NewTokenAmount(10)
 
 	t.Run("fail to cover gas cost for message receipt on chain", func(t *testing.T) {
@@ -72,7 +72,7 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 
 		// decrease the gas cost by `gasStep` for each apply and ensure `SysErrOutOfGas` is always returned.
 		trueGas := int64(result.GasUsed())
-		gasStep := int64(50)
+		gasStep := int64(trueGas / 100)
 		newAccountB := utils.NewSECP256K1Addr(t, "2")
 		for tryGas := trueGas - gasStep; tryGas > 0; tryGas -= gasStep {
 			td.ApplyFailure(td.MessageProducer.Transfer(alice, newAccountB, chain.Value(transferAmnt), chain.Nonce(aliceNonceF()), chain.GasPrice(1), chain.GasLimit(tryGas)),

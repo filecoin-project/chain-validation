@@ -43,12 +43,12 @@ func init() {
 // Tests exercising messages sent internally from one actor to another.
 // These use a multisig actor with approvers=1 as a convenient staging ground for arbitrary internal messages.
 func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
-	var acctDefaultBalance = abi.NewTokenAmount(1_000_000_000)
-	var multisigBalance = abi.NewTokenAmount(1_000_000)
+	var acctDefaultBalance = abi.NewTokenAmount(1_000_000_000_000)
+	var multisigBalance = abi.NewTokenAmount(1_000_000_000)
 	nonce := uint64(1)
 
 	builder := drivers.NewBuilder(context.Background(), factory).
-		WithDefaultGasLimit(1_000_000).
+		WithDefaultGasLimit(1_000_000_000).
 		WithDefaultGasPrice(big.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
@@ -284,9 +284,9 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 
 		// AwardBlockReward will abort unless invoked by the system actor
 		params := reward.AwardBlockRewardParams{
-			Miner:       stage.creator,
-			Penalty:     big.Zero(),
-			GasReward:   big.Zero(),
+			Miner:     stage.creator,
+			Penalty:   big.Zero(),
+			GasReward: big.Zero(),
 		}
 		amtSent := abi.NewTokenAmount(1)
 		stage.sendOk(builtin.RewardActorAddr, amtSent, builtin.MethodsReward.AwardBlockReward, &params, nonce)

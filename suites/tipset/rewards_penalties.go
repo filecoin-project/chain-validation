@@ -22,11 +22,11 @@ import (
 // Test for semantically in/valid messages, including miner penalties.
 func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
-		WithDefaultGasLimit(1_000_000).
+		WithDefaultGasLimit(1_000_000_000).
 		WithDefaultGasPrice(big.NewInt(1)).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
-	acctDefaultBalance := abi.NewTokenAmount(1_000_000_000)
+	acctDefaultBalance := abi.NewTokenAmount(10_000_000_000)
 	sendValue := abi.NewTokenAmount(1)
 
 	t.Run("ok simple send", func(t *testing.T) {
@@ -116,7 +116,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		newRewards := td.GetRewardSummary()
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
 		newMinerBalance := td.GetBalance(miner)
-		gasPenalty := big.NewInt(350)
+		gasPenalty := big.NewInt(548898)
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward
 		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), gasPenalty)
@@ -152,7 +152,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		newRewards := td.GetRewardSummary()
 		newMinerBalance := td.GetBalance(miner)
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		gasPenalty := big.NewInt(176)
+		gasPenalty := big.NewInt(548724)
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward.
 		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), gasPenalty)
@@ -181,7 +181,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		newRewards := td.GetRewardSummary()
 		newMinerBalance := td.GetBalance(miner)
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		gasPenalty := big.NewInt(40)
+		gasPenalty := big.NewInt(137177)
 		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
@@ -197,8 +197,8 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		alice, _ := td.NewAccountActor(drivers.BLS, acctDefaultBalance)
 
 		gasPrice := int64(2)
-		gasPenalty := int64(260)
-		gasLimit := gasPenalty - 130
+		gasPenalty := int64(274546)
+		gasLimit := gasPenalty - gasPenalty/gasPrice
 
 		// nonce == 1 causest the message application to fail resulting in a miner penalty.
 		bb.WithBLSMessageAndCode(
@@ -229,8 +229,8 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		alice, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
 
 		gasPrice := int64(2)
-		gasPenalty := int64(420)
-		gasLimit := gasPenalty - 210
+		gasPenalty := int64(274706)
+		gasLimit := gasPenalty - gasPenalty/gasPrice
 		// nonce == 1 causes the message application to fail resulting in a miner penalty.
 		bb.WithSECPMessageAndCode(
 			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
@@ -257,7 +257,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		tb := drivers.NewTipSetMessageBuilder(td)
 		bb := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
-		halfBalance := abi.NewTokenAmount(10_000_000)
+		halfBalance := abi.NewTokenAmount(5_000_000_000)
 		_, aliceId := td.NewAccountActor(drivers.BLS, big.Add(halfBalance, halfBalance))
 
 		// Attempt to whole balance, in two parts.
@@ -276,7 +276,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		newRewards := td.GetRewardSummary()
 		newMinerBalance := td.GetBalance(miner)
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		gasPenalty := big.NewInt(48)
+		gasPenalty := big.NewInt(137189)
 		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, result.Receipts[0].GasUsed.Big(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(halfBalance, gasPenalty))
 	})
