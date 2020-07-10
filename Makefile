@@ -1,4 +1,3 @@
-GOBIN ?= go
 GOLINT ?= golangci-lint
 
 all: build lint tidy
@@ -21,7 +20,7 @@ $(FFI_DEPS): .filecoin-build ;
 	@touch $@
 
 chainval: .update-modules .filecoin-build
-	$(GOBIN) build ./...
+	go build ./...
 .PHONY: chainval
 SUBMODULES+=chainval
 
@@ -32,10 +31,10 @@ clean:
 	rm -f .update-modules
 
 resources:
-	$(GOBIN) generate ./box/...
+	go generate ./box/...
 
 tidy:
-	$(GOBIN) mod tidy
+	go mod tidy
 .PHONY: tidy
 
 lint:
