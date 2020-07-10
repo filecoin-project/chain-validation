@@ -301,7 +301,7 @@ func (td *TestDriver) Complete() {
 	// Gas expectation recording.
 	// Uncomment the following line to persist the actual gas values used to file as the new set
 	// of expectations.
-	td.StateTracker.Record()
+	//td.StateTracker.Record()
 }
 
 //
