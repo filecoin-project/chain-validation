@@ -20,7 +20,7 @@ func (mp *MessageProducer) RewardAwardBlockReward(from, to address.Address, para
 }
 func (mp *MessageProducer) RewardLastPerEpochReward(from, to address.Address, params *adt.EmptyValue, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
-	return mp.Build(from, to, builtin_spec.MethodsReward.LastPerEpochReward, ser, opts...)
+	return mp.Build(from, to, builtin_spec.MethodsReward.ThisEpochReward, ser, opts...)
 }
 func (mp *MessageProducer) RewardUpdateNetworkKPI(from, to address.Address, params *big.Int, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)

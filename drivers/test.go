@@ -74,8 +74,9 @@ func init() {
 		State:   init_spec.ConstructState(EmptyMapCid, "chain-validation"),
 	}
 
-	firstRewardState := reward_spec.ConstructState()
-	firstRewardState.LastPerEpochReward = big_spec.NewInt(1e17)
+	z := big_spec.Zero()
+	firstRewardState := reward_spec.ConstructState(&z)
+	firstRewardState.ThisEpochReward = big_spec.NewInt(1e17)
 
 	DefaultRewardActorState = ActorState{
 		Addr:    builtin_spec.RewardActorAddr,
@@ -96,12 +97,17 @@ func init() {
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.StoragePowerActorCodeID,
 		State: &power_spec.State{
-			TotalRawBytePower:        abi_spec.NewStoragePower(0),
-			TotalQualityAdjPower:     abi_spec.NewStoragePower(0),
-			TotalPledgeCollateral:    abi_spec.NewTokenAmount(0),
-			CronEventQueue:           EmptyMapCid,
-			Claims:                   EmptyMapCid,
-			NumMinersMeetingMinPower: 0,
+			TotalRawBytePower:       abi_spec.NewStoragePower(0),
+			TotalBytesCommitted:     abi_spec.NewStoragePower(0),
+			TotalQualityAdjPower:    abi_spec.NewStoragePower(0),
+			TotalQABytesCommitted:   abi_spec.NewStoragePower(0),
+			TotalPledgeCollateral:   abi_spec.TokenAmount{},
+			MinerCount:              0,
+			MinerAboveMinPowerCount: 0,
+			CronEventQueue:          EmptyMapCid,
+			LastEpochTick:           0,
+			Claims:                  EmptyMapCid,
+			ProofValidationBatch:    nil,
 		},
 	}
 
@@ -578,7 +584,7 @@ func (td *TestDriver) GetRewardSummary() *RewardSummary {
 		Treasury:           td.GetBalance(builtin_spec.RewardActorAddr),
 		SimpleSupply:       rst.SimpleSupply,
 		BaselineSupply:     rst.BaselineSupply,
-		NextPerEpochReward: rst.LastPerEpochReward,
-		NextPerBlockReward: big_spec.Div(rst.LastPerEpochReward, big_spec.NewInt(builtin_spec.ExpectedLeadersPerEpoch)),
+		NextPerEpochReward: rst.ThisEpochReward,
+		NextPerBlockReward: big_spec.Div(rst.ThisEpochReward, big_spec.NewInt(builtin_spec.ExpectedLeadersPerEpoch)),
 	}
 }
