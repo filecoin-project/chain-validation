@@ -3,7 +3,6 @@ package vmwrapper
 import (
 	"bytes"
 	"encoding/json"
-
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/filecoin-project/specs-actors/actors/abi/big"

@@ -139,8 +139,33 @@ func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredSeal
 	expectedMinerActorIDAddress := utils.NewIDAddr(d.tb, utils.IdFromAddress(minerWorkerID)+1)
 	minerActorAddrs := computeInitActorExecReturn(d.tb, minerWorkerPk, 0, 1, expectedMinerActorIDAddress)
 
+	d.minerInfo = &MinerInfo{
+		Owner:    minerOwnerPk,
+		OwnerID:  minerOwnerID,
+		Worker:   minerWorkerPk,
+		WorkerID: minerWorkerID,
+	}
+
+	ss, err := sealProofType.SectorSize()
+	require.NoError(d.tb, err)
+	ps, err := sealProofType.WindowPoStPartitionSectors()
+	require.NoError(d.tb, err)
+	mi := &miner_spec.MinerInfo{
+		Owner:                      minerOwnerID,
+		Worker:                     minerWorkerID,
+		PendingWorkerKey:           nil,
+		PeerId:                     abi_spec.PeerID("chain-validation"),
+		Multiaddrs:                 nil,
+		SealProofType:              sealProofType,
+		SectorSize:                 ss,
+		WindowPoStPartitionSectors: ps,
+	}
+	mc, err := d.st.StorePut(mi)
+	require.NoError(d.tb, err)
+
 	// create the miner actor s.t. it exists in the init actors map
-	minerState, err := miner_spec.ConstructState(EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid, minerOwnerID, minerWorkerID, abi_spec.PeerID("chain-validation"), nil, sealProofType, periodBoundary)
+	minerState, err := miner_spec.ConstructState(mc, periodBoundary, EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid)
+
 	require.NoError(d.tb, err)
 	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), minerState)
 	require.NoError(d.tb, err)
@@ -172,13 +197,6 @@ func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredSeal
 
 	// update storage power actor's state in the tree
 	d.PutState(&spa)
-
-	d.minerInfo = &MinerInfo{
-		Owner:    minerOwnerPk,
-		OwnerID:  minerOwnerID,
-		Worker:   minerWorkerPk,
-		WorkerID: minerWorkerID,
-	}
 
 	return minerActorIDAddr
 }
