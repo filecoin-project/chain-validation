@@ -4,14 +4,14 @@ go 1.13
 
 require (
 	github.com/dave/jennifer v1.4.0
-	github.com/filecoin-project/filecoin-ffi v0.26.1-0.20200508175440-05b30afeb00d
+	github.com/filecoin-project/filecoin-ffi v0.30.4-0.20200716204036-cddc56607e1d
 	github.com/filecoin-project/go-address v0.0.2-0.20200504173055-8b6f2fb2b3ef
 	github.com/filecoin-project/go-crypto v0.0.0-20191218222705-effae4ea9f03
-	github.com/filecoin-project/go-fil-commcid v0.0.0-20200208005934-2b8bd03caca5
+	github.com/filecoin-project/go-fil-commcid v0.0.0-20200716160307-8f644712406f
 	github.com/filecoin-project/specs-actors v0.7.2
 	github.com/gorilla/rpc v1.2.0
 	github.com/ipfs/go-block-format v0.0.2
-	github.com/ipfs/go-cid v0.0.6-0.20200501230655-7c82f3b81c00
+	github.com/ipfs/go-cid v0.0.6
 	github.com/ipfs/go-datastore v0.4.4
 	github.com/ipfs/go-hamt-ipld v0.1.1-0.20200501020327-d53d20a7063e // indirect
 	github.com/ipfs/go-ipfs-blockstore v1.0.0
@@ -22,8 +22,7 @@ require (
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-core v0.5.3
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
-	github.com/multiformats/go-multibase v0.0.2 // indirect
-	github.com/multiformats/go-multihash v0.0.13
+	github.com/multiformats/go-multihash v0.0.14
 	github.com/multiformats/go-varint v0.0.5
 	github.com/stretchr/testify v1.5.1
 	github.com/warpfork/go-wish v0.0.0-20200122115046-b9ea61034e4a // indirect

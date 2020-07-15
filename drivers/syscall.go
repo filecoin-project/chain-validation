@@ -30,7 +30,7 @@ var fakeComputerUnsealedSectorCIDFunc = func(proof abi.RegisteredSealProof, piec
 		}
 	}
 	token := blake2b.Sum256(buf.Bytes())
-	return commcid.DataCommitmentV1ToCID(token[:]), nil
+	return commcid.DataCommitmentV1ToCID(token[:])
 }
 
 var fakeVerifySealFunc = func(info abi.SealVerifyInfo) error {
