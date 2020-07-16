@@ -14,7 +14,7 @@ import (
 )
 
 type MockSectorBuilder struct {
-	t testing.TB
+	t         testing.TB
 	sectorSeq uint64
 
 	// PreSeal is intexted by sectorID
@@ -35,8 +35,9 @@ func (msb *MockSectorBuilder) NewPreSealedSector(miner, client address.Address, 
 
 	token := make([]byte, 32)
 	binary.PutUvarint(token, msb.sectorSeq)
-	D := commcid.DataCommitmentV1ToCID(token)
-	R := commcid.ReplicaCommitmentV1ToCID(token)
+	// the only error we could get is if token isn't 32 long, ignore
+	D, _ := commcid.DataCommitmentV1ToCID(token)
+	R, _ := commcid.ReplicaCommitmentV1ToCID(token)
 	msb.sectorSeq++
 
 	preseal := &types.PreSeal{
