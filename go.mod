@@ -8,7 +8,7 @@ require (
 	github.com/filecoin-project/go-address v0.0.2-0.20200504173055-8b6f2fb2b3ef
 	github.com/filecoin-project/go-crypto v0.0.0-20191218222705-effae4ea9f03
 	github.com/filecoin-project/go-fil-commcid v0.0.0-20200716160307-8f644712406f
-	github.com/filecoin-project/specs-actors v0.7.3-0.20200716231407-60a2ae96d2e6
+	github.com/filecoin-project/specs-actors v0.7.3-0.20200717200758-365408676dbb
 	github.com/gorilla/rpc v1.2.0
 	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-cid v0.0.6
