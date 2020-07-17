@@ -8,7 +8,7 @@ require (
 	github.com/filecoin-project/go-address v0.0.2-0.20200504173055-8b6f2fb2b3ef
 	github.com/filecoin-project/go-crypto v0.0.0-20191218222705-effae4ea9f03
 	github.com/filecoin-project/go-fil-commcid v0.0.0-20200716160307-8f644712406f
-	github.com/filecoin-project/specs-actors v0.7.2
+	github.com/filecoin-project/specs-actors v0.7.3-0.20200716231407-60a2ae96d2e6
 	github.com/gorilla/rpc v1.2.0
 	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-cid v0.0.6
@@ -26,7 +26,7 @@ require (
 	github.com/multiformats/go-varint v0.0.5
 	github.com/stretchr/testify v1.5.1
 	github.com/warpfork/go-wish v0.0.0-20200122115046-b9ea61034e4a // indirect
-	github.com/whyrusleeping/cbor-gen v0.0.0-20200504204219-64967432584d
+	github.com/whyrusleeping/cbor-gen v0.0.0-20200710004633-5379fc63235d
 	golang.org/x/crypto v0.0.0-20200427165652-729f1e841bcc // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/sys v0.0.0-20200427175716-29b57079015a // indirect
