@@ -43,7 +43,6 @@ var (
 	EmptyDeadlinesCid cid.Cid
 	EmptyMapCid       cid.Cid
 	EmptyMultiMapCid  cid.Cid
-	EmptySetCid       cid.Cid
 )
 
 var (
@@ -74,8 +73,7 @@ func init() {
 		State:   init_spec.ConstructState(EmptyMapCid, "chain-validation"),
 	}
 
-	z := big_spec.Zero()
-	firstRewardState := reward_spec.ConstructState(&z)
+	firstRewardState := reward_spec.ConstructState(big_spec.Zero())
 	firstRewardState.ThisEpochReward = big_spec.NewInt(1e17)
 
 	DefaultRewardActorState = ActorState{
@@ -105,7 +103,7 @@ func init() {
 			MinerCount:              0,
 			MinerAboveMinPowerCount: 0,
 			CronEventQueue:          EmptyMapCid,
-			LastEpochTick:           0,
+			FirstCronEpoch:          0,
 			Claims:                  EmptyMapCid,
 			ProofValidationBatch:    nil,
 		},
@@ -174,13 +172,17 @@ func initializeStoreWithAdtRoots(store adt_spec.Store) error {
 		return err
 	}
 
-	EmptySetCid, err = adt_spec.MakeEmptySet(store).Root()
+	EmptyDeadlinesCid, err = store.Put(context.TODO(), &miner.Deadline{
+		Partitions:        EmptyArrayCid,
+		ExpirationsEpochs: EmptyArrayCid,
+		PostSubmissions:   abi_spec.NewBitField(),
+		EarlyTerminations: abi_spec.NewBitField(),
+		LiveSectors:       0,
+	})
 	if err != nil {
 		return err
 	}
 
-	emptyDeadlines := miner.ConstructDeadlines()
-	EmptyDeadlinesCid, err = store.Put(context.Background(), emptyDeadlines)
 	if err != nil {
 		return err
 	}
@@ -582,8 +584,6 @@ func (td *TestDriver) GetRewardSummary() *RewardSummary {
 
 	return &RewardSummary{
 		Treasury:           td.GetBalance(builtin_spec.RewardActorAddr),
-		SimpleSupply:       rst.SimpleSupply,
-		BaselineSupply:     rst.BaselineSupply,
 		NextPerEpochReward: rst.ThisEpochReward,
 		NextPerBlockReward: big_spec.Div(rst.ThisEpochReward, big_spec.NewInt(builtin_spec.ExpectedLeadersPerEpoch)),
 	}

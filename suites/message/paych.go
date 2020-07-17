@@ -79,12 +79,17 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 		td.ApplyOk(
 			td.MessageProducer.PaychUpdateChannelState(sender, paychAddr, &paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
-					TimeLockMin: pcTimeLock,
-					TimeLockMax: 0, // TimeLockMax set to 0 means no timeout
-					Lane:        pcLane,
-					Nonce:       pcNonce,
-					Amount:      pcAmount,
-					Signature:   pcSig,
+					ChannelAddr:     paychAddr,
+					TimeLockMin:     pcTimeLock,
+					TimeLockMax:     0, // TimeLockMax set to 0 means no timeout
+					SecretPreimage:  nil,
+					Extra:           nil,
+					Lane:            pcLane,
+					Nonce:           pcNonce,
+					Amount:          pcAmount,
+					MinSettleHeight: 0,
+					Merges:          nil,
+					Signature:       pcSig,
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())))
 		var pcState paych_spec.State
@@ -113,11 +118,16 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 		td.ApplyOk(
 			td.MessageProducer.PaychUpdateChannelState(sender, paychAddr, &paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
-					TimeLockMin: abi_spec.ChainEpoch(1),
-					TimeLockMax: 0, // TimeLockMax set to 0 means no timeout
-					Lane:        1,
-					Nonce:       1,
-					Amount:      toSend, // the amount that can be redeemed by receiver
+					ChannelAddr:     paychAddr,
+					TimeLockMin:     abi_spec.ChainEpoch(1),
+					TimeLockMax:     0, // TimeLockMax set to 0 means no timeout
+					SecretPreimage:  nil,
+					Extra:           nil,
+					Lane:            1,
+					Nonce:           1,
+					Amount:          toSend, // the amount that can be redeemed by receiver,
+					MinSettleHeight: 0,
+					Merges:          nil,
 					Signature: &crypto_spec.Signature{
 						Type: crypto_spec.SigTypeBLS,
 						Data: []byte("signature goes here"),

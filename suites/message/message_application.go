@@ -130,12 +130,17 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 		td.ApplyFailure(
 			td.MessageProducer.PaychUpdateChannelState(sender, paychAddr, &paych_spec.UpdateChannelStateParams{
 				Sv: paych_spec.SignedVoucher{
-					TimeLockMin: pcTimeLock,
-					TimeLockMax: pcTimeLock,
-					Lane:        pcLane,
-					Nonce:       pcNonce,
-					Amount:      pcAmount,
-					Signature:   pcSig, // construct with invalid signature
+					ChannelAddr:     paychAddr,
+					TimeLockMin:     pcTimeLock,
+					TimeLockMax:     pcTimeLock,
+					SecretPreimage:  nil,
+					Extra:           nil,
+					Lane:            pcLane,
+					Nonce:           pcNonce,
+					Amount:          pcAmount,
+					MinSettleHeight: 0,
+					Merges:          nil,
+					Signature:       pcSig, // construct with invalid signature
 				},
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())),
 			exitcode.ErrIllegalArgument)
