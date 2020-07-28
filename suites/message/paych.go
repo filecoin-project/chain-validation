@@ -140,17 +140,15 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 			td.MessageProducer.PaychSettle(receiver, paychAddr, nil, chain.Value(big_spec.Zero()), chain.Nonce(0)))
 
 		// advance the epoch so the funds may be redeemed.
-		td.ExeCtx.Epoch++
+		td.ExeCtx.Epoch += paych_spec.SettleDelay
 
 		collectResult := td.ApplyOk(
 			td.MessageProducer.PaychCollect(receiver, paychAddr, nil, chain.Nonce(1), chain.Value(big_spec.Zero())))
 
 		// receiver_balance = initial_balance + paych_send - settle_paych_msg_gas - collect_paych_msg_gas
 		td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), settleResult.Receipt.GasUsed.Big()), collectResult.Receipt.GasUsed.Big()))
-		td.AssertBalance(paychAddr, big_spec.Zero())
-		var pcState paych_spec.State
-		td.GetActorState(paychAddr, &pcState)
-		assert.Equal(t, big_spec.Zero(), pcState.ToSend)
+		// the paych actor should have been deleted after the collect
+		td.AssertNoActor(paychAddr)
 	})
 
 }
