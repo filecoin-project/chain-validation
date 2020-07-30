@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"github.com/filecoin-project/go-bitfield"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
@@ -43,6 +44,7 @@ var (
 	EmptyDeadlinesCid cid.Cid
 	EmptyMapCid       cid.Cid
 	EmptyMultiMapCid  cid.Cid
+	EmptyBitfieldCid  cid.Cid
 )
 
 var (
@@ -171,6 +173,8 @@ func initializeStoreWithAdtRoots(store adt_spec.Store) error {
 		return err
 	}
 
+	emptyBitfield := bitfield.NewFromSet(nil)
+	EmptyBitfieldCid, err = store.Put(context.TODO(), emptyBitfield)
 	if err != nil {
 		return err
 	}

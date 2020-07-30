@@ -6,9 +6,10 @@ require (
 	github.com/dave/jennifer v1.4.0
 	github.com/filecoin-project/filecoin-ffi v0.30.4-0.20200716204036-cddc56607e1d
 	github.com/filecoin-project/go-address v0.0.2-0.20200504173055-8b6f2fb2b3ef
+	github.com/filecoin-project/go-bitfield v0.1.2
 	github.com/filecoin-project/go-crypto v0.0.0-20191218222705-effae4ea9f03
 	github.com/filecoin-project/go-fil-commcid v0.0.0-20200716160307-8f644712406f
-	github.com/filecoin-project/specs-actors v0.8.1-0.20200728182452-1476088f645b
+	github.com/filecoin-project/specs-actors v0.8.4
 	github.com/gorilla/rpc v1.2.0
 	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-cid v0.0.6
