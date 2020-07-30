@@ -81,7 +81,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			receiver:    bob,
 			receiverBal: big_spec.Zero(),
 
-			code: exitcode.SysErrSenderStateInvalid,
+			code: exitcode.SysErrInsufficientFunds,
 		},
 		{
 			desc: "fail to transfer more funds than sender has when sender balance == zero",
@@ -94,7 +94,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			receiver:    bob,
 			receiverBal: big_spec.Zero(),
 
-			code: exitcode.SysErrSenderStateInvalid,
+			code: exitcode.SysErrInsufficientFunds,
 		},
 	}
 
@@ -125,7 +125,11 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), result.Receipt.GasUsed.Big()))
 				td.AssertBalance(tc.receiver, tc.transferAmnt)
 			} else {
-				td.AssertBalance(tc.sender, tc.senderBal)
+				if tc.code == exitcode.SysErrInsufficientFunds {
+					td.AssertBalance(tc.sender, big_spec.Sub(tc.senderBal, result.Receipt.GasUsed.Big()))
+				} else {
+					td.AssertBalance(tc.sender, tc.senderBal)
+				}
 			}
 		})
 	}
