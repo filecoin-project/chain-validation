@@ -60,6 +60,8 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 				).ApplyAndValidate()
 				tipB.Clear()
 
+				td.ExeCtx.Epoch++
+
 				// Each account has paid gas fees.
 				td.AssertBalance(aliceId, big.Sub(aBal, result.Receipts[0].GasUsed.Big()))
 				td.AssertBalance(bobId, big.Sub(bBal, result.Receipts[1].GasUsed.Big()))
