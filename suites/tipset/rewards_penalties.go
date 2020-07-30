@@ -249,7 +249,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		td.AssertBalance(alice, acctDefaultBalance)
 	})
 
-	t.Run("penalize sender insufficient balance", func(t *testing.T) {
+	t.Run("no pentalty if the balance is not sufficient to cover transfer", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
 
@@ -266,7 +266,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 			td.MessageProducer.Transfer(aliceId, builtin.BurntFundsActorAddr, chain.Value(halfBalance)),
 		).WithBLSMessageAndCode(
 			td.MessageProducer.Transfer(aliceId, builtin.BurntFundsActorAddr, chain.Value(halfBalance), chain.Nonce(1)),
-			exitcode.SysErrSenderStateInvalid,
+			exitcode.SysErrInsufficientFunds,
 		)
 
 		prevRewards := td.GetRewardSummary()
@@ -276,8 +276,8 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		newRewards := td.GetRewardSummary()
 		newMinerBalance := td.GetBalance(miner)
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		gasPenalty := big.NewInt(199137)
-		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, result.Receipts[0].GasUsed.Big(), gasPenalty)
+		gasPenalty := big.NewInt(0)
+		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Add(result.Receipts[0].GasUsed.Big(), result.Receipts[1].GasUsed.Big()), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(halfBalance, gasPenalty))
 	})
 

@@ -94,19 +94,7 @@ func init() {
 		Addr:    builtin_spec.StoragePowerActorAddr,
 		Balance: big_spec.Zero(),
 		Code:    builtin_spec.StoragePowerActorCodeID,
-		State: &power_spec.State{
-			TotalRawBytePower:       abi_spec.NewStoragePower(0),
-			TotalBytesCommitted:     abi_spec.NewStoragePower(0),
-			TotalQualityAdjPower:    abi_spec.NewStoragePower(0),
-			TotalQABytesCommitted:   abi_spec.NewStoragePower(0),
-			TotalPledgeCollateral:   abi_spec.TokenAmount{},
-			MinerCount:              0,
-			MinerAboveMinPowerCount: 0,
-			CronEventQueue:          EmptyMapCid,
-			FirstCronEpoch:          0,
-			Claims:                  EmptyMapCid,
-			ProofValidationBatch:    nil,
-		},
+		State:   power_spec.ConstructState(EmptyMapCid, EmptyMultiMapCid),
 	}
 
 	DefaultStorageMarketActorState = ActorState{
