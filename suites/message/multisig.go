@@ -81,7 +81,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 			To:     outsider,
 			Value:  valueSend,
 			Method: builtin_spec.MethodSend,
-			Params: []byte{},
+			Params: nil,
 		}
 
 		// propose the transaction and assert it exists in the actor state
@@ -160,7 +160,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 			To:     outsider,
 			Value:  valueSend,
 			Method: builtin_spec.MethodSend,
-			Params: []byte{},
+			Params: nil,
 		}
 
 		// propose the transaction and assert it exists in the actor state

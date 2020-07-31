@@ -26,7 +26,7 @@ require (
 	github.com/multiformats/go-varint v0.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/warpfork/go-wish v0.0.0-20200122115046-b9ea61034e4a // indirect
-	github.com/whyrusleeping/cbor-gen v0.0.0-20200715143311-227fab5a2377
+	github.com/whyrusleeping/cbor-gen v0.0.0-20200723185710-6a3894a6352b
 	golang.org/x/crypto v0.0.0-20200427165652-729f1e841bcc // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/sys v0.0.0-20200427175716-29b57079015a // indirect
