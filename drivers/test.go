@@ -5,8 +5,9 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/filecoin-project/go-bitfield"
 	"testing"
+
+	"github.com/filecoin-project/go-bitfield"
 
 	"github.com/filecoin-project/go-address"
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
@@ -442,7 +443,7 @@ func (td *TestDriver) GetHead(addr address.Address) cid.Cid {
 func (td *TestDriver) AssertBalance(addr address.Address, expected abi_spec.TokenAmount) {
 	actr, err := td.State().Actor(addr)
 	require.NoError(td.T, err)
-	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected actor %s balance: %s, actual balance: %s", addr, expected, actr.Balance()))
+	assert.Equal(td.T, expected.String(), actr.Balance().String(), fmt.Sprintf("expected actor %s balance: %s, actual balance: %s", addr, expected, actr.Balance()))
 }
 
 // Checks an actor's balance and callSeqNum.
