@@ -57,13 +57,15 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		defer td.Complete()
 
 		stage := prepareStage(td, acctDefaultBalance, multisigBalance)
+		to, _ := td.NewAccountActor(address.SECP256K1, big.Zero())
 		balanceBefore := td.GetBalance(stage.creator)
 
-		// Multisig sends back to the creator.
 		amtSent := abi.NewTokenAmount(1)
-		result := stage.sendOk(stage.creator, amtSent, builtin.MethodSend, nil, nonce)
+		result := stage.sendOk(to, amtSent, builtin.MethodSend, nil, nonce)
 
-		td.AssertActor(stage.creator, big.Sub(big.Add(balanceBefore, amtSent), result.Receipt.GasUsed.Big()), nonce+1)
+		td.AssertActorChange(stage.creator, balanceBefore, result.Msg.GasLimit, result.Msg.GasPrice, result.Msg.Value, result.Receipt, result.Msg.CallSeqNum+1)
+		td.AssertBalance(to, amtSent)
+		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
 	})
 
 	t.Run("ok to new actor", func(t *testing.T) {
@@ -79,7 +81,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		result := stage.sendOk(newAddr, amtSent, builtin.MethodSend, nil, nonce)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
-		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
+		td.AssertActorChange(stage.creator, balanceBefore, result.Msg.GasLimit, result.Msg.GasPrice, result.Msg.Value, result.Receipt, result.Msg.CallSeqNum+1)
 		td.AssertBalance(newAddr, amtSent)
 	})
 
@@ -102,7 +104,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		//assert.Equal(t, expected.Bytes(), result.Receipt.ReturnValue)
 
 		td.AssertBalance(stage.msAddr, big.Sub(multisigBalance, amtSent))
-		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
+		td.AssertActorChange(stage.creator, balanceBefore, result.Msg.GasLimit, result.Msg.GasPrice, result.Msg.Value, result.Receipt, result.Msg.CallSeqNum+1)
 		td.AssertBalance(newAddr, amtSent)
 	})
 
@@ -122,7 +124,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		result := stage.sendOk(stage.msAddr, big.Zero(), builtin.MethodsMultisig.AddSigner, &params, nonce)
 
 		td.AssertBalance(stage.msAddr, multisigBalance)
-		assert.Equal(t, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()), td.GetBalance(stage.creator))
+		td.AssertActorChange(stage.creator, balanceBefore, result.Msg.GasLimit, result.Msg.GasPrice, result.Msg.Value, result.Receipt, result.Msg.CallSeqNum+1)
 		var st multisig.State
 		td.GetActorState(stage.msAddr, &st)
 		assert.Equal(t, []address.Address{stage.creator, anotherId}, st.Signers)
@@ -214,8 +216,8 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		amtSent := abi.NewTokenAmount(1)
 		result := stage.sendOk(stage.creator, amtSent, abi.MethodNum(99), nil, nonce)
 
-		td.AssertBalance(stage.msAddr, multisigBalance)                                       // No change.
-		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big())) // Pay gas, don't receive funds.
+		td.AssertBalance(stage.msAddr, multisigBalance)                                                                                                         // No change.
+		td.AssertActorChange(stage.creator, balanceBefore, result.Msg.GasLimit, result.Msg.GasPrice, result.Msg.Value, result.Receipt, result.Msg.CallSeqNum+1) // Pay gas, don't receive funds.
 	})
 
 	// The multisig actor checks before attempting to transfer more than its balance, so we can't exercise that
@@ -248,7 +250,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		amtSent := abi.NewTokenAmount(1)
 		result := stage.sendOk(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, params, nonce)
 
-		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
+		td.AssertActorChange(stage.creator, balanceBefore, result.Msg.GasLimit, result.Msg.GasPrice, result.Msg.Value, result.Receipt, result.Msg.CallSeqNum+1)
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
 		assert.Equal(t, 1, len(stage.state().Signers))  // No new signers
 	})
@@ -270,7 +272,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		amtSent := abi.NewTokenAmount(1)
 		result := stage.sendOk(stage.msAddr, amtSent, builtin.MethodsMultisig.AddSigner, &params, nonce)
 
-		td.AssertBalance(stage.creator, big.Sub(balanceBefore, result.Receipt.GasUsed.Big()))
+		td.AssertActorChange(stage.creator, balanceBefore, result.Msg.GasLimit, result.Msg.GasPrice, result.Msg.Value, result.Receipt, result.Msg.CallSeqNum+1)
 		td.AssertBalance(stage.msAddr, multisigBalance) // No change.
 		assert.Equal(t, 1, len(stage.state().Signers))  // No new signers
 	})
@@ -353,7 +355,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 		assert.Equal(t, exitcode.SysErrInsufficientFunds, puppetRet.Code)
 
 		// alice should be charged for the gas cost and bob should have not received any funds.
-		td.AssertBalance(alice, big.Sub(acctDefaultBalance, result.GasUsed().Big()))
+		td.AssertActorChange(alice, acctDefaultBalance, result.Msg.GasLimit, result.Msg.GasPrice, result.Msg.Value, result.Receipt, result.Msg.CallSeqNum+1)
 		td.AssertBalance(bob, big.Zero())
 
 	})

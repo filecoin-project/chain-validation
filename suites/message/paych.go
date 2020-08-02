@@ -139,14 +139,17 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 		settleResult := td.ApplyOk(
 			td.MessageProducer.PaychSettle(receiver, paychAddr, nil, chain.Value(big_spec.Zero()), chain.Nonce(0)))
 
+		td.AssertActorChange(receiver, initialBal, settleResult.Msg.GasLimit, settleResult.Msg.GasPrice, settleResult.Msg.Value, settleResult.Receipt, settleResult.Msg.CallSeqNum+1)
+
 		// advance the epoch so the funds may be redeemed.
 		td.ExeCtx.Epoch += paych_spec.SettleDelay
 
+		prevBal := td.GetBalance(receiver)
 		collectResult := td.ApplyOk(
 			td.MessageProducer.PaychCollect(receiver, paychAddr, nil, chain.Nonce(1), chain.Value(big_spec.Zero())))
 
-		// receiver_balance = initial_balance + paych_send - settle_paych_msg_gas - collect_paych_msg_gas
-		td.AssertBalance(receiver, big_spec.Sub(big_spec.Sub(big_spec.Add(toSend, initialBal), settleResult.Receipt.GasUsed.Big()), collectResult.Receipt.GasUsed.Big()))
+		// receiver_balance = previous_balance + paych_send - collect_paych_msg_gas
+		td.AssertActorChange(receiver, prevBal, collectResult.Msg.GasLimit, collectResult.Msg.GasPrice, toSend.Neg(), collectResult.Receipt, collectResult.Msg.CallSeqNum+1)
 		// the paych actor should have been deleted after the collect
 		td.AssertNoActor(paychAddr)
 	})

@@ -445,11 +445,18 @@ func (td *TestDriver) AssertBalance(addr address.Address, expected abi_spec.Toke
 	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected actor %s balance: %s, actual balance: %s", addr, expected, actr.Balance()))
 }
 
-// Checks an actor's balance and callSeqNum.
-func (td *TestDriver) AssertActor(addr address.Address, balance abi_spec.TokenAmount, callSeqNum uint64) {
+// Checks that after executing a message, the sender actor's balance is as expected, given
+// - the actor's previous balance
+// - the gas limit of the executed message
+// - the gas price of the executed message
+// - the value transferred by the executed message
+func (td *TestDriver) AssertActorChange(addr address.Address, prevBalance abi_spec.TokenAmount, gasLimit int64, gasPrice big_spec.Int, transferred big_spec.Int, rct types.MessageReceipt, callSeqNum uint64) {
 	actr, err := td.State().Actor(addr)
 	require.NoError(td.T, err)
-	assert.Equal(td.T, balance, actr.Balance(), fmt.Sprintf("expected actor %s balance: %s, actual balance: %s", addr, balance, actr.Balance()))
+
+	expected := big_spec.Sub(prevBalance, td.CalcMessageCost(gasLimit, gasPrice, transferred, rct))
+
+	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected actor %s balance: %s, actual balance: %s", addr, expected, actr.Balance()))
 	assert.Equal(td.T, callSeqNum, actr.CallSeqNum(), fmt.Sprintf("expected actor %s callSeqNum: %d, actual : %d", addr, callSeqNum, actr.CallSeqNum()))
 }
 
