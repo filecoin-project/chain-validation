@@ -149,6 +149,7 @@ func (s *ServiceHandler) ApplyMessage(epoch abi.ChainEpoch, msg *types.Message) 
 		return types.ApplyMessageResult{}, err
 	}
 	return types.ApplyMessageResult{
+		Msg:     *msg,
 		Receipt: reply.Receipt,
 		Penalty: reply.Penalty,
 		Reward:  reply.Reward,
@@ -163,6 +164,7 @@ func (s *ServiceHandler) ApplySignedMessage(epoch abi.ChainEpoch, msg *types.Sig
 		return types.ApplyMessageResult{}, err
 	}
 	return types.ApplyMessageResult{
+		Msg:     msg.Message,
 		Receipt: reply.Receipt,
 		Penalty: reply.Penalty,
 		Reward:  reply.Reward,

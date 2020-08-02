@@ -16,6 +16,7 @@ var _ Trackable = (*ApplyMessageResult)(nil)
 var _ Trackable = (*ApplyTipSetResult)(nil)
 
 type ApplyMessageResult struct {
+	Msg     Message
 	Receipt MessageReceipt
 	Penalty abi.TokenAmount
 	Reward  abi.TokenAmount

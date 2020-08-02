@@ -144,16 +144,17 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		_, receiverID := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		amountSent := big_spec.NewInt(100)
+		msgOriginal := td.MessageProducer.Transfer(senderID, receiverID, chain.Nonce(0), chain.Value(amountSent))
+		msgDup := td.MessageProducer.Transfer(senderID, receiverID, chain.Nonce(0), chain.Value(amountSent))
 		result := tipB.WithBlockBuilder(
 			// using ID addresses will ensure the BLS message and the unsigned message encapsulated in the SECP message
 			// have the same CID.
-			blkB.WithBLSMessageOk(td.MessageProducer.Transfer(senderID, receiverID, chain.Nonce(0), chain.Value(amountSent))).
-				WithSECPMessageDropped(td.MessageProducer.Transfer(senderID, receiverID, chain.Nonce(0), chain.Value(amountSent))),
+			blkB.WithBLSMessageOk(msgOriginal).WithSECPMessageDropped(msgDup),
 		).ApplyAndValidate()
 
 		assert.Equal(t, 1, len(result.Receipts))
 
 		td.AssertBalance(receiverID, amountSent)
-		td.AssertBalance(senderID, big_spec.Sub(big_spec.Sub(senderInitialBal, amountSent), result.Receipts[0].GasUsed.Big()))
+		td.AssertActorChange(senderID, senderInitialBal, msgOriginal.GasLimit, msgOriginal.GasPrice, msgOriginal.Value, result.Receipts[0], msgOriginal.CallSeqNum+1)
 	})
 }

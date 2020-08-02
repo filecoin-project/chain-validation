@@ -81,15 +81,12 @@ func MessageTest_AccountActorCreation(t *testing.T, factory state.Factories) {
 			defer td.Complete()
 
 			existingAccountAddr, _ := td.NewAccountActor(tc.existingActorType, tc.existingActorBal)
-			result := td.ApplyFailure(
-				td.MessageProducer.Transfer(existingAccountAddr, tc.newActorAddr, chain.Value(tc.newActorInitBal), chain.Nonce(0)),
-				tc.expExitCode,
-			)
+			result := td.ApplyFailure(td.MessageProducer.Transfer(existingAccountAddr, tc.newActorAddr, chain.Value(tc.newActorInitBal), chain.Nonce(0)), tc.expExitCode)
 
 			// new actor balance will only exist if message was applied successfully.
 			if tc.expExitCode.IsSuccess() {
 				td.AssertBalance(tc.newActorAddr, tc.newActorInitBal)
-				td.AssertBalance(existingAccountAddr, big_spec.Sub(big_spec.Sub(tc.existingActorBal, result.Receipt.GasUsed.Big()), tc.newActorInitBal))
+				td.AssertActorChange(existingAccountAddr, tc.existingActorBal, result.Msg.GasLimit, result.Msg.GasPrice, tc.newActorInitBal, result.Receipt, 1)
 			}
 		})
 	}
