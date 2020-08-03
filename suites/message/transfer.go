@@ -86,7 +86,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			code: exitcode.SysErrInsufficientFunds,
 		},
 		{
-			desc: "fail to transfer more funds than sender has when sender balance == zero",
+			desc: "fail to transfer more funds than sender has when sender balance matches gas limit",
 
 			sender:    alice,
 			senderBal: big_spec.NewInt(gasFeeCap * gasLimit),
@@ -97,6 +97,19 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			receiverBal: big_spec.Zero(),
 
 			code: exitcode.SysErrInsufficientFunds,
+		},
+		{
+			desc: "fail to transfer when sender balance under gas limit",
+
+			sender:    alice,
+			senderBal: big_spec.NewInt(gasFeeCap*gasLimit - 1),
+
+			transferAmnt: big_spec.NewInt(0),
+
+			receiver:    bob,
+			receiverBal: big_spec.Zero(),
+
+			code: exitcode.SysErrSenderStateInvalid,
 		},
 	}
 
