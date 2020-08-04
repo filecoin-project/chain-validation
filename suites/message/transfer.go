@@ -122,11 +122,11 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			// create a message to transfer funds from `to` to `from` for amount `transferAmnt` and apply it to the state tree
 			// assert the actor balances changed as expected, the receiver balance should not change if transfer fails
 			if tc.code.IsSuccess() {
-				td.AssertBalance(tc.sender, big_spec.Sub(big_spec.Sub(tc.senderBal, tc.transferAmnt), result.Receipt.GasUsed.Big()))
+				td.AssertActorChange(tc.sender, tc.senderBal, result.Msg.GasLimit, result.Msg.GasPrice, tc.transferAmnt, result.Receipt, 1)
 				td.AssertBalance(tc.receiver, tc.transferAmnt)
 			} else {
 				if tc.code == exitcode.SysErrInsufficientFunds {
-					td.AssertBalance(tc.sender, big_spec.Sub(tc.senderBal, result.Receipt.GasUsed.Big()))
+					td.AssertActorChange(tc.sender, tc.senderBal, result.Msg.GasLimit, result.Msg.GasPrice, big_spec.Zero(), result.Receipt, 1)
 				} else {
 					td.AssertBalance(tc.sender, tc.senderBal)
 				}
@@ -150,10 +150,10 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceInitialBalance)
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		result := td.ApplyOk(
-			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0)))
+		msg := td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0))
+		result := td.ApplyOk(msg)
 		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
-		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()))
+		td.AssertActorChange(alice, aliceInitialBalance, msg.GasLimit, msg.GasPrice, big_spec.Zero(), result.Receipt, 1)
 	})
 
 	t.Run("self transfer secp to id address", func(t *testing.T) {
@@ -163,10 +163,9 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 		alice, aliceId := td.NewAccountActor(drivers.SECP, aliceInitialBalance)
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		result := td.ApplyOk(
-			td.MessageProducer.Transfer(alice, aliceId, chain.Value(transferAmnt), chain.Nonce(0)))
+		result := td.ApplyOk(td.MessageProducer.Transfer(alice, aliceId, chain.Value(transferAmnt), chain.Nonce(0)))
 		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
-		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()))
+		td.AssertActorChange(alice, aliceInitialBalance, result.Msg.GasLimit, result.Msg.GasPrice, big_spec.Zero(), result.Receipt, 1)
 	})
 
 	t.Run("self transfer id to secp address", func(t *testing.T) {
@@ -176,10 +175,9 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 		alice, aliceId := td.NewAccountActor(drivers.SECP, aliceInitialBalance)
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		result := td.ApplyOk(
-			td.MessageProducer.Transfer(aliceId, alice, chain.Value(transferAmnt), chain.Nonce(0)))
+		result := td.ApplyOk(td.MessageProducer.Transfer(aliceId, alice, chain.Value(transferAmnt), chain.Nonce(0)))
 		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
-		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()))
+		td.AssertActorChange(alice, aliceInitialBalance, result.Msg.GasLimit, result.Msg.GasPrice, big_spec.Zero(), result.Receipt, 1)
 	})
 
 	t.Run("self transfer id to id address", func(t *testing.T) {
@@ -189,10 +187,9 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 		alice, aliceId := td.NewAccountActor(drivers.SECP, aliceInitialBalance)
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		result := td.ApplyOk(
-			td.MessageProducer.Transfer(aliceId, aliceId, chain.Value(transferAmnt), chain.Nonce(0)))
+		result := td.ApplyOk(td.MessageProducer.Transfer(aliceId, aliceId, chain.Value(transferAmnt), chain.Nonce(0)))
 		// since this is a self transfer expect alice's balance to only decrease by the gasUsed
-		td.AssertBalance(alice, big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()))
+		td.AssertActorChange(alice, aliceInitialBalance, result.Msg.GasLimit, result.Msg.GasPrice, big_spec.Zero(), result.Receipt, 1)
 	})
 
 	t.Run("ok transfer from known address to new account", func(t *testing.T) {
@@ -203,10 +200,8 @@ func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
 		receiver := td.Wallet().NewSECP256k1AccountAddress()
 		transferAmnt := abi_spec.NewTokenAmount(10)
 
-		result := td.ApplyOk(
-			td.MessageProducer.Transfer(alice, receiver, chain.Value(transferAmnt), chain.Nonce(0)),
-		)
-		td.AssertBalance(alice, big_spec.Sub(big_spec.Sub(aliceInitialBalance, result.Receipt.GasUsed.Big()), transferAmnt))
+		result := td.ApplyOk(td.MessageProducer.Transfer(alice, receiver, chain.Value(transferAmnt), chain.Nonce(0)))
+		td.AssertActorChange(alice, aliceInitialBalance, result.Msg.GasLimit, result.Msg.GasPrice, transferAmnt, result.Receipt, 1)
 		td.AssertBalance(receiver, transferAmnt)
 	})
 

@@ -45,26 +45,26 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 			for _, bob := range []addr.Address{bobPk, bobId} {
 				aBal := td.GetBalance(aliceId)
 				bBal := td.GetBalance(bobId)
+				burnBal := td.GetBalance(builtin.BurntFundsActorAddr)
 				prevRewards := td.GetRewardSummary()
 				prevMinerBal := td.GetBalance(miner)
 
 				// Process a block with two messages, a simple send back and forth between accounts.
+				msg1 := td.MessageProducer.Transfer(alice, bob, chain.Value(sendValue), chain.Nonce(callSeq))
+				msg2 := td.MessageProducer.Transfer(bob, alice, chain.Value(sendValue), chain.Nonce(callSeq))
 				result := tipB.WithBlockBuilder(
 					drivers.NewBlockBuilder(td, td.ExeCtx.Miner).
-						WithBLSMessageOk(
-							td.MessageProducer.Transfer(alice, bob, chain.Value(sendValue), chain.Nonce(callSeq)),
-						).
-						WithBLSMessageOk(
-							td.MessageProducer.Transfer(bob, alice, chain.Value(sendValue), chain.Nonce(callSeq)),
-						),
+						WithBLSMessageOk(msg1).
+						WithBLSMessageOk(msg2),
 				).ApplyAndValidate()
 				tipB.Clear()
 
 				td.ExeCtx.Epoch++
 
 				// Each account has paid gas fees.
-				td.AssertBalance(aliceId, big.Sub(aBal, result.Receipts[0].GasUsed.Big()))
-				td.AssertBalance(bobId, big.Sub(bBal, result.Receipts[1].GasUsed.Big()))
+				td.AssertBalance(aliceId, big.Sub(aBal, td.CalcMessageCost(msg1.GasLimit, msg1.GasPrice, big.Zero(), result.Receipts[0])))
+				td.AssertBalance(bobId, big.Sub(bBal, td.CalcMessageCost(msg2.GasLimit, msg2.GasPrice, big.Zero(), result.Receipts[1])))
+
 				gasSum := big.Add(result.Receipts[0].GasUsed.Big(), result.Receipts[1].GasUsed.Big()) // Exploit gas price = 1
 
 				// Validate rewards are paid directly to miner
@@ -77,15 +77,15 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 				thisReward := big.Add(prevRewards.NextPerBlockReward, gasSum)
 				assert.Equal(t, big.Add(prevMinerBal, thisReward), td.GetBalance(miner))
 
-				// no money was burnt
-				assert.Equal(t, big.Zero(), td.GetBalance(builtin.BurntFundsActorAddr))
+				newBurn := big.Add(drivers.GetBurn(msg1.GasLimit, result.Receipts[0].GasUsed), drivers.GetBurn(msg2.GasLimit, result.Receipts[1].GasUsed))
+				td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(burnBal, newBurn))
 
 				callSeq++
 			}
 		}
 	})
 
-	t.Run("penalize sender does't exist", func(t *testing.T) {
+	t.Run("penalize sender doesn't exist", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
 		bb := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
@@ -202,7 +202,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		gasPenalty := int64(482274)
 		gasLimit := gasPenalty - gasPenalty/gasPrice
 
-		// nonce == 1 causest the message application to fail resulting in a miner penalty.
+		// nonce == 1 causes the message application to fail resulting in a miner penalty.
 		bb.WithBLSMessageAndCode(
 			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
 			exitcode.SysErrSenderStateInvalid,
@@ -251,7 +251,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		td.AssertBalance(alice, acctDefaultBalance)
 	})
 
-	t.Run("no pentalty if the balance is not sufficient to cover transfer", func(t *testing.T) {
+	t.Run("no penalty if the balance is not sufficient to cover transfer", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
 
@@ -264,12 +264,9 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 
 		// Attempt to whole balance, in two parts.
 		// The second message should fail (insufficient balance to pay fees).
-		bb.WithBLSMessageOk(
-			td.MessageProducer.Transfer(aliceId, builtin.BurntFundsActorAddr, chain.Value(halfBalance)),
-		).WithBLSMessageAndCode(
-			td.MessageProducer.Transfer(aliceId, builtin.BurntFundsActorAddr, chain.Value(halfBalance), chain.Nonce(1)),
-			exitcode.SysErrInsufficientFunds,
-		)
+		msgOk := td.MessageProducer.Transfer(aliceId, builtin.BurntFundsActorAddr, chain.Value(halfBalance))
+		msgFail := td.MessageProducer.Transfer(aliceId, builtin.BurntFundsActorAddr, chain.Value(halfBalance), chain.Nonce(1))
+		bb.WithBLSMessageOk(msgOk).WithBLSMessageAndCode(msgFail, exitcode.SysErrInsufficientFunds)
 
 		prevRewards := td.GetRewardSummary()
 		prevMinerBalance := td.GetBalance(miner)
@@ -280,7 +277,9 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
 		gasPenalty := big.NewInt(0)
 		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Add(result.Receipts[0].GasUsed.Big(), result.Receipts[1].GasUsed.Big()), gasPenalty)
-		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(halfBalance, gasPenalty))
+
+		burn := big.Add(drivers.GetBurn(msgOk.GasLimit, result.Receipts[0].GasUsed), drivers.GetBurn(msgFail.GasLimit, result.Receipts[1].GasUsed))
+		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(burn, big.Add(halfBalance, gasPenalty)))
 	})
 
 	t.Run("insufficient gas to cover return value", func(t *testing.T) {
