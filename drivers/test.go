@@ -5,8 +5,9 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/filecoin-project/go-bitfield"
 	"testing"
+
+	"github.com/filecoin-project/go-bitfield"
 
 	"github.com/filecoin-project/go-address"
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
@@ -456,7 +457,7 @@ func (td *TestDriver) AssertActorChange(addr address.Address, prevBalance abi_sp
 
 	expected := big_spec.Sub(prevBalance, td.CalcMessageCost(gasLimit, gasPrice, transferred, rct))
 
-	assert.Equal(td.T, expected, actr.Balance(), fmt.Sprintf("expected actor %s balance: %s, actual balance: %s", addr, expected, actr.Balance()))
+	assert.Equal(td.T, expected.String(), actr.Balance().String(), fmt.Sprintf("expected actor %s balance: %s, actual balance: %s", addr, expected, actr.Balance()))
 	assert.Equal(td.T, callSeqNum, actr.CallSeqNum(), fmt.Sprintf("expected actor %s callSeqNum: %d, actual : %d", addr, callSeqNum, actr.CallSeqNum()))
 }
 

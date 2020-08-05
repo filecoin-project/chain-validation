@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/filecoin-project/chain-validation/chain"
+	"github.com/filecoin-project/chain-validation/chain/types"
 	"github.com/filecoin-project/chain-validation/drivers"
 	"github.com/filecoin-project/chain-validation/state"
 	"github.com/filecoin-project/chain-validation/suites/utils"
@@ -77,7 +78,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 				thisReward := big.Add(prevRewards.NextPerBlockReward, gasSum)
 				assert.Equal(t, big.Add(prevMinerBal, thisReward), td.GetBalance(miner))
 
-				newBurn := big.Add(drivers.GetBurn(msg1.GasLimit, result.Receipts[0].GasUsed), drivers.GetBurn(msg2.GasLimit, result.Receipts[1].GasUsed))
+				newBurn := big.Add(drivers.GetBurn(types.GasUnits(msg1.GasLimit), result.Receipts[0].GasUsed), drivers.GetBurn(types.GasUnits(msg2.GasLimit), result.Receipts[1].GasUsed))
 				td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(burnBal, newBurn))
 
 				callSeq++
@@ -278,7 +279,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		gasPenalty := big.NewInt(0)
 		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Add(result.Receipts[0].GasUsed.Big(), result.Receipts[1].GasUsed.Big()), gasPenalty)
 
-		burn := big.Add(drivers.GetBurn(msgOk.GasLimit, result.Receipts[0].GasUsed), drivers.GetBurn(msgFail.GasLimit, result.Receipts[1].GasUsed))
+		burn := big.Add(drivers.GetBurn(types.GasUnits(msgOk.GasLimit), result.Receipts[0].GasUsed), drivers.GetBurn(types.GasUnits(msgFail.GasLimit), result.Receipts[1].GasUsed))
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(burn, big.Add(halfBalance, gasPenalty)))
 	})
 
