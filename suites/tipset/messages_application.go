@@ -20,7 +20,8 @@ func TipSetTest_BlockMessageApplication(t *testing.T, factory state.Factories) {
 	const gasLimit = 1_000_000_000
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(gasLimit).
-		WithDefaultGasPrice(big_spec.NewInt(1)).
+		WithDefaultGasFeeCap(1).
+		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	t.Run("SECP and BLS messages cost different amounts of gas", func(t *testing.T) {
@@ -56,7 +57,8 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 	const gasLimit = 1_000_000_000
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(gasLimit).
-		WithDefaultGasPrice(big_spec.NewInt(1)).
+		WithDefaultGasFeeCap(1).
+		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	t.Run("apply a single BLS message", func(t *testing.T) {
@@ -155,6 +157,6 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		assert.Equal(t, 1, len(result.Receipts))
 
 		td.AssertBalance(receiverID, amountSent)
-		td.AssertActorChange(senderID, senderInitialBal, msgOriginal.GasLimit, msgOriginal.GasPrice, msgOriginal.Value, result.Receipts[0], msgOriginal.CallSeqNum+1)
+		td.AssertActorChange(senderID, senderInitialBal, msgOriginal.GasLimit, msgOriginal.GasPremium, msgOriginal.Value, result.Receipts[0], msgOriginal.CallSeqNum+1)
 	})
 }

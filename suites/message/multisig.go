@@ -21,7 +21,8 @@ import (
 func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasPrice(big_spec.NewInt(1)).
+		WithDefaultGasFeeCap(1).
+		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	t.Run("constructor test", func(t *testing.T) {

@@ -20,7 +20,8 @@ import (
 func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasPrice(big_spec.NewInt(1)).
+		WithDefaultGasFeeCap(1).
+		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	var aliceBal = abi_spec.NewTokenAmount(1_000_000_000_000)
@@ -32,7 +33,7 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		td.ApplyFailure(
-			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(1), chain.GasLimit(8)),
+			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPremium(1), chain.GasLimit(8)),
 			exitcode.SysErrOutOfGas)
 	})
 
@@ -43,13 +44,13 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 		alice, _ := td.NewAccountActor(drivers.SECP, aliceBal)
 		// Expect Message application to fail due to lack of gas
 		td.ApplyFailure(
-			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
+			td.MessageProducer.Transfer(alice, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPremium(10), chain.GasLimit(1)),
 			exitcode.SysErrOutOfGas)
 
 		// Expect Message application to fail due to lack of gas when sender is unknown
 		unknown := utils.NewIDAddr(t, 10000000)
 		td.ApplyFailure(
-			td.MessageProducer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPrice(10), chain.GasLimit(1)),
+			td.MessageProducer.Transfer(unknown, alice, chain.Value(transferAmnt), chain.Nonce(0), chain.GasPremium(10), chain.GasLimit(1)),
 			exitcode.SysErrOutOfGas)
 	})
 
@@ -75,7 +76,7 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 		gasStep := int64(trueGas / 100)
 		newAccountB := utils.NewSECP256K1Addr(t, "2")
 		for tryGas := trueGas - gasStep; tryGas > 0; tryGas -= gasStep {
-			td.ApplyFailure(td.MessageProducer.Transfer(alice, newAccountB, chain.Value(transferAmnt), chain.Nonce(aliceNonceF()), chain.GasPrice(1), chain.GasLimit(tryGas)),
+			td.ApplyFailure(td.MessageProducer.Transfer(alice, newAccountB, chain.Value(transferAmnt), chain.Nonce(aliceNonceF()), chain.GasPremium(1), chain.GasLimit(tryGas)),
 				exitcode.SysErrOutOfGas,
 			)
 		}

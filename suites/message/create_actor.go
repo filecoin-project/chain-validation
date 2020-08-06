@@ -7,7 +7,6 @@ import (
 	"github.com/filecoin-project/go-address"
 
 	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
-	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"
@@ -19,7 +18,8 @@ import (
 func MessageTest_AccountActorCreation(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasPrice(big_spec.NewInt(1)).
+		WithDefaultGasFeeCap(1).
+		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	testCases := []struct {
@@ -86,7 +86,7 @@ func MessageTest_AccountActorCreation(t *testing.T, factory state.Factories) {
 			// new actor balance will only exist if message was applied successfully.
 			if tc.expExitCode.IsSuccess() {
 				td.AssertBalance(tc.newActorAddr, tc.newActorInitBal)
-				td.AssertActorChange(existingAccountAddr, tc.existingActorBal, result.Msg.GasLimit, result.Msg.GasPrice, tc.newActorInitBal, result.Receipt, 1)
+				td.AssertActorChange(existingAccountAddr, tc.existingActorBal, result.Msg.GasLimit, result.Msg.GasPremium, tc.newActorInitBal, result.Receipt, 1)
 			}
 		})
 	}
@@ -95,7 +95,8 @@ func MessageTest_AccountActorCreation(t *testing.T, factory state.Factories) {
 func MessageTest_InitActorSequentialIDAddressCreate(t *testing.T, factory state.Factories) {
 	td := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasPrice(big_spec.NewInt(1)).
+		WithDefaultGasFeeCap(1).
+		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...).Build(t)
 	defer td.Complete()
 
