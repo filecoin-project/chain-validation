@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"fmt"
+	"golang.org/x/xerrors"
 	"io"
 
 	"github.com/filecoin-project/go-address"
@@ -26,8 +27,9 @@ type Message struct {
 	// Amount of value to transfer from sender's to receiver's balance.
 	Value big.Int
 
-	GasPrice big.Int
-	GasLimit int64
+	GasLimit   int64
+	GasFeeCap  abi.TokenAmount
+	GasPremium abi.TokenAmount
 
 	// Optional method to invoke on receiver, zero for a plain value send.
 	Method abi.MethodNum
@@ -68,11 +70,6 @@ func (t *Message) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.GasPrice (big.Int) (struct)
-	if err := t.GasPrice.MarshalCBOR(w); err != nil {
-		return err
-	}
-
 	// t.GasLimit (int64) (int64)
 	if t.GasLimit >= 0 {
 		if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajUnsignedInt, uint64(t.GasLimit))); err != nil {
@@ -84,6 +81,15 @@ func (t *Message) MarshalCBOR(w io.Writer) error {
 		}
 	}
 
+	// t.GasFeeCap (big.Int) (struct)
+	if err := t.GasFeeCap.MarshalCBOR(w); err != nil {
+		return err
+	}
+
+	// t.GasPremium (big.Int) (struct)
+	if err := t.GasPremium.MarshalCBOR(w); err != nil {
+		return err
+	}
 	// t.Method (abi.MethodNum) (uint64)
 
 	if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajUnsignedInt, uint64(t.Method))); err != nil {
@@ -160,15 +166,6 @@ func (t *Message) UnmarshalCBOR(r io.Reader) error {
 		}
 
 	}
-	// t.GasPrice (big.Int) (struct)
-
-	{
-
-		if err := t.GasPrice.UnmarshalCBOR(br); err != nil {
-			return fmt.Errorf("unmarshaling t.GasPrice: %w", err)
-		}
-
-	}
 	// t.GasLimit (int64) (int64)
 	{
 		maj, extra, err := cbg.CborReadHeader(br)
@@ -193,6 +190,24 @@ func (t *Message) UnmarshalCBOR(r io.Reader) error {
 		}
 
 		t.GasLimit = int64(extraI)
+	}
+	// t.GasFeeCap (big.Int) (struct)
+
+	{
+
+		if err := t.GasFeeCap.UnmarshalCBOR(br); err != nil {
+			return xerrors.Errorf("unmarshaling t.GasFeeCap: %w", err)
+		}
+
+	}
+	// t.GasPremium (big.Int) (struct)
+
+	{
+
+		if err := t.GasPremium.UnmarshalCBOR(br); err != nil {
+			return xerrors.Errorf("unmarshaling t.GasPremium: %w", err)
+		}
+
 	}
 	// t.Method (abi.MethodNum) (uint64)
 

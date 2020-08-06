@@ -207,8 +207,9 @@ type TestDriverBuilder struct {
 
 	actorStates []ActorState
 
-	defaultGasPrice abi_spec.TokenAmount
-	defaultGasLimit int64
+	defaultGasFeeCap  abi_spec.TokenAmount
+	defaultGasPremium abi_spec.TokenAmount
+	defaultGasLimit   int64
 }
 
 func NewBuilder(ctx context.Context, factory state.Factories) *TestDriverBuilder {
@@ -235,8 +236,13 @@ func (b *TestDriverBuilder) WithDefaultGasLimit(limit int64) *TestDriverBuilder 
 	return b
 }
 
-func (b *TestDriverBuilder) WithDefaultGasPrice(price abi_spec.TokenAmount) *TestDriverBuilder {
-	b.defaultGasPrice = price
+func (b *TestDriverBuilder) WithDefaultGasFeeCap(feeCap int64) *TestDriverBuilder {
+	b.defaultGasFeeCap = abi_spec.NewTokenAmount(feeCap)
+	return b
+}
+
+func (b *TestDriverBuilder) WithDefaultGasPremium(premium int64) *TestDriverBuilder {
+	b.defaultGasPremium = abi_spec.NewTokenAmount(premium)
 	return b
 }
 
@@ -257,7 +263,7 @@ func (b *TestDriverBuilder) Build(t testing.TB) *TestDriver {
 	minerActorIDAddr := sd.newMinerAccountActor(TestSealProofType, abi_spec.ChainEpoch(0))
 
 	exeCtx := types.NewExecutionContext(1, minerActorIDAddr)
-	producer := chain.NewMessageProducer(b.defaultGasLimit, b.defaultGasPrice)
+	producer := chain.NewMessageProducer(b.defaultGasFeeCap, b.defaultGasPremium, b.defaultGasLimit)
 	validator := chain.NewValidator(applier)
 
 	return &TestDriver{

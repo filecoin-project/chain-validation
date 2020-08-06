@@ -24,7 +24,8 @@ import (
 func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasPrice(big.NewInt(1)).
+		WithDefaultGasFeeCap(1).
+		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	acctDefaultBalance := abi.NewTokenAmount(10_000_000_000)
@@ -63,8 +64,8 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 				td.ExeCtx.Epoch++
 
 				// Each account has paid gas fees.
-				td.AssertBalance(aliceId, big.Sub(aBal, td.CalcMessageCost(msg1.GasLimit, msg1.GasPrice, big.Zero(), result.Receipts[0])))
-				td.AssertBalance(bobId, big.Sub(bBal, td.CalcMessageCost(msg2.GasLimit, msg2.GasPrice, big.Zero(), result.Receipts[1])))
+				td.AssertBalance(aliceId, big.Sub(aBal, td.CalcMessageCost(msg1.GasLimit, msg1.GasPremium, big.Zero(), result.Receipts[0])))
+				td.AssertBalance(bobId, big.Sub(bBal, td.CalcMessageCost(msg2.GasLimit, msg2.GasPremium, big.Zero(), result.Receipts[1])))
 
 				gasSum := big.Add(result.Receipts[0].GasUsed.Big(), result.Receipts[1].GasUsed.Big()) // Exploit gas price = 1
 
@@ -205,7 +206,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 
 		// nonce == 1 causes the message application to fail resulting in a miner penalty.
 		bb.WithBLSMessageAndCode(
-			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
+			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPremium(gasPrice), chain.GasLimit(gasLimit)),
 			exitcode.SysErrSenderStateInvalid,
 		)
 
@@ -231,12 +232,12 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 
 		alice, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
 
-		gasPrice := int64(2)
+		gasPremium := int64(2)
 		gasPenalty := int64(562274)
-		gasLimit := gasPenalty - gasPenalty/gasPrice
+		gasLimit := gasPenalty - gasPenalty/gasPremium
 		// nonce == 1 causes the message application to fail resulting in a miner penalty.
 		bb.WithSECPMessageAndCode(
-			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPrice(gasPrice), chain.GasLimit(gasLimit)),
+			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPremium(gasPremium), chain.GasLimit(gasLimit)),
 			exitcode.SysErrSenderStateInvalid,
 		)
 

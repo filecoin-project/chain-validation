@@ -19,7 +19,8 @@ import (
 func MessageTest_Paych(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasPrice(big_spec.NewInt(1)).
+		WithDefaultGasFeeCap(1).
+		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
 	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
@@ -139,7 +140,7 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 		settleResult := td.ApplyOk(
 			td.MessageProducer.PaychSettle(receiver, paychAddr, nil, chain.Value(big_spec.Zero()), chain.Nonce(0)))
 
-		td.AssertActorChange(receiver, initialBal, settleResult.Msg.GasLimit, settleResult.Msg.GasPrice, big_spec.Zero(), settleResult.Receipt, 1)
+		td.AssertActorChange(receiver, initialBal, settleResult.Msg.GasLimit, settleResult.Msg.GasPremium, big_spec.Zero(), settleResult.Receipt, 1)
 
 		// advance the epoch so the funds may be redeemed.
 		td.ExeCtx.Epoch += paych_spec.SettleDelay
@@ -149,7 +150,7 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 			td.MessageProducer.PaychCollect(receiver, paychAddr, nil, chain.Nonce(1), chain.Value(big_spec.Zero())))
 
 		// receiver_balance = previous_balance + paych_send - collect_paych_msg_gas
-		td.AssertActorChange(receiver, prevBal, collectResult.Msg.GasLimit, collectResult.Msg.GasPrice, toSend.Neg(), collectResult.Receipt, 2)
+		td.AssertActorChange(receiver, prevBal, collectResult.Msg.GasLimit, collectResult.Msg.GasPremium, toSend.Neg(), collectResult.Receipt, 2)
 		// the paych actor should have been deleted after the collect
 		td.AssertNoActor(paychAddr)
 	})

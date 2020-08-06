@@ -26,9 +26,9 @@ func GetBurn(gasLimit types.GasUnits, gasUsed types.GasUnits) big_spec.Int {
 	return gasToBurn
 }
 
-func (d *StateDriver) CalcMessageCost(gasLimit int64, gasPrice big_spec.Int, transferred big_spec.Int, rct types.MessageReceipt) big_spec.Int {
+func (d *StateDriver) CalcMessageCost(gasLimit int64, gasPremium big_spec.Int, transferred big_spec.Int, rct types.MessageReceipt) big_spec.Int {
 	change := big_spec.Add(rct.GasUsed.Big(), GetBurn(types.GasUnits(gasLimit), rct.GasUsed))
-	change = big_spec.Mul(change, gasPrice)
+	change = big_spec.Mul(change, gasPremium)
 	if rct.ExitCode.IsSuccess() {
 		change = big_spec.Add(change, transferred)
 	}

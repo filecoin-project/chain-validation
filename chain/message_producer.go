@@ -16,12 +16,13 @@ type MessageProducer struct {
 }
 
 // NewMessageProducer creates a new message producer, delegating message creation to `factory`.
-func NewMessageProducer(defaultGasLimit int64, defaultGasPrice big_spec.Int) *MessageProducer {
+func NewMessageProducer(defaultGasFeeCap abi_spec.TokenAmount, defaultGasPremium abi_spec.TokenAmount, defaultGasLimit int64) *MessageProducer {
 	return &MessageProducer{
 		defaults: msgOpts{
-			value:    big_spec.Zero(),
-			gasLimit: defaultGasLimit,
-			gasPrice: defaultGasPrice,
+			value:      big_spec.Zero(),
+			gasLimit:   defaultGasLimit,
+			gasFeeCap:  defaultGasFeeCap,
+			gasPremium: defaultGasPremium,
 		},
 	}
 }
@@ -32,7 +33,7 @@ func (mp *MessageProducer) Messages() []*types.Message {
 }
 
 // BuildFull creates and returns a single message.
-func (mp *MessageProducer) BuildFull(from, to address.Address, method abi_spec.MethodNum, callSeq uint64, value, gasPrice big_spec.Int, gasLimit int64, params []byte) *types.Message {
+func (mp *MessageProducer) BuildFull(from, to address.Address, method abi_spec.MethodNum, callSeq uint64, value, gasFeeCap abi_spec.TokenAmount, gasPremium abi_spec.TokenAmount, gasLimit int64, params []byte) *types.Message {
 	fm := &types.Message{
 		To:         to,
 		From:       from,
@@ -40,8 +41,9 @@ func (mp *MessageProducer) BuildFull(from, to address.Address, method abi_spec.M
 		Value:      value,
 		Method:     method,
 		Params:     params,
-		GasPrice:   gasPrice,
 		GasLimit:   gasLimit,
+		GasFeeCap:  gasFeeCap,
+		GasPremium: gasPremium,
 	}
 	mp.messages = append(mp.messages, fm)
 	return fm
@@ -54,16 +56,17 @@ func (mp *MessageProducer) Build(from, to address.Address, method abi_spec.Metho
 		opt(&values)
 	}
 
-	return mp.BuildFull(from, to, method, values.nonce, values.value, values.gasPrice, values.gasLimit, params)
+	return mp.BuildFull(from, to, method, values.nonce, values.value, values.gasFeeCap, values.gasPremium, values.gasLimit, params)
 }
 
 // msgOpts specifies value and gas parameters for a message, supporting a functional options pattern
 // for concise but customizable message construction.
 type msgOpts struct {
-	nonce    uint64
-	value    big_spec.Int
-	gasPrice big_spec.Int
-	gasLimit int64
+	nonce      uint64
+	value      big_spec.Int
+	gasLimit   int64
+	gasFeeCap  abi_spec.TokenAmount
+	gasPremium abi_spec.TokenAmount
 }
 
 // MsgOpt is an option configuring message value or gas parameters.
@@ -87,8 +90,14 @@ func GasLimit(limit int64) MsgOpt {
 	}
 }
 
-func GasPrice(price int64) MsgOpt {
+func GasFeeCap(feeCap int64) MsgOpt {
 	return func(opts *msgOpts) {
-		opts.gasPrice = big_spec.NewInt(price)
+		opts.gasFeeCap = abi_spec.NewTokenAmount(feeCap)
+	}
+}
+
+func GasPremium(premium int64) MsgOpt {
+	return func(opts *msgOpts) {
+		opts.gasPremium = abi_spec.NewTokenAmount(premium)
 	}
 }
