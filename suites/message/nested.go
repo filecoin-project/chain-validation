@@ -49,7 +49,7 @@ func MessageTest_NestedSends(t *testing.T, factory state.Factories) {
 
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasFeeCap(1).
+		WithDefaultGasFeeCap(200).
 		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 

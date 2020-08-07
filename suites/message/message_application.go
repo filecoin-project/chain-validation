@@ -20,7 +20,7 @@ import (
 func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasFeeCap(1).
+		WithDefaultGasFeeCap(200).
 		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
@@ -108,7 +108,7 @@ func MessageTest_MessageApplicationEdgecases(t *testing.T, factory state.Factori
 		const pcLane = uint64(123)
 		const pcNonce = uint64(1)
 		var pcAmount = big_spec.NewInt(10)
-		var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
+		var initialBal = abi_spec.NewTokenAmount(2_000_000_000_000)
 		var toSend = abi_spec.NewTokenAmount(10_000)
 		var pcSig = &crypto_spec.Signature{
 			Type: crypto_spec.SigTypeBLS,

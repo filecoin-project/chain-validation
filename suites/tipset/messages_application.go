@@ -18,9 +18,10 @@ import (
 
 func TipSetTest_BlockMessageApplication(t *testing.T, factory state.Factories) {
 	const gasLimit = 1_000_000_000
+	const gasFeeCap = 200
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(gasLimit).
-		WithDefaultGasFeeCap(1).
+		WithDefaultGasFeeCap(gasFeeCap).
 		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
@@ -30,9 +31,9 @@ func TipSetTest_BlockMessageApplication(t *testing.T, factory state.Factories) {
 		tipB := drivers.NewTipSetMessageBuilder(td)
 		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
-		senderBLS, _ := td.NewAccountActor(address.BLS, big_spec.NewInt(10*gasLimit))
+		senderBLS, _ := td.NewAccountActor(address.BLS, big_spec.NewInt(10*gasFeeCap*gasLimit))
 		receiverBLS, _ := td.NewAccountActor(address.BLS, big_spec.Zero())
-		senderSECP, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10*gasLimit))
+		senderSECP, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10*gasFeeCap*gasLimit))
 		receiverSECP, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 		transferAmnt := abi.NewTokenAmount(100)
 
@@ -55,9 +56,10 @@ func TipSetTest_BlockMessageApplication(t *testing.T, factory state.Factories) {
 
 func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories) {
 	const gasLimit = 1_000_000_000
+	const gasFeeCap = 200
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(gasLimit).
-		WithDefaultGasFeeCap(1).
+		WithDefaultGasFeeCap(200).
 		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
@@ -67,7 +69,7 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		tipB := drivers.NewTipSetMessageBuilder(td)
 		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
-		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10*gasLimit))
+		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10*gasFeeCap*gasLimit))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		tipB.WithBlockBuilder(
@@ -86,7 +88,7 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		tipB := drivers.NewTipSetMessageBuilder(td)
 		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
-		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10*gasLimit))
+		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10*gasFeeCap*gasLimit))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		tipB.WithBlockBuilder(
@@ -104,7 +106,7 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		tipB := drivers.NewTipSetMessageBuilder(td)
 		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
-		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10*gasLimit))
+		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10*gasFeeCap*gasLimit))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		tipB.WithBlockBuilder(
@@ -123,7 +125,7 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		tipB := drivers.NewTipSetMessageBuilder(td)
 		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
-		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10*gasLimit))
+		sender, _ := td.NewAccountActor(address.SECP256K1, big_spec.NewInt(10*gasFeeCap*gasLimit))
 		receiver, _ := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 
 		tipB.WithBlockBuilder(
@@ -141,7 +143,7 @@ func TipSetTest_BlockMessageDeduplication(t *testing.T, factory state.Factories)
 		tipB := drivers.NewTipSetMessageBuilder(td)
 		blkB := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
-		senderInitialBal := big_spec.NewInt(10 * gasLimit)
+		senderInitialBal := big_spec.NewInt(10 * gasFeeCap * gasLimit)
 		_, senderID := td.NewAccountActor(address.SECP256K1, senderInitialBal)
 		_, receiverID := td.NewAccountActor(address.SECP256K1, big_spec.Zero())
 

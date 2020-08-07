@@ -22,13 +22,15 @@ import (
 
 // Test for semantically in/valid messages, including miner penalties.
 func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) {
+	const gasLimit = 1_000_000_000
+	const gasPremium = 1
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasFeeCap(1).
-		WithDefaultGasPremium(1).
+		WithDefaultGasFeeCap(200).
+		WithDefaultGasPremium(gasPremium).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
-	acctDefaultBalance := abi.NewTokenAmount(10_000_000_000)
+	acctDefaultBalance := abi.NewTokenAmount(10_000_000_000_000)
 	sendValue := abi.NewTokenAmount(1)
 
 	t.Run("ok simple send", func(t *testing.T) {
@@ -67,7 +69,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 				td.AssertBalance(aliceId, big.Sub(aBal, td.CalcMessageCost(msg1.GasLimit, msg1.GasPremium, big.Zero(), result.Receipts[0])))
 				td.AssertBalance(bobId, big.Sub(bBal, td.CalcMessageCost(msg2.GasLimit, msg2.GasPremium, big.Zero(), result.Receipts[1])))
 
-				gasSum := big.Add(result.Receipts[0].GasUsed.Big(), result.Receipts[1].GasUsed.Big()) // Exploit gas price = 1
+				gasSum := msg1.GasLimit + msg2.GasLimit // Exploit gas premium = 1
 
 				// Validate rewards are paid directly to miner
 				newRewards := td.GetRewardSummary()
@@ -76,7 +78,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 				assert.Equal(t, big.Sub(prevRewards.Treasury, prevRewards.NextPerBlockReward), newRewards.Treasury)
 
 				// the miners balance should have increased by the reward amount
-				thisReward := big.Add(prevRewards.NextPerBlockReward, gasSum)
+				thisReward := big.Add(prevRewards.NextPerBlockReward, big.NewInt(gasSum))
 				assert.Equal(t, big.Add(prevMinerBal, thisReward), td.GetBalance(miner))
 
 				newBurn := big.Add(drivers.GetBurn(types.GasUnits(msg1.GasLimit), result.Receipts[0].GasUsed), drivers.GetBurn(types.GasUnits(msg2.GasLimit), result.Receipts[1].GasUsed))
@@ -118,9 +120,10 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		}
 
 		newRewards := td.GetRewardSummary()
-		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
 		newMinerBalance := td.GetBalance(miner)
-		gasPenalty := big.NewInt(867548)
+
+		gasPenalty := drivers.GetMinerPenalty(gasLimit)
+		gasPenalty = big.Mul(gasPenalty, big.NewInt(int64(len(badSenders))))
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward
 		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), gasPenalty)
@@ -155,8 +158,9 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 
 		newRewards := td.GetRewardSummary()
 		newMinerBalance := td.GetBalance(miner)
-		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		gasPenalty := big.NewInt(780548)
+
+		gasPenalty := drivers.GetMinerPenalty(gasLimit)
+		gasPenalty = big.Mul(gasPenalty, big.NewInt(int64(len(senders))))
 
 		// The penalty amount has been burnt by the reward actor, and subtracted from the miner's block reward.
 		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), gasPenalty)
@@ -184,73 +188,11 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 
 		newRewards := td.GetRewardSummary()
 		newMinerBalance := td.GetBalance(miner)
-		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		gasPenalty := big.NewInt(193137)
+
+		gasPenalty := drivers.GetMinerPenalty(gasLimit)
+
 		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), gasPenalty)
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
-	})
-
-	t.Run("miner penalty exceeds declared gas limit for BLS message", func(t *testing.T) {
-		td := builder.Build(t)
-		defer td.Complete()
-
-		miner := td.ExeCtx.Miner
-		tb := drivers.NewTipSetMessageBuilder(td)
-		bb := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
-
-		alice, _ := td.NewAccountActor(drivers.BLS, acctDefaultBalance)
-
-		gasPrice := int64(2)
-		gasPenalty := int64(482274)
-		gasLimit := gasPenalty - gasPenalty/gasPrice
-
-		// nonce == 1 causes the message application to fail resulting in a miner penalty.
-		bb.WithBLSMessageAndCode(
-			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPremium(gasPrice), chain.GasLimit(gasLimit)),
-			exitcode.SysErrSenderStateInvalid,
-		)
-
-		prevRewards := td.GetRewardSummary()
-		prevMinerBalance := td.GetBalance(miner)
-		tb.WithBlockBuilder(bb).ApplyAndValidate()
-
-		newRewards := td.GetRewardSummary()
-		newMinerBalance := td.GetBalance(miner)
-		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), big.NewInt(gasPenalty))
-		td.AssertBalance(builtin.BurntFundsActorAddr, big.NewInt(gasPenalty))
-		td.AssertBalance(alice, acctDefaultBalance)
-	})
-
-	t.Run("miner penalty exceeds declared gas limit for SECP message", func(t *testing.T) {
-		td := builder.Build(t)
-		defer td.Complete()
-
-		miner := td.ExeCtx.Miner
-		tb := drivers.NewTipSetMessageBuilder(td)
-		bb := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
-
-		alice, _ := td.NewAccountActor(drivers.SECP, acctDefaultBalance)
-
-		gasPremium := int64(2)
-		gasPenalty := int64(562274)
-		gasLimit := gasPenalty - gasPenalty/gasPremium
-		// nonce == 1 causes the message application to fail resulting in a miner penalty.
-		bb.WithSECPMessageAndCode(
-			td.MessageProducer.Transfer(alice, builtin.BurntFundsActorAddr, chain.Nonce(1), chain.GasPremium(gasPremium), chain.GasLimit(gasLimit)),
-			exitcode.SysErrSenderStateInvalid,
-		)
-
-		prevRewards := td.GetRewardSummary()
-		prevMinerBalance := td.GetBalance(miner)
-		tb.WithBlockBuilder(bb).ApplyAndValidate()
-
-		newRewards := td.GetRewardSummary()
-		newMinerBalance := td.GetBalance(miner)
-		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
-		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), big.NewInt(gasPenalty))
-		td.AssertBalance(builtin.BurntFundsActorAddr, big.NewInt(gasPenalty))
-		td.AssertBalance(alice, acctDefaultBalance)
 	})
 
 	t.Run("no penalty if the balance is not sufficient to cover transfer", func(t *testing.T) {
@@ -261,7 +203,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		tb := drivers.NewTipSetMessageBuilder(td)
 		bb := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
 
-		halfBalance := abi.NewTokenAmount(5_000_000_000)
+		halfBalance := abi.NewTokenAmount(5_000_000_000_000)
 		_, aliceId := td.NewAccountActor(drivers.BLS, big.Add(halfBalance, halfBalance))
 
 		// Attempt to whole balance, in two parts.
@@ -278,7 +220,7 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		newMinerBalance := td.GetBalance(miner)
 		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
 		gasPenalty := big.NewInt(0)
-		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Add(result.Receipts[0].GasUsed.Big(), result.Receipts[1].GasUsed.Big()), gasPenalty)
+		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.NewInt(msgOk.GasLimit+msgFail.GasLimit), gasPenalty)
 
 		burn := big.Add(drivers.GetBurn(types.GasUnits(msgOk.GasLimit), result.Receipts[0].GasUsed), drivers.GetBurn(types.GasUnits(msgFail.GasLimit), result.Receipts[1].GasUsed))
 		td.AssertBalance(builtin.BurntFundsActorAddr, big.Add(burn, big.Add(halfBalance, gasPenalty)))
@@ -332,8 +274,9 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		// the return value which is smaller than the gas limit.
 		assert.Equal(t, gasLimit, gasUsed)
 
+		cost := td.CalcMessageCost(gasLimit.Big().Int64(), big.NewInt(gasPremium), big.Zero(), result.Receipts[0])
 		// Check sender charged exactly the max cost.
-		assert.Equal(td.T, big.Sub(senderBalanceBefore, gasCost), td.GetBalance(alice))
+		assert.Equal(td.T, big.Sub(senderBalanceBefore, cost), td.GetBalance(alice))
 
 		// Check the miner earned exactly the max cost (plus block reward).
 		thisRwd := big.Add(rewardsBefore.NextPerBlockReward, gasCost)

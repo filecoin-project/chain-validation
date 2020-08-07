@@ -19,11 +19,11 @@ import (
 func MessageTest_Paych(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasFeeCap(1).
+		WithDefaultGasFeeCap(200).
 		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
-	var initialBal = abi_spec.NewTokenAmount(200_000_000_000)
+	var initialBal = abi_spec.NewTokenAmount(1_000_000_000_000)
 	var toSend = abi_spec.NewTokenAmount(10_000)
 	t.Run("happy path constructor", func(t *testing.T) {
 		td := builder.Build(t)

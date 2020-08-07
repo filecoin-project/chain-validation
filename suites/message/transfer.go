@@ -38,9 +38,10 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 	bob := utils.NewSECP256K1Addr(t, "2")
 
 	const gasLimit = 1_000_000_000
+	const gasFeeCap = 200
 	builder := drivers.NewBuilder(context.Background(), factories).
 		WithDefaultGasLimit(gasLimit).
-		WithDefaultGasFeeCap(1).
+		WithDefaultGasFeeCap(gasFeeCap).
 		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
@@ -49,7 +50,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			desc: "successfully transfer funds from sender to receiver",
 
 			sender:    alice,
-			senderBal: big_spec.NewInt(10 * gasLimit),
+			senderBal: big_spec.NewInt(10 * gasFeeCap * gasLimit),
 
 			transferAmnt: big_spec.NewInt(50),
 
@@ -62,7 +63,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			desc: "successfully transfer zero funds from sender to receiver",
 
 			sender:    alice,
-			senderBal: big_spec.NewInt(10 * gasLimit),
+			senderBal: big_spec.NewInt(10 * gasFeeCap * gasLimit),
 
 			transferAmnt: big_spec.NewInt(0),
 
@@ -75,9 +76,9 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			desc: "fail to transfer more funds than sender balance > 0",
 
 			sender:    alice,
-			senderBal: big_spec.NewInt(10 * gasLimit),
+			senderBal: big_spec.NewInt(10 * gasFeeCap * gasLimit),
 
-			transferAmnt: big_spec.NewInt(10*gasLimit - gasLimit + 1),
+			transferAmnt: big_spec.NewInt(10*gasFeeCap*gasLimit - gasFeeCap*gasLimit + 1),
 
 			receiver:    bob,
 			receiverBal: big_spec.Zero(),
@@ -88,7 +89,7 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 			desc: "fail to transfer more funds than sender has when sender balance == zero",
 
 			sender:    alice,
-			senderBal: big_spec.NewInt(gasLimit),
+			senderBal: big_spec.NewInt(gasFeeCap * gasLimit),
 
 			transferAmnt: big_spec.NewInt(1),
 
@@ -137,11 +138,11 @@ func MessageTest_ValueTransferSimple(t *testing.T, factories state.Factories) {
 }
 
 func MessageTest_ValueTransferAdvance(t *testing.T, factory state.Factories) {
-	var aliceInitialBalance = abi_spec.NewTokenAmount(10_000_000_000)
+	var aliceInitialBalance = abi_spec.NewTokenAmount(1_000_000_000_000)
 
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasFeeCap(1).
+		WithDefaultGasFeeCap(200).
 		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 

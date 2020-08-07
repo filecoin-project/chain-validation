@@ -21,7 +21,7 @@ import (
 func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 	builder := drivers.NewBuilder(context.Background(), factory).
 		WithDefaultGasLimit(1_000_000_000).
-		WithDefaultGasFeeCap(1).
+		WithDefaultGasFeeCap(200).
 		WithDefaultGasPremium(1).
 		WithActorState(drivers.DefaultBuiltinActorsState...)
 
@@ -29,7 +29,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 		const numApprovals = 1
 		const unlockDuration = 10
 		var valueSend = abi_spec.NewTokenAmount(10)
-		var initialBal = abi_spec.NewTokenAmount(200000000000)
+		var initialBal = abi_spec.NewTokenAmount(1_000_000_000_000)
 
 		td := builder.Build(t)
 		defer td.Complete()
@@ -54,7 +54,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 		const numApprovals = 2
 		const unlockDuration = 10
 		var valueSend = abi_spec.NewTokenAmount(10)
-		var initialBal = abi_spec.NewTokenAmount(200000000000)
+		var initialBal = abi_spec.NewTokenAmount(1_000_000_000_000)
 
 		td := builder.Build(t)
 		defer td.Complete()
@@ -131,7 +131,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 	t.Run("propose and approve", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
-		var initialBal = abi_spec.NewTokenAmount(200000000000)
+		var initialBal = abi_spec.NewTokenAmount(1_000_000_000_000)
 		const numApprovals = 2
 		const unlockDuration = 1
 		var valueSend = abi_spec.NewTokenAmount(10)
@@ -228,7 +228,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 	t.Run("add signer", func(t *testing.T) {
 		const initialNumApprovals = 1
 		var msValue = abi_spec.NewTokenAmount(100000000000)
-		var initialBal = abi_spec.NewTokenAmount(200000000000)
+		var initialBal = abi_spec.NewTokenAmount(1_000_000_000_000)
 
 		td := builder.Build(t)
 		defer td.Complete()
