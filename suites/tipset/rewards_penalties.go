@@ -195,6 +195,33 @@ func TipSetTest_MinerRewardsAndPenalties(t *testing.T, factory state.Factories) 
 		td.AssertBalance(builtin.BurntFundsActorAddr, gasPenalty)
 	})
 
+	t.Run("penalty if the balance is not sufficient to cover gas", func(t *testing.T) {
+		td := builder.Build(t)
+		defer td.Complete()
+
+		miner := td.ExeCtx.Miner
+		tb := drivers.NewTipSetMessageBuilder(td)
+		bb := drivers.NewBlockBuilder(td, td.ExeCtx.Miner)
+
+		balance := abi.NewTokenAmount(1)
+		_, aliceId := td.NewAccountActor(drivers.BLS, balance)
+
+		bb.WithBLSMessageAndCode(
+			td.MessageProducer.Transfer(aliceId, builtin.BurntFundsActorAddr, chain.Value(big.Zero()), chain.Nonce(0), chain.GasLimit(gasLimit)),
+			exitcode.SysErrSenderStateInvalid,
+		)
+
+		prevRewards := td.GetRewardSummary()
+		prevMinerBalance := td.GetBalance(miner)
+		tb.WithBlockBuilder(bb).ApplyAndValidate()
+
+		newRewards := td.GetRewardSummary()
+		newMinerBalance := td.GetBalance(miner)
+		// The penalty charged to the miner is not present in the receipt so we just have to hardcode it here.
+		validateRewards(td, prevRewards, newRewards, prevMinerBalance, newMinerBalance, big.Zero(), drivers.GetMinerPenalty(gasLimit))
+		td.AssertBalance(aliceId, balance)
+	})
+
 	t.Run("no penalty if the balance is not sufficient to cover transfer", func(t *testing.T) {
 		td := builder.Build(t)
 		defer td.Complete()
