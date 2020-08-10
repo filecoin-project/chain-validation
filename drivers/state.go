@@ -164,9 +164,9 @@ func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredSeal
 	require.NoError(d.tb, err)
 
 	// create the miner actor s.t. it exists in the init actors map
-	minerState, err := miner_spec.ConstructState(mc, periodBoundary, EmptyBitfieldCid, EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid)
-
+	minerState, err := miner_spec.ConstructState(mc, periodBoundary, EmptyBitfieldCid, EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid, EmptyVestingFundsCid)
 	require.NoError(d.tb, err)
+
 	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), minerState)
 	require.NoError(d.tb, err)
 	require.Equal(d.tb, expectedMinerActorIDAddress, minerActorIDAddr)
