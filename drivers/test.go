@@ -41,11 +41,12 @@ import (
 var (
 
 	// initialized by calling initializeStoreWithAdtRoots
-	EmptyArrayCid     cid.Cid
-	EmptyDeadlinesCid cid.Cid
-	EmptyMapCid       cid.Cid
-	EmptyMultiMapCid  cid.Cid
-	EmptyBitfieldCid  cid.Cid
+	EmptyArrayCid        cid.Cid
+	EmptyDeadlinesCid    cid.Cid
+	EmptyVestingFundsCid cid.Cid
+	EmptyMapCid          cid.Cid
+	EmptyMultiMapCid     cid.Cid
+	EmptyBitfieldCid     cid.Cid
 )
 
 var (
@@ -163,19 +164,17 @@ func initializeStoreWithAdtRoots(store adt_spec.Store) error {
 		return err
 	}
 
-	EmptyDeadlinesCid, err = store.Put(context.TODO(), &miner.Deadline{
-		Partitions:        EmptyArrayCid,
-		ExpirationsEpochs: EmptyArrayCid,
-		PostSubmissions:   abi_spec.NewBitField(),
-		EarlyTerminations: abi_spec.NewBitField(),
-		LiveSectors:       0,
-	})
+	EmptyDeadlinesCid, err = store.Put(context.TODO(), miner.ConstructDeadline(EmptyArrayCid))
 	if err != nil {
 		return err
 	}
 
-	emptyBitfield := bitfield.NewFromSet(nil)
-	EmptyBitfieldCid, err = store.Put(context.TODO(), emptyBitfield)
+	EmptyVestingFundsCid, err = store.Put(context.Background(), miner.ConstructVestingFunds())
+	if err != nil {
+		return err
+	}
+
+	EmptyBitfieldCid, err = store.Put(context.TODO(), bitfield.New())
 	if err != nil {
 		return err
 	}
