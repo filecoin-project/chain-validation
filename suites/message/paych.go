@@ -8,7 +8,9 @@ import (
 	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
 	paych_spec "github.com/filecoin-project/specs-actors/actors/builtin/paych"
 	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
+	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/chain-validation/chain"
 	"github.com/filecoin-project/chain-validation/drivers"
@@ -95,11 +97,18 @@ func MessageTest_Paych(t *testing.T, factory state.Factories) {
 			}, chain.Nonce(1), chain.Value(big_spec.Zero())))
 		var pcState paych_spec.State
 		td.GetActorState(paychAddr, &pcState)
-		assert.Equal(t, 1, len(pcState.LaneStates))
-		ls := pcState.LaneStates[0]
+
+		arr, err := adt.AsArray(drivers.AsStore(td.State()), pcState.LaneStates)
+		require.NoError(t, err)
+		assert.EqualValues(t, 1, arr.Length())
+
+		var ls paych_spec.LaneState
+		found, err := arr.Get(pcLane, &ls)
+		require.NoError(t, err)
+		require.True(t, found)
+
 		assert.Equal(t, pcAmount, ls.Redeemed)
 		assert.Equal(t, pcNonce, ls.Nonce)
-		assert.Equal(t, pcLane, ls.ID)
 	})
 
 	t.Run("happy path collect", func(t *testing.T) {
