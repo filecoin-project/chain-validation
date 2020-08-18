@@ -1,3 +1,18 @@
+# ⚠️  This repo is in process of being deprecated.
+
+All message-type test cases have been migrated to https://github.com/filecoin-project/test-vectors/, and are now following an interoperable test-vector-based approach. See the README there for more info.
+
+Tipset and chain vectors will be migrated shortly, and this repo will be decomissioned thereafter.
+
+All outstanding issues in this repo are being scoped/analysed, and transferred to https://github.com/filecoin-project/test-vectors/.
+
+**NO FURTHER WORK SHOULD TAKE PLACE HERE**. Please contribute to https://github.com/filecoin-project/test-vectors/ instead.
+
+In case of doubts, get in touch with [@raulk](github.com/raulk).
+
+
+---
+
 # Chain-Validation
 [![](https://img.shields.io/badge/made%20by-Protocol%20Labs-blue.svg?style=flat-square)](http://ipn.io)
 [![CircleCI](https://circleci.com/gh/filecoin-project/chain-validation.svg?style=svg)](https://circleci.com/gh/filecoin-project/chain-validation)
