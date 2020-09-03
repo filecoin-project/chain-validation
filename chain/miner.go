@@ -2,7 +2,6 @@ package chain
 
 import (
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/specs-actors/actors/abi/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
@@ -62,10 +61,6 @@ func (mp *MessageProducer) MinerOnDeferredCronEvent(from, to address.Address, pa
 func (mp *MessageProducer) MinerCheckSectorProven(from, to address.Address, params *miner.CheckSectorProvenParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
 	return mp.Build(from, to, builtin_spec.MethodsMiner.CheckSectorProven, ser, opts...)
-}
-func (mp *MessageProducer) MinerAddLockedFund(from, to address.Address, params *big.Int, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(params)
-	return mp.Build(from, to, builtin_spec.MethodsMiner.AddLockedFund, ser, opts...)
 }
 func (mp *MessageProducer) MinerReportConsensusFault(from, to address.Address, params *miner.ReportConsensusFaultParams, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)

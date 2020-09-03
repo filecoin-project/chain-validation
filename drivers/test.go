@@ -550,7 +550,7 @@ func computeInitActorExecReturn(t testing.TB, from address.Address, originatorCa
 func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce uint64, value abi_spec.TokenAmount, multisigAddr address.Address, from address.Address, params *multisig_spec.ConstructorParams, code exitcode.ExitCode, retval []byte) {
 	/* Create the Multisig actor*/
 	td.applyMessageExpectCodeAndReturn(
-		td.MessageProducer.CreateMultisigActor(from, params.Signers, params.UnlockDuration, params.NumApprovalsThreshold, chain.Nonce(nonce), chain.Value(value)),
+		td.MessageProducer.CreateMultisigActor(from, params.Signers, params.UnlockDuration, params.StartEpoch, params.NumApprovalsThreshold, chain.Nonce(nonce), chain.Value(value)),
 		code, retval)
 	/* Assert the actor state was setup as expected */
 	pendingTxMapRoot, err := adt_spec.MakeEmptyMap(newMockStore()).Root()
@@ -559,7 +559,7 @@ func (td *TestDriver) MustCreateAndVerifyMultisigActor(nonce uint64, value abi_s
 	startEpoch := abi_spec.ChainEpoch(0)
 	if params.UnlockDuration > 0 {
 		initialBalance = value
-		startEpoch = td.ExeCtx.Epoch
+		startEpoch = params.StartEpoch
 	}
 	td.AssertMultisigState(multisigAddr, multisig_spec.State{
 		NextTxnID:      0,

@@ -28,6 +28,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 	t.Run("constructor test", func(t *testing.T) {
 		const numApprovals = 1
 		const unlockDuration = 10
+		const startEpoch = 5
 		var valueSend = abi_spec.NewTokenAmount(10)
 		var initialBal = abi_spec.NewTokenAmount(1_000_000_000_000)
 
@@ -46,6 +47,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 				Signers:               []address.Address{aliceId},
 				NumApprovalsThreshold: numApprovals,
 				UnlockDuration:        unlockDuration,
+				StartEpoch:            startEpoch,
 			},
 			exitcode_spec.Ok, chain.MustSerialize(&createRet))
 	})
@@ -53,6 +55,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 	t.Run("propose and cancel", func(t *testing.T) {
 		const numApprovals = 2
 		const unlockDuration = 10
+		const startEpoch = 5
 		var valueSend = abi_spec.NewTokenAmount(10)
 		var initialBal = abi_spec.NewTokenAmount(1_000_000_000_000)
 
@@ -73,6 +76,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 				Signers:               []address.Address{aliceId, bobId},
 				NumApprovalsThreshold: numApprovals,
 				UnlockDuration:        unlockDuration,
+				StartEpoch:            startEpoch,
 			},
 			exitcode_spec.Ok, chain.MustSerialize(&createRet))
 		td.AssertBalance(multisigAddr, valueSend)
@@ -122,7 +126,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 			NumApprovalsThreshold: numApprovals,
 			NextTxnID:             1,
 			InitialBalance:        valueSend,
-			StartEpoch:            1,
+			StartEpoch:            startEpoch,
 			UnlockDuration:        unlockDuration,
 		})
 		td.AssertBalance(multisigAddr, valueSend)
@@ -134,6 +138,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 		var initialBal = abi_spec.NewTokenAmount(1_000_000_000_000)
 		const numApprovals = 2
 		const unlockDuration = 1
+		const startEpoch = 0
 		var valueSend = abi_spec.NewTokenAmount(10)
 
 		// Signers
@@ -153,6 +158,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 				Signers:               []address.Address{aliceId, bobId},
 				NumApprovalsThreshold: numApprovals,
 				UnlockDuration:        unlockDuration,
+				StartEpoch:            startEpoch,
 			},
 			exitcode_spec.Ok, chain.MustSerialize(&createRet))
 
@@ -216,7 +222,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 			NumApprovalsThreshold: numApprovals,
 			NextTxnID:             txID1,
 			InitialBalance:        valueSend,
-			StartEpoch:            1,
+			StartEpoch:            startEpoch,
 			UnlockDuration:        unlockDuration,
 		})
 		td.AssertMultisigContainsTransaction(multisigAddr, txID0, false)
@@ -227,6 +233,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 
 	t.Run("add signer", func(t *testing.T) {
 		const initialNumApprovals = 1
+		const startEpoch = 5
 		var msValue = abi_spec.NewTokenAmount(100000000000)
 		var initialBal = abi_spec.NewTokenAmount(1_000_000_000_000)
 
@@ -245,6 +252,7 @@ func MessageTest_MultiSigActor(t *testing.T, factory state.Factories) {
 				Signers:               initialSigners,
 				NumApprovalsThreshold: initialNumApprovals,
 				UnlockDuration:        0,
+				StartEpoch:            startEpoch,
 			},
 			exitcode_spec.Ok,
 			chain.MustSerialize(&createRet),

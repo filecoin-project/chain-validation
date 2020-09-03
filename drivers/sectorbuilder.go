@@ -29,7 +29,7 @@ func NewMockSectorBuilder(t testing.TB) *MockSectorBuilder {
 	}
 }
 
-func (msb *MockSectorBuilder) NewPreSealedSector(miner, client address.Address, pt abi.RegisteredProof, ssize abi.SectorSize, start, end abi.ChainEpoch) *types.PreSeal {
+func (msb *MockSectorBuilder) NewPreSealedSector(miner, client address.Address, pt abi.RegisteredSealProof, ssize abi.SectorSize, start, end abi.ChainEpoch) *types.PreSeal {
 	minerSectors := msb.MinerSectors[miner]
 	sectorID := len(minerSectors)
 
