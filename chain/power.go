@@ -35,10 +35,6 @@ func (mp *MessageProducer) PowerUpdatePledgeTotal(from, to address.Address, para
 	ser := MustSerialize(params)
 	return mp.Build(from, to, builtin_spec.MethodsPower.UpdatePledgeTotal, ser, opts...)
 }
-func (mp *MessageProducer) PowerOnConsensusFault(from, to address.Address, params *big.Int, opts ...MsgOpt) *types.Message {
-	ser := MustSerialize(params)
-	return mp.Build(from, to, builtin_spec.MethodsPower.OnConsensusFault, ser, opts...)
-}
 func (mp *MessageProducer) PowerSubmitPoRepForBulkVerify(from, to address.Address, params *abi.SealVerifyInfo, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
 	return mp.Build(from, to, builtin_spec.MethodsPower.SubmitPoRepForBulkVerify, ser, opts...)

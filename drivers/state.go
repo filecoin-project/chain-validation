@@ -148,7 +148,7 @@ func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredSeal
 
 	ss, err := sealProofType.SectorSize()
 	require.NoError(d.tb, err)
-	ps, err := sealProofType.WindowPoStPartitionSectors()
+	ps, err := abi_spec.SealProofWindowPoStPartitionSectors(sealProofType)
 	require.NoError(d.tb, err)
 	mi := &miner_spec.MinerInfo{
 		Owner:                      minerOwnerID,
@@ -164,7 +164,7 @@ func (d *StateDriver) newMinerAccountActor(sealProofType abi_spec.RegisteredSeal
 	require.NoError(d.tb, err)
 
 	// create the miner actor s.t. it exists in the init actors map
-	minerState, err := miner_spec.ConstructState(mc, periodBoundary, EmptyBitfieldCid, EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid, EmptyVestingFundsCid)
+	minerState, err := miner_spec.ConstructState(mc, periodBoundary, 0, EmptyBitfieldCid, EmptyArrayCid, EmptyMapCid, EmptyDeadlinesCid, EmptyVestingFundsCid)
 	require.NoError(d.tb, err)
 
 	_, minerActorIDAddr, err := d.State().CreateActor(builtin_spec.StorageMinerActorCodeID, minerActorAddrs.RobustAddress, big_spec.Zero(), minerState)

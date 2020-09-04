@@ -377,7 +377,7 @@ type msStage struct {
 func prepareStage(td *drivers.TestDriver, creatorBalance, msBalance abi.TokenAmount) *msStage {
 	_, creatorId := td.NewAccountActor(drivers.SECP, creatorBalance)
 
-	msg := td.MessageProducer.CreateMultisigActor(creatorId, []address.Address{creatorId}, 0, 1, chain.Value(msBalance), chain.Nonce(0))
+	msg := td.MessageProducer.CreateMultisigActor(creatorId, []address.Address{creatorId}, 0, 0, 1, chain.Value(msBalance), chain.Nonce(0))
 	result := td.ApplyMessage(msg)
 	require.Equal(td.T, exitcode.Ok, result.Receipt.ExitCode)
 

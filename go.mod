@@ -9,7 +9,7 @@ require (
 	github.com/filecoin-project/go-bitfield v0.2.0
 	github.com/filecoin-project/go-crypto v0.0.0-20191218222705-effae4ea9f03
 	github.com/filecoin-project/go-fil-commcid v0.0.0-20200716160307-8f644712406f
-	github.com/filecoin-project/specs-actors v0.9.2
+	github.com/filecoin-project/specs-actors v0.9.1-0.20200904012052-4acd0efe4a20
 	github.com/gorilla/rpc v1.2.0
 	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-cid v0.0.7
