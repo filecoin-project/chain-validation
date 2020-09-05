@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	address "github.com/filecoin-project/go-address"
-	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
+	abi_spec "github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 	require "github.com/stretchr/testify/require"
 
-	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+	big_spec "github.com/filecoin-project/go-state-types/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
 

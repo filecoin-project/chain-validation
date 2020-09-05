@@ -2,8 +2,8 @@ package chain
 
 import (
 	address "github.com/filecoin-project/go-address"
-	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
-	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+	abi_spec "github.com/filecoin-project/go-state-types/abi"
+	big_spec "github.com/filecoin-project/go-state-types/big"
 
 	"github.com/filecoin-project/chain-validation/chain/types"
 )

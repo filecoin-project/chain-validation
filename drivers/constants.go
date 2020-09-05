@@ -1,7 +1,7 @@
 package drivers
 
 import (
-	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+	big_spec "github.com/filecoin-project/go-state-types/big"
 )
 
 const (

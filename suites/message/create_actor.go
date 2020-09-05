@@ -6,7 +6,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 
-	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
+	abi_spec "github.com/filecoin-project/go-state-types/abi"
 	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
 
 	"github.com/filecoin-project/chain-validation/chain"

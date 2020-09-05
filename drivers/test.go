@@ -10,8 +10,8 @@ import (
 	"github.com/filecoin-project/go-bitfield"
 
 	"github.com/filecoin-project/go-address"
-	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
-	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+	abi_spec "github.com/filecoin-project/go-state-types/abi"
+	big_spec "github.com/filecoin-project/go-state-types/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 	account_spec "github.com/filecoin-project/specs-actors/actors/builtin/account"
 	cron_spec "github.com/filecoin-project/specs-actors/actors/builtin/cron"

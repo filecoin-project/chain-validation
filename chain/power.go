@@ -2,9 +2,9 @@ package chain
 
 import (
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/specs-actors/actors/abi"
-	"github.com/filecoin-project/specs-actors/actors/abi/big"
+	"github.com/filecoin-project/go-state-types/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
+	"github.com/filecoin-project/specs-actors/actors/runtime/proof"
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
@@ -39,7 +39,7 @@ func (mp *MessageProducer) PowerOnConsensusFault(from, to address.Address, param
 	ser := MustSerialize(params)
 	return mp.Build(from, to, builtin_spec.MethodsPower.OnConsensusFault, ser, opts...)
 }
-func (mp *MessageProducer) PowerSubmitPoRepForBulkVerify(from, to address.Address, params *abi.SealVerifyInfo, opts ...MsgOpt) *types.Message {
+func (mp *MessageProducer) PowerSubmitPoRepForBulkVerify(from, to address.Address, params *proof.SealVerifyInfo, opts ...MsgOpt) *types.Message {
 	ser := MustSerialize(params)
 	return mp.Build(from, to, builtin_spec.MethodsPower.SubmitPoRepForBulkVerify, ser, opts...)
 }

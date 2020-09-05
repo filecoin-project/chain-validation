@@ -6,8 +6,8 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	commcid "github.com/filecoin-project/go-fil-commcid"
-	"github.com/filecoin-project/specs-actors/actors/abi"
-	"github.com/filecoin-project/specs-actors/actors/abi/big"
+	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/specs-actors/actors/builtin/market"
 
 	"github.com/filecoin-project/chain-validation/chain/types"
@@ -29,7 +29,7 @@ func NewMockSectorBuilder(t testing.TB) *MockSectorBuilder {
 	}
 }
 
-func (msb *MockSectorBuilder) NewPreSealedSector(miner, client address.Address, pt abi.RegisteredProof, ssize abi.SectorSize, start, end abi.ChainEpoch) *types.PreSeal {
+func (msb *MockSectorBuilder) NewPreSealedSector(miner, client address.Address, pt abi.RegisteredSealProof, ssize abi.SectorSize, start, end abi.ChainEpoch) *types.PreSeal {
 	minerSectors := msb.MinerSectors[miner]
 	sectorID := len(minerSectors)
 

@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/specs-actors/actors/abi"
+	"github.com/filecoin-project/go-state-types/abi"
 )
 
 // ExecutionContext provides the context for execution of a message.
