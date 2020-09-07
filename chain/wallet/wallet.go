@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/specs-actors/actors/crypto"
+	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/ipsn/go-secp256k1"
 	blake2b "github.com/minio/blake2b-simd"
 	"golang.org/x/xerrors"

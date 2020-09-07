@@ -13,7 +13,7 @@ import (
 	big_spec "github.com/filecoin-project/go-state-types/big"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
-	exitcode_spec "github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
+	exitcode_spec "github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/minio/blake2b-simd"
 	"github.com/stretchr/testify/require"
 )

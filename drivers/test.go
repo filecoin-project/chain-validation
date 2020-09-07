@@ -23,7 +23,7 @@ import (
 	reward_spec "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/builtin/system"
 	runtime_spec "github.com/filecoin-project/specs-actors/actors/runtime"
-	"github.com/filecoin-project/specs-actors/actors/runtime/exitcode"
+	"github.com/filecoin-project/go-state-types/exitcode"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 	cid "github.com/ipfs/go-cid"
 	datastore "github.com/ipfs/go-datastore"

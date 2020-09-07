@@ -7,7 +7,7 @@ import (
 
 	abi "github.com/filecoin-project/go-state-types/abi"
 	big "github.com/filecoin-project/go-state-types/big"
-	crypto "github.com/filecoin-project/specs-actors/actors/crypto"
+	crypto "github.com/filecoin-project/go-state-types/crypto"
 	runtime "github.com/filecoin-project/specs-actors/actors/runtime"
 )
 

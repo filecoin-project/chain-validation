@@ -9,7 +9,7 @@ import (
 	big_spec "github.com/filecoin-project/go-state-types/big"
 	miner_spec "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	power_spec "github.com/filecoin-project/specs-actors/actors/builtin/power"
-	acrypto "github.com/filecoin-project/specs-actors/actors/crypto"
+	acrypto "github.com/filecoin-project/go-state-types/crypto"
 	"github.com/filecoin-project/specs-actors/actors/runtime"
 	adt_spec "github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
