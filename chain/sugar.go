@@ -2,7 +2,7 @@ package chain
 
 import (
 	"github.com/filecoin-project/go-address"
-	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
+	abi_spec "github.com/filecoin-project/go-state-types/abi"
 	builtin_spec "github.com/filecoin-project/specs-actors/actors/builtin"
 	init_spec "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	multisig_spec "github.com/filecoin-project/specs-actors/actors/builtin/multisig"

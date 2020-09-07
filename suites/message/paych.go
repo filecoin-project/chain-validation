@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	abi_spec "github.com/filecoin-project/specs-actors/actors/abi"
-	big_spec "github.com/filecoin-project/specs-actors/actors/abi/big"
+	abi_spec "github.com/filecoin-project/go-state-types/abi"
+	big_spec "github.com/filecoin-project/go-state-types/big"
 	paych_spec "github.com/filecoin-project/specs-actors/actors/builtin/paych"
-	crypto_spec "github.com/filecoin-project/specs-actors/actors/crypto"
+	crypto_spec "github.com/filecoin-project/go-state-types/crypto"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

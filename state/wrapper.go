@@ -5,9 +5,9 @@ import (
 
 	address "github.com/filecoin-project/go-address"
 
-	abi "github.com/filecoin-project/specs-actors/actors/abi"
-	big "github.com/filecoin-project/specs-actors/actors/abi/big"
-	crypto "github.com/filecoin-project/specs-actors/actors/crypto"
+	abi "github.com/filecoin-project/go-state-types/abi"
+	big "github.com/filecoin-project/go-state-types/big"
+	crypto "github.com/filecoin-project/go-state-types/crypto"
 	runtime "github.com/filecoin-project/specs-actors/actors/runtime"
 )
 
